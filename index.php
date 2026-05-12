@@ -1,5 +1,6 @@
 <?php
-session_start();
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
 require_once 'config/db.php';
 require_once 'controllers/UsuarioController.php';
 require_once 'controllers/AdminControllers.php'; 
@@ -65,10 +66,10 @@ $action = $_GET['action'] ?? 'inicio';
             $adminC->actualizar();
             break;
             case "registro":
-    require_once "controllers/UsuarioController.php";
-    $controller = new UsuarioController(); 
-    $controller->registrar();
-    break;
+        require_once "controllers/UsuarioController.php";
+         $Usuariocontroller = new UsuarioController($db);
+        $Usuariocontroller->registrar();
+        break;
 
             
 
