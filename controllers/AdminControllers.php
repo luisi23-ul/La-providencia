@@ -3,12 +3,12 @@ class AdminControllers {
     private $productoModelo;
 
     public function __construct() {
-        // Instanciamos el modelo para usar sus métodos después
+        // Instanciamos el modelo para usar despues
         require_once 'models/ProductoModel.php';
         $this->productoModelo = new ProductoModel();
     }
 
-    // --- NUEVO: Este método carga la vista de las dos opciones (TickTaps) ---
+    
     public function mostrarDashboard() {
         include 'views/admin_dashboard.php';
     }
@@ -17,7 +17,7 @@ class AdminControllers {
         include 'views/formulario_producto.php';
     }
 
-    // --- NUEVO: Este método carga la tabla con todos los productos ---
+    //carga la tabla con todos los productos ---
     public function mostrarListado() {
         // Le pedimos al modelo todos los productos para la tabla
         $listaProductos = $this->productoModelo->obtenerTodos();
@@ -25,15 +25,13 @@ class AdminControllers {
     }
 
     public function catalogo() {
-    // 1. Obtenemos los datos del modelo
     $listaProductos = $this->productoModelo->obtenerProductos();
     
-    // 2. Cargamos la vista del catálogo
+    //Carga la vista del catálogo
     require_once 'views/catalogo.php';
 }
 
     public function agregar() {
-        // Captura de datos limpia (Orientada a Objetos)
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $datos = [
                 'nombre'    => $_POST['nombre_producto'],
@@ -50,7 +48,7 @@ class AdminControllers {
 
             if ($this->productoModelo->registrarProducto($datos)) {
                 move_uploaded_file($ruta_temp, $destino);
-                // Respuesta elegante con JS
+    
                 echo "<script>alert('¡Componente Publicado!'); window.location='index.php?action=dashboard';</script>";
             }
         }
@@ -60,14 +58,13 @@ class AdminControllers {
 public function eliminar() {
     $id = $_GET['id'];
     $this->productoModelo->borrarProducto($id);
-    // Redirigimos al listado para ver que ya no está
     header("Location: index.php?action=listado");
 }
 
 // Función para abrir el formulario de edición
 public function editar() {
     $id = $_GET['id'];
-    // Buscamos los datos del producto para rellenar el formulario
+    
     $p = $this->productoModelo->obtenerPorId($id);
     require_once 'views/editar_producto.php';
 }
@@ -80,22 +77,21 @@ public function actualizar() {
         $p = $this->productoModelo->obtenerPorId($id);
         $nombreImagen = $p->imagen; 
 
-        // 2. Lógica para procesar la nueva imagen si el usuario seleccionó una
+        // nueva imagen si el usuario seleccionó una
         if (isset($_FILES['imagen']) && $_FILES['imagen']['error'] == 0) {
             // Generamos un nombre único para evitar que archivos con el mismo nombre se borren
            // Línea 86 (Ajustada para limpiar espacios)
         $nombreLimpio = str_replace(' ', '_', $_FILES['imagen']['name']); 
         $nombreImagen = time() . "_" . $nombreLimpio;
             
-            // Ruta física donde se guardará el archivo en tu servidor
-            // Cambia la línea 89 por esta:
+           
         $rutaDestino = $_SERVER['DOCUMENT_ROOT'] . "/La-providencia/public/uploads/" . $nombreImagen;
             
             // Movemos el archivo desde la carpeta temporal de PHP a tu carpeta del proyecto
             move_uploaded_file($_FILES['imagen']['tmp_name'], $rutaDestino);
         }
 
-        // 3. Preparamos el arreglo de datos con los nombres que espera el Modelo
+        // Prepara el arreglo de datos con los nombres que espera el Modelo
         $datos = [
             'id'     => $id,
             'nombre' => $_POST['nombre'],
@@ -105,7 +101,7 @@ public function actualizar() {
             'imagen' => $nombreImagen // Se envía la nueva o la que ya existía
         ];
 
-        // 4. Ejecutamos la actualización y redireccionamos al listado
+        // 4. Ejecuta la actualización y redireccionamos al listado
         if ($this->productoModelo->modificarProducto($datos)) {
             header("Location: index.php?action=listado");
             exit(); 

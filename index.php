@@ -10,8 +10,7 @@ $db = Database::connect();
 $usuarioC = new UsuarioController($db); 
 $adminC = new AdminControllers(); 
 
-// Capturamos la acción. Si no hay acción, por defecto enviamos a 'inicio'
-// Pero si el usuario ya está logueado como admin, podrías cambiar 'inicio' por 'dashboard'
+// Captura la acción  Si no hay acción,  enviamos a 'inicio'
 $action = $_GET['action'] ?? 'inicio';
 
 ?> 
@@ -28,27 +27,27 @@ $action = $_GET['action'] ?? 'inicio';
     <main id="app">
         <?php 
         switch ($action) {
-            // 1. DASHBOARD: Esta es la vista principal con las dos tarjetas (Cargar / Gestionar)
+            // Esta es la vista principal con las dos tarjetas (Cargar / Gestionar)
             case 'dashboard':
                 $adminC->mostrarDashboard();
                 break;
 
-            // 2. FORMULARIO: Solo aparece cuando el admin hace click en "Cargar Producto"
+            //  FORMULARIO: Solo aparece cuando el admin hace click en "Cargar Producto"
             case 'admin':
                 $adminC->mostrarPanel();
                 break;
 
-            // 3. GESTIÓN: Aparece cuando el admin hace click en "Gestionar Inventario"
+            //  GESTIÓN: Aparece cuando el admin hace click en "Gestionar Inventario"
             case 'listado':
                 $adminC->mostrarListado();
                 break;
 
-            // PROCESOS LÓGICOS (No muestran vista, solo ejecutan y redirigen)
+            //  (No muestran vista, solo ejecutan y redirigen)
             case 'guardar_producto':
                 $adminC->agregar();
                 break;
 
-                // Acción para mostrar el catálogo dinámico
+                // Acción para mostrar el catálogo 
             case 'ver_catalogo':
                 $adminC->catalogo();
                 break;
@@ -67,7 +66,7 @@ $action = $_GET['action'] ?? 'inicio';
             break;
             case "registro":
     require_once "controllers/UsuarioController.php";
-    $controller = new UsuarioController(); // Sin nada dentro de los paréntesis
+    $controller = new UsuarioController(); 
     $controller->registrar();
     break;
 

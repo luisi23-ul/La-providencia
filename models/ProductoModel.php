@@ -5,12 +5,11 @@ class ProductoModel {
     private $db;
 
     public function __construct() {
-        // Usamos el método connect() que ya tienes en db.php
         $this->db = Database::connect(); 
     }
 
    public function registrarProducto($datos) {
-        // Usamos los nombres exactos de tu base de datos (imagen)
+       
         $sql = "INSERT INTO productos (nombre_producto, descripcion, precio, stock, imagen, id_categoria) 
                 VALUES (?, ?, ?, ?, ?, ?)";
         
@@ -26,14 +25,14 @@ class ProductoModel {
     }
 
     public function obtenerProductos() {
-    // Consultamos todos los productos de la base de datos
+    // Consulta todos los productos de la base de datos
     $sql = "SELECT * FROM productos ORDER BY id DESC";
     $stmt = $this->db->prepare($sql);
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_OBJ); // Retorna una lista de objetos
 }
 
-// Agrégalo después de la llave de la línea 34 en ProductoModel.php
+
 public function obtenerTodos() {
      $sql = "SELECT id, nombre_producto, descripcion, precio, stock, imagen, id_categoria FROM productos ORDER BY id DESC";
     $stmt = $this->db->prepare($sql);
@@ -49,7 +48,6 @@ public function borrarProducto($id) {
 }
 
 // Buscar UN solo producto por su ID
-// 1. ESTA FUNCIÓN ES SOLO PARA BUSCAR (La que carga el formulario)
 public function obtenerPorId($id) {
     $sql = "SELECT * FROM productos WHERE id = :id";
     $stmt = $this->db->prepare($sql);
@@ -75,7 +73,7 @@ public function modificarProducto($datos) {
     $stmt->bindParam(':precio', $datos['precio']); 
     $stmt->bindParam(':stock', $datos['stock']); 
     $stmt->bindParam(':desc', $datos['desc']); 
-    $stmt->bindParam(':imagen', $datos['imagen']); // Ahora sí coincide con el SQL
+    $stmt->bindParam(':imagen', $datos['imagen']); 
     $stmt->bindParam(':id', $datos['id']); 
 
     return $stmt->execute(); 

@@ -14,7 +14,7 @@ class UsuarioModels {
     }
 
     public function registrarCliente($datos) {
-        // Usamos id_rol = 3 que es el de 'Cliente' en tu tabla roles
+        // Usamos id_rol = 3 que es el de cliente
         $sql = "INSERT INTO usuarios (nombre, apellido, correo, telefono, clave, id_rol) 
                 VALUES (:nombre, :apellido, :correo, :telefono, :clave, 3)";
         
