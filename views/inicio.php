@@ -233,6 +233,5 @@
 
     <footer class="footer-bottom">
         <p>&copy; <?php echo date('Y'); ?> Inversiones La Providencia. Todos los derechos reservados.</p>
-        <p>Diseñado con <i class="fas fa-heart" style="color: #ff4d4d;"></i> por Edgar Rojas</p>
     </footer>
 </footer>
