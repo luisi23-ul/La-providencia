@@ -14,13 +14,13 @@ class UsuarioModels {
     }
 
     public function registrarCliente($datos) {
-        // Usamos id_rol = 3 que es el de cliente
+        //  id_rol = 3 que es el de cliente
         $sql = "INSERT INTO usuarios (nombre, apellido, correo, telefono, clave, id_rol) 
                 VALUES (:nombre, :apellido, :correo, :telefono, :clave, 3)";
         
         $stmt = $this->db->prepare($sql);
         
-        // Encriptar clave por seguridad
+        // Encripta clave 
         $password_hash = password_hash($datos['clave'], PASSWORD_DEFAULT);
 
         $stmt->bindParam(':nombre', $datos['nombre']);

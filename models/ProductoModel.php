@@ -40,7 +40,7 @@ public function obtenerTodos() {
     return $stmt->fetchAll(PDO::FETCH_OBJ);
 }
 
-// Borrar de la base de datos
+// Borra de la base de datos
 public function borrarProducto($id) {
     $sql = "DELETE FROM productos WHERE id = ?";
     $stmt = $this->db->prepare($sql);
@@ -56,9 +56,8 @@ public function obtenerPorId($id) {
     return $stmt->fetch(PDO::FETCH_OBJ);
 }
 
-// 2. ESTA FUNCIÓN ES SOLO PARA GUARDAR LOS CAMBIOS
+//  ES SOLO PARA GUARDAR LOS CAMBIOS
 public function modificarProducto($datos) { 
-    // 1. Agregamos "imagen = :imagen" a la consulta SQL
     $sql = "UPDATE productos SET 
                 nombre_producto = :nombre, 
                 precio = :precio, 
