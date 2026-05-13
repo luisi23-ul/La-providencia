@@ -1,0 +1,110 @@
+/* public/css/header.css */
+
+.main-header {
+    position: fixed;
+    top: 20px;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    z-index: 1000;
+}
+
+/* La pastilla (nav) estilo Glassmorphism */
+.nav-container {
+    background: rgba(255, 255, 255, 0.8); /* Fondo blanco traslúcido */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 0.6rem 2.5rem;
+    border-radius: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 90%;
+    max-width: 1100px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+/* Logo */
+.brand-logo {
+    font-size: 1.3rem;
+    margin: 0;
+}
+
+.brand-logo a {
+    text-decoration: none;
+    color: var(--dark-surface); /* Azul oscuro para las letras */
+    font-weight: 700;
+}
+
+.brand-logo span {
+    color: var(--primary-blue); /* El azul vibrante de La Providencia */
+    margin-left: 3px;
+}
+
+/* Menú Central */
+.nav-menu {
+    display: flex;
+    gap: 30px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.nav-menu a {
+    text-decoration: none;
+    color: var(--dark-surface); /* Letras azul oscuro */
+    font-size: 1rem;
+    font-weight: 500;
+    transition: 0.3s;
+}
+
+.nav-menu a:hover, 
+.nav-menu a.active {
+    color: var(--primary-blue);
+}
+
+/* Iconos de la derecha */
+.main-header aside {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.boton-login {
+    color: var(--primary-blue);
+    font-size: 1.6rem;
+    text-decoration: none;
+    transition: 0.3s;
+    display: flex;
+    align-items: center;
+}
+
+.boton-carrito {
+    background: transparent;
+    border: none;
+    color: var(--dark-surface);
+    font-size: 1.4rem;
+    cursor: pointer;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.insignia {
+    position: absolute;
+    top: -5px;
+    right: -10px;
+    background: var(--primary-blue);
+    color: white;
+    font-size: 0.7rem;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 2px solid #fff;
+}

@@ -1,0 +1,33 @@
+html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 80px; /* Esto evita que la navbar tape el título al llegar a la sección */
+}
+
+/* public/css/style.css */
+:root {
+    /* Paleta UX/UI: Menos contraste agresivo, más elegancia */
+    --primary-blue: #0052d4;      /* Azul vibrante del logo */
+    --soft-blue: #eef2ff;         /* Azul muy pálido para fondos de tarjetas */
+    --dark-surface: #0f172a;      /* Slate/Navy profundo (Mejor que negro puro) */
+    --fondo-cristal: rgba(20, 20, 20, 0.4);
+    --dark-body: #020617;
+    --capa-hero: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.4) 100%);         /* Fondo general (Casi negro, pero con tinte azul) */
+    --white-pure: #ffffff;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    
+    --main-font: 'Poppins', sans-serif;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--main-font); /* Fondo con matiz azulado profesional */
+    color: var(--text-main);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased; /* Mejora la legibilidad en Mac/iOS */
+}

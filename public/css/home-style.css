@@ -1,0 +1,592 @@
+/* public/css/home-style.css */
+.hero-section {
+    min-height: 100vh;
+    width: 100%;
+    background: var(--capa-hero), url('../img/section-hero1.png'); 
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 8%; 
+}
+
+.contenedor-hero {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr; 
+    align-items: center;
+    gap: 2rem;
+    width: 100%;
+    max-width: 1200px;
+    padding-left: 10%
+}
+
+.titulo-hero{
+    font-size: clamp(2.2rem, 5vw, 3.8rem); 
+    font-weight: 800; 
+    line-height: 1.1; 
+    margin-bottom: 1.2rem;
+    color: var(--dark-surface);
+    letter-spacing: -2px; 
+}
+
+.subtitulo-hero {
+    color: var(--dark-surface);
+    font-size: 1.1rem; 
+    max-width: 480px;  
+    margin-bottom: 2rem;
+    line-height: 1.6;
+}
+
+
+.text-hero {
+    background: none;
+    color: var(--primary-blue);
+}
+
+
+/* Contenedor de las etiquetas de producto */
+.product-tags {
+    margin: 25px 0;
+}
+
+.product-tags ul {
+    display: flex;
+    gap: 12px;
+    list-style: none; /* Quitamos los puntos de la lista */
+    padding: 0;
+    flex-wrap: wrap; /* Para que se ajusten en celulares */
+}
+
+.product-tags li {
+    background: rgba(0, 82, 212, 0.1); /* Fondo azul muy suave traslúcido */
+    border: 1px solid rgba(0, 82, 212, 0.3);
+    color: var(--primary-blue);
+    padding: 6px 16px;
+    border-radius: 50px; /* Forma de cápsula */
+    font-size: 0.85rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: 0.3s ease;
+}
+
+.product-tags li:hover {
+    background: var(--primary-blue);
+    border-color: var(--white-pure);
+    transform: translateY(-3px);
+    color: var(--white-pure);
+}
+
+.product-tags i {
+    color: var(--primary-blue);
+    font-size: 0.9rem;
+}
+
+.product-tags li:hover i {
+    color: white; /* El icono cambia a blanco al pasar el mouse */
+}
+
+.hero-img{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: transparent;
+    padding: 2rem;
+    perspective: 1200px;
+    cursor: pointer;
+    position: relative;
+    animation-name:slideInDown;
+    animation-duration: 1s;
+}
+
+.hero-logo-img {
+    width: 100%;
+    max-width: 100dvw;
+    height: 100%;
+    position: relative;
+    filter: drop-shadow(0 10px 20px rgba(0,0,0,0.3));
+}
+
+@keyframes slideInDown {  
+from{
+    transform: translate3d(0, -100%,0);
+} 
+
+to{
+    transform: translate3d(0,0,0);
+}
+}
+
+/* --- SECTION PRODUCTS (FONDO OSCURO) --- */
+.products-section {
+    background-color: #0f172a; /* El azul oscuro que querías */
+    padding: 80px 8%;
+    width: 100%;
+    display: block;
+    clear: both;
+}
+
+.section-header {
+    text-align: center;
+    margin-bottom: 50px;
+}
+
+.section-title {
+    color: #ffffff;
+    font-size: 2.5rem;
+    font-weight: 800;
+}
+
+.section-title span {
+    color: var(--primary-blue);
+}
+
+.section-subtitle {
+    color: #94a3b8;
+    font-size: 1.2rem;
+    font-weight: 400;
+    margin-top: 10px;
+}
+
+/* --- GRID --- */
+.products-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 25px;
+    max-width: 1200px;
+    margin: 40px auto 0 auto; /* Añadimos margen arriba para separar del título */
+    padding-bottom: 50px; /* Espacio abajo */
+    justify-content: center;
+}
+
+/* --- CARDS ESTILO TICKTAPS (FONDO BLANCO) --- */
+.product-card {
+    background: #ffffff !important; /* Forzamos el blanco */
+    border-radius: 20px;
+    padding: 25px;
+    display: flex !important; /* Forzamos que sea un contenedor flexible */
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    min-height: 350px; /* Le damos un alto mínimo para que no desaparezca */
+    width: 100%; /* Que ocupe su espacio en el grid */
+    transition: transform 0.3s ease;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    opacity: 1 !important; /* Por si alguna clase reveal las oculta */
+    visibility: visible !important;
+}
+
+.product-card:hover {
+    transform: translateY(-10px);
+}
+
+.product-visual {
+    background: #f1f5f9 !important;
+    width: 100%;
+    min-height: 150px; /* Alto mínimo para el área del icono */
+    border-radius: 15px;
+    display: flex !important;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.product-visual i {
+    font-size: 3.5rem;
+    color: var(--primary-blue); /* El azul de La Providencia */
+    display: block !important;
+}
+
+
+
+.product-name {
+    color: #1e293b; /* Texto oscuro para la tarjeta blanca */
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.product-description {
+    color: #64748b;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    margin-bottom: 20px;
+}
+
+/* --- PIE DE TARJETA --- */
+.product-footer {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: auto;
+    padding-top: 15px;
+    border-top: 1px solid #f1f5f9;
+}
+
+.product-price {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: #1e293b;
+}
+
+.product-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-action {
+    background: #000000; /* Botones negros como en TickTaps */
+    color: #ffffff;
+    border: none;
+    width: 35px;
+    height: 35px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: 0.2s;
+}
+
+.btn-action:hover {
+    background: var(--primary-blue);
+}
+
+/* --- SECTION NOSOTROS --- */
+.nosotros-section {
+    padding: 100px 8%;
+    background: var(--capa-hero), url('../img/section-hero1.png');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    width: 100%;
+}
+/*titulo*/
+.section-title-nosotros{
+    color: var(--dark-surface);
+    font-size: 2.5rem;
+    font-weight: 800;
+}
+
+.section-subtitle-nosotros{
+    color: var(--dark-surface);
+    font-size: 1.2rem;
+    font-weight: 400;
+    margin-top: 10px;
+}
+
+/* Ahora es una section, pero el estilo se mantiene por la clase */
+.nosotros-grid {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    flex-wrap: wrap;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.info-card {
+   /* Fondo BLANCO total como en productos */
+    background: #ffffff !important; 
+    border-radius: 20px;
+    padding: 40px;
+    flex: 1;
+    min-width: 300px;
+    max-width: 500px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 82, 212, 0.1);
+    opacity: 1 !important; /* Visibilidad forzada */
+    visibility: visible !important;
+}
+
+.info-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+/* Estilo del ICONO grande y azul */
+.info-icon {
+    width: 90px;
+    height: 90px;
+    /* Fondo suave del icono */
+    background: rgba(0, 82, 212, 0.05) !important; 
+    color: var(--primary-blue) !important; /* Azul La Providencia forzado */
+    border-radius: 25px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 3rem;
+    margin-bottom: 20px;
+}
+
+/* Texto OSCURO para leer en fondo blanco */
+.info-title {
+    font-size: 1.8rem;
+    color: #1e293b !important; /* Texto oscuro, no blanco */
+    font-weight: 700;
+}
+
+.info-text {
+    color: #64748b !important; /* Gris oscuro para el cuerpo del texto */
+    line-height: 1.7;
+    font-size: 1.05rem;
+    padding: 0 10px;
+}
+
+/* --- SECTION CONTACTO (FONDO OSCURO) --- */
+.contacto-section {
+    background-color: #0f172a;
+    padding: 80px 8%;
+    width: 100%;
+    display: block;
+    clear: both;
+}
+
+.section-title-contacto{
+    color: #ffffff;
+    font-size: 2.5rem;
+    font-weight: 800;
+}
+
+.section-subtitle-contacto{
+    color: #94a3b8;
+    font-size: 1.2rem;
+    font-weight: 400;
+    margin-top: 10px;
+}
+
+
+/* --- GRID DE CONTACTO --- */
+.contacto-grid {
+    display: grid;
+    grid-template-columns: 0.8fr 1.2fr; 
+    gap: 30px;
+    max-width: 1200px;
+    margin: 50px auto 0;
+    align-items: stretch;
+}
+
+/* --- BLOQUE DE INFORMACIÓN (IZQUIERDA) --- */
+.contacto-info {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.contacto-card {
+    background: #ffffff;
+    border-radius: 24px;
+    padding: 30px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease;
+}
+
+.contacto-card:hover {
+    transform: translateX(10px);
+}
+
+.contacto-icon-box {
+    width: 60px;
+    height: 60px;
+    background: var(--primary-blue);
+    color: #ffffff;
+    border-radius: 15px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.4rem;
+}
+
+/* Estilos para el texto dentro de la card (Ubicación/Teléfono) */
+.contacto-card header h4 {
+    color: var(--dark-surface);
+    font-size: 1.2rem;
+    margin: 0;
+    font-weight: 700;
+}
+
+.contacto-card header p {
+    color: var(--text-muted);
+    font-size: 1rem;
+    margin: 5px 0 0;
+}
+
+/* --- REDES SOCIALES --- */
+.redes-contacto {
+    display: flex;
+    gap: 20px;
+}
+
+.redes-contacto a {
+    font-size: 1.8rem;
+    color: var(--dark-surface);
+    transition: color 0.3s;
+}
+
+.redes-contacto a:hover {
+    color: var(--primary-blue);
+}
+
+/* --- FORMULARIO (DERECHA) --- */
+.contacto-form {
+    background: #ffffff;
+    padding: 50px;
+    border-radius: 30px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+}
+
+/* Fieldset para agrupar sin divs */
+.form-group {
+    border: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.contacto-form label {
+    color: var(--dark-surface);
+    font-weight: 700;
+}
+
+.contacto-form input, 
+.contacto-form textarea {
+    background: #f8fafc;
+    border: 2px solid #e2e8f0;
+    padding: 15px;
+    border-radius: 15px;
+    font-size: 1rem;
+    font-family: inherit;
+    width: 100%;
+    transition: border-color 0.3s;
+}
+
+.contacto-form input:focus, 
+.contacto-form textarea:focus {
+    border-color: var(--primary-blue);
+    outline: none;
+}
+
+/* --- BOTÓN DE ENVIAR (ESTILO PREMIUM) --- */
+.btn-enviar {
+    background-color: var(--primary-blue);
+    color: #ffffff;
+    border: none;
+    padding: 18px 30px;
+    border-radius: 15px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px; /* Espacio entre el texto y el icono del avioncito */
+    transition: all 0.3s ease;
+    box-shadow: 0 10px 20px rgba(0, 82, 212, 0.2);
+    margin-top: 10px;
+}
+
+.btn-enviar i {
+    transition: transform 0.3s ease;
+}
+
+/* Efectos al pasar el mouse */
+.btn-enviar:hover {
+    background-color: var(--dark-surface); /* Cambia al azul oscuro de la marca */
+    transform: translateY(-3px); /* Se eleva un poco */
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+}
+
+.btn-enviar:hover i {
+    transform: translateX(5px) translateY(-5px); /* El avioncito hace un efecto de despegue */
+}
+
+/* Efecto al hacer clic */
+.btn-enviar:active {
+    transform: translateY(0);
+}
+
+/* --- MAIN FOOTER --- */
+.main-footer {
+    background-color: #020617; /* Un azul casi negro para el final */
+    color: #ffffff;
+    padding: 80px 8% 20px;
+    width: 100%;
+}
+
+.footer-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-bottom: 50px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.footer-brand h2 {
+    font-size: 1.8rem;
+    margin-bottom: 15px;
+}
+
+.footer-brand p {
+    color: #94a3b8;
+    max-width: 250px;
+    line-height: 1.6;
+}
+
+.footer-links h4, 
+.footer-legal h4 {
+    font-size: 1.2rem;
+    margin-bottom: 20px;
+    color: #ffffff;
+}
+
+.footer-links ul, 
+.footer-legal ul {
+    list-style: none;
+    padding: 0;
+}
+
+.footer-links li, 
+.footer-legal li {
+    margin-bottom: 12px;
+}
+
+.footer-links a, 
+.footer-legal a {
+    color: #94a3b8;
+    text-decoration: none;
+    transition: 0.3s;
+}
+
+.footer-links a:hover, 
+.footer-legal a:hover {
+    color: var(--primary-blue);
+    padding-left: 5px;
+}
+
+/* --- FOOTER BOTTOM --- */
+.footer-bottom {
+    text-align: center;
+    padding-top: 30px;
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+.footer-bottom p {
+    margin-bottom: 10px;
+}
