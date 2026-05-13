@@ -21,7 +21,7 @@ class UsuarioController {
             $email = isset($_POST['email']) ? $_POST['email'] : '';
             $pass = isset($_POST['password']) ? $_POST['password'] : '';
 
-            if ($email === 'luisi@gmail.com' && $pass === 'Dios1234') {
+            if ($email === 'luisa@gmail.com' && $pass === 'Dios1234') {
                 if (session_status() == PHP_SESSION_NONE) {
                     session_start();
                 }
@@ -42,25 +42,38 @@ class UsuarioController {
         }
     }
 
-    public function registrar() {
-        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            $datos = [
-                'nombre'   => $_POST['nombre'],
-                'apellido' => $_POST['apellido'],
-                'telefono' => $_POST['telefono'],
-                'correo'   => $_POST['correo'],
-                'clave'    => $_POST['clave']
-            ];
+    // Dentro de UsuarioController.php
 
-            if ($this->modelo->registrarCliente($datos)) {
-                
-                header("Location: index.php?action=ver_catalogo&res=exito");
-                exit();
-            } else {
-                echo "Hubo un error al guardar en la base de datos.";
-            }
+public function mostrarRegistro() {
+    include 'views/registro.php';
+}
+
+public function guardarCliente() {
+    if (isset($_POST["nombre"])) {
+        $datos = array(
+            "nombre"   => $_POST["nombre"],
+            "apellido" => $_POST["apellido"],
+            "telefono" => $_POST["telefono"],
+            "correo"   => $_POST["correo"],
+            "clave"    => $_POST["clave"],
+            "id_rol"   => 3 // Rol de cliente
+        );
+
+        // INSTANCIAMOS igual que haces con productos
+        $modelo = new UsuarioModels(); 
+        $respuesta = $modelo->registrarClienteModel($datos);
+
+        if ($respuesta) {
+            echo "<script>
+                    alert('¡Bienvenido! Tu registro en La Providencia fue exitoso.');
+                    window.location.href = 'index.php?action=inicio';
+                  </script>";
+        } else {
+            echo "<script>alert('Error al guardar. Verifica los campos.');</script>";
         }
     }
+}
+
 
     public function cerrarSesion() {
         if (session_status() == PHP_SESSION_NONE) {

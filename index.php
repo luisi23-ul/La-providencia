@@ -1,4 +1,6 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_reporting', E_ALL);
 
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
@@ -17,7 +19,6 @@ $action = $_GET['action'] ?? 'inicio';
 // --- 1. CARGAMOS EL HEADER (Trae <html>, <head> y <nav>) ---
 include 'views/layout/header.php'; 
 
-// --- 2. CONTENIDO DINÁMICO ---
 echo '<main id="app">'; 
 
 switch ($action) {
@@ -34,15 +35,21 @@ switch ($action) {
         $usuarioC->validarLogin();
         break;
 
-    case 'registro':
-        $usuarioC->registrar();
-        break;
+   
 
-    // --- VISTAS DE ADMINISTRACIÓN ---
+    
     case 'dashboard':
         $adminC->mostrarDashboard();
         break;
+        
+        
+case 'registro':
+    $usuarioC->mostrarRegistro(); // Para ver el formulario
+    break;
 
+case 'registrar_cliente':
+    $usuarioC->guardarCliente(); // Para procesar los datos y guardarlos
+    break;
     case 'admin':
         $adminC->mostrarPanel();
         break;
@@ -59,7 +66,6 @@ switch ($action) {
         $adminC->editar();
         break;
 
-    // --- ACCIONES DE LÓGICA (POST) ---
     case 'guardar_producto':
         $adminC->agregar();
         break;

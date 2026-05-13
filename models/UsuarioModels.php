@@ -1,4 +1,5 @@
 <?php
+require_once 'config/db.php';
 class UsuarioModels {
     private $db;
 
@@ -13,24 +14,37 @@ class UsuarioModels {
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    public function registrarCliente($datos) {
-        //  id_rol = 3 que es el de cliente
-        $sql = "INSERT INTO usuarios (nombre, apellido, correo, telefono, clave, id_rol) 
-                VALUES (:nombre, :apellido, :correo, :telefono, :clave, 3)";
-        
-        $stmt = $this->db->prepare($sql);
-        
-        // Encripta clave 
-        $password_hash = password_hash($datos['clave'], PASSWORD_DEFAULT);
+    
 
-        $stmt->bindParam(':nombre', $datos['nombre']);
-        $stmt->bindParam(':apellido', $datos['apellido']);
-        $stmt->bindParam(':correo', $datos['correo']);
-        $stmt->bindParam(':telefono', $datos['telefono']);
-        $stmt->bindParam(':clave', $password_hash);
 
-        return $stmt->execute();
+    // Si no tienes un constructor (__construct), usa la conexión estática directamente
+    public function registrarClienteModel($datos) {
+        $sql = "INSERT INTO usuarios (nombre, apellido, telefono, correo, clave, id_rol) 
+                VALUES (?, ?, ?, ?, ?, ?)";
+        
+        // Usamos Conexion::conectar() para obtener el objeto PDO
+        $stmt = Conexion::conectar()->prepare($sql);
+        
+        return $stmt->execute([
+            $datos['nombre'], 
+            $datos['apellido'], 
+            $datos['telefono'], 
+            $datos['correo'], 
+            $datos['clave'], 
+            $datos['id_rol']
+        ]);
     }
 
+
+    public function cerrarSesion() {
+        if (session_status() == PHP_SESSION_NONE) {
+            session_start();
+        }
+        session_destroy();
+        header("Location: index.php?action=inicio");
+        exit();
+    }
+
+    
     
 }

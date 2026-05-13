@@ -33,15 +33,22 @@
     <li><a href="#contacto">Contacto</a></li>
             </ul>
 
-            <aside>
-                <a href="index.php?action=login" class="boton-login" aria-label="Iniciar Sesión">
-                <i class="fas fa-user-circle"></i>
-                </a>
-                <button class="boton-carrito" aria-label="Carrito">
-                <i class="fas fa-shopping-basket"></i>
-                <span class="insignia">0</span>
-                </button>
-            </aside>
+           <aside class="header-actions">
+    <a href="index.php?action=login" class="action-item" aria-label="Iniciar Sesión">
+        <i class="fas fa-user-circle"></i>
+        <span>Iniciar Sesión</span>
+    </a>
+
+    <a href="index.php?action=registro" class="action-item" aria-label="Registrarse">
+        <i class="fas fa-user-plus"></i>
+        <span>Registrarse</span>
+    </a>
+
+    <a href="index.php?action=ver_catalogo" class="action-item" aria-label="Carrito">
+        <i class="fas fa-shopping-basket"></i>
+        <span class="cart-count">0</span>
+    </a>
+</aside>
         </nav>
     </header>
 

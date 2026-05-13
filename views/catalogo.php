@@ -1,5 +1,6 @@
 <section class="contenedor-catalogo">
     <header class="encabezado-catalogo">
+        <link rel="stylesheet" href="public/css/catalogo.css?v=<?php echo time(); ?>">
         <h2>Nuestros Productos</h2>
         <p>Soluciones de alto nivel diseñadas para tu hogar.</p>
     </header>

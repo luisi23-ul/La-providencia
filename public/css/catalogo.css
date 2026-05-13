@@ -1,0 +1,108 @@
+
+/* Estilo General del Catálogo */
+.contenedor-catalogo {
+    background-color: #f1f5f9; /* Fondo gris muy claro como el video */
+    padding: 60px 20px;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+.encabezado-catalogo {
+    text-align: center;
+    margin-bottom: 50px;
+}
+
+.encabezado-catalogo h2 {
+    font-size: 2.5rem;
+    color: #1e293b;
+    margin-bottom: 10px;
+}
+
+/* Rejilla de Tarjetas */
+.grid-productos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 25px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* La Tarjeta (Card) */
+.card-producto {
+    background: #ffffff;
+    border-radius: 25px; /* Bordes muy redondeados como el video */
+    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+    overflow: hidden;
+    transition: 0.3s;
+    border: 1px solid #e2e8f0;
+    margin: 0;
+}
+
+.card-producto:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(74, 222, 128, 0.2);
+}
+
+.imagen-container {
+    background: #f8fafc;
+    height: 220px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.card-producto img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+/* Textos internos */
+.card-producto figcaption {
+    padding: 20px;
+}
+
+.card-producto h3 {
+    font-size: 1.2rem;
+    color: #0f172a;
+    margin-bottom: 5px;
+}
+
+.calidad {
+    font-size: 0.85rem;
+    color: #64748b;
+    margin-bottom: 15px;
+}
+
+.stock {
+    font-size: 0.9rem;
+    color: #1e293b;
+    border-top: 1px solid #f1f5f9;
+    padding-top: 10px;
+}
+
+/* Fila de Precio y Carrito */
+.info-compra {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 15px;
+}
+
+.precio {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: #1e293b;
+}
+
+.icon-carito {
+    background: #1e293b;
+    color: white;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    cursor: pointer;
+}
