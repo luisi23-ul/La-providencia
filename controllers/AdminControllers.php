@@ -17,7 +17,7 @@ class AdminControllers {
         include 'views/formulario_producto.php';
     }
 
-    //carga la tabla con todos los productos ---
+    //carga la tabla con todos los producto
     public function mostrarListado() {
         // Le pedimos al modelo todos los productos para la tabla
         $listaProductos = $this->productoModelo->obtenerTodos();
@@ -27,7 +27,7 @@ class AdminControllers {
     public function catalogo() {
     $listaProductos = $this->productoModelo->obtenerProductos();
     
-    //Carga la vista del catálogo
+    //Carga el catálogo
     require_once 'views/catalogo.php';
 }
 
@@ -42,7 +42,7 @@ class AdminControllers {
                 'imagen'    => $_FILES['imagen']['name']
             ];
 
-            // Subida física de la imagen
+            // Subida física de la image
             $ruta_temp = $_FILES['imagen']['tmp_name'];
             $destino = "public/uploads/" . $datos['imagen'];
 
@@ -54,14 +54,14 @@ class AdminControllers {
         }
     }
 
-    // Función para eliminar
+    //  para eliminar
 public function eliminar() {
     $id = $_GET['id'];
     $this->productoModelo->borrarProducto($id);
     header("Location: index.php?action=listado");
 }
 
-// Función para abrir el formulario de edición
+//  para abrir el formulario de edición
 public function editar() {
     $id = $_GET['id'];
     
@@ -73,7 +73,7 @@ public function actualizar() {
     if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $id = $_POST['id'];
 
-        // 1. Buscamos el producto actual para recuperar el nombre de la imagen vieja
+        //  se busca el producto actual para recuperar el nombre de la imagen vieja
         $p = $this->productoModelo->obtenerPorId($id);
         $nombreImagen = $p->imagen; 
 
@@ -87,21 +87,21 @@ public function actualizar() {
            
         $rutaDestino = $_SERVER['DOCUMENT_ROOT'] . "/La-providencia/public/uploads/" . $nombreImagen;
             
-            // Movemos el archivo desde la carpeta temporal de PHP a tu carpeta del proyecto
+            // Movemos el archivo desde la carpeta temporal de PHP a la carpeta del proyecto
             move_uploaded_file($_FILES['imagen']['tmp_name'], $rutaDestino);
         }
 
-        // Prepara el arreglo de datos con los nombres que espera el Modelo
+        // Prepara el arreglo de datos con los nombres que se coneta con el modelo
         $datos = [
             'id'     => $id,
             'nombre' => $_POST['nombre'],
             'precio' => $_POST['precio'],
             'stock'  => $_POST['stock'],
             'desc'   => $_POST['desc'],
-            'imagen' => $nombreImagen // Se envía la nueva o la que ya existía
+            'imagen' => $nombreImagen 
         ];
 
-        // 4. Ejecuta la actualización y redireccionamos al listado
+        //  la actualización y se redirecciona al listado
         if ($this->productoModelo->modificarProducto($datos)) {
             header("Location: index.php?action=listado");
             exit(); 

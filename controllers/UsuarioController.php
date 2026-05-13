@@ -28,11 +28,10 @@ class UsuarioController {
 
                 $_SESSION['admin_auth'] = 'Luisana Admin';
                 
-                // --- CAMBIO CLAVE AQUÍ ---
-                // Antes decía 'action=admin'. Lo cambiamos a 'dashboard'
+                
                 header("Location: index.php?action=dashboard");
                 exit();
-                // -------------------------
+                
                 
             } else {
                 echo "<script>
@@ -54,7 +53,7 @@ class UsuarioController {
             ];
 
             if ($this->modelo->registrarCliente($datos)) {
-                // Si sale bien, lo mandamos al catálogo con un mensaje de éxito
+                
                 header("Location: index.php?action=ver_catalogo&res=exito");
                 exit();
             } else {

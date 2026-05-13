@@ -40,7 +40,7 @@
             <input type="file" name="imagen" class="input-file-providencia" accept="image/*" required>
         </fieldset>
 <p style="text-align: center; margin-top: 30px;">
-    <input type="button" value="GUARDAR PRODUCTO" onclick="document.getElementById('formAgregar').submit();" style="background: #0052d4; color: white; padding: 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; font-size: 1.1em;">
+    <input type="button" value="GUARDAR PRODUCTO" onclick="document.getElementById('formProducto').submit();" style="background: #0052d4; color: white; padding: 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; font-size: 1.1em;">
 </p>
 
 <p style="text-align: center; margin-top: 15px;">
