@@ -1,6 +1,4 @@
 <?php
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
 require_once 'config/db.php';
 require_once 'controllers/UsuarioController.php';
 require_once 'controllers/AdminControllers.php'; 
@@ -11,7 +9,7 @@ $db = Database::connect();
 $usuarioC = new UsuarioController($db); 
 $adminC = new AdminControllers(); 
 
-// Captura la acción  Si no hay acción,  enviamos a 'inicio'
+// agarra la acción  Si no hay acción,  enviamos a 'inicio'
 $action = $_GET['action'] ?? 'inicio';
 
 ?> 
@@ -67,8 +65,8 @@ $action = $_GET['action'] ?? 'inicio';
             break;
             case "registro":
         require_once "controllers/UsuarioController.php";
-         $Usuariocontroller = new UsuarioController($db);
-        $Usuariocontroller->registrar();
+         $controller = new UsuarioController($db);
+         $controller->registrar();
         break;
 
             
