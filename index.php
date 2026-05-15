@@ -34,6 +34,10 @@ switch ($action) {
         $usuarioC->mostrarInicio();
         break;
 
+        case 'login':
+        $usuarioC->mostrarLogin();
+        break;
+
     case 'login_usuario':
         $usuarioC->mostrarLogin_registro();
         break;
