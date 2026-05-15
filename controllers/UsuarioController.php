@@ -1,11 +1,10 @@
 <?php
-// Clase encargada de la gestión de usuarios y autenticación
 class UsuarioController {
     private $modelo;
 
-    public function __construct($db) {
+    public function __construct() {
         require_once 'models/UsuarioModels.php';
-        $this->modelo = new UsuarioModels($db);
+        $this->modelo = new UsuarioModels();
     }
 
     public function mostrarLogin() {
@@ -50,29 +49,69 @@ public function mostrarRegistro() {
 
 public function guardarCliente() {
     if (isset($_POST["nombre"])) {
+        
+        // Esta es la línea mágica para la seguridad:
+        $encriptar = password_hash($_POST["clave"], PASSWORD_DEFAULT);
+
         $datos = array(
             "nombre"   => $_POST["nombre"],
             "apellido" => $_POST["apellido"],
             "telefono" => $_POST["telefono"],
             "correo"   => $_POST["correo"],
-            "clave"    => $_POST["clave"],
-            "id_rol"   => 3 // Rol de cliente
+            "clave"    => $encriptar, // <-- Aquí guardamos la clave ya protegida
+            "id_rol"   => 3 
         );
 
-        // INSTANCIAMOS igual que haces con productos
-        $modelo = new UsuarioModels(); 
-        $respuesta = $modelo->registrarClienteModel($datos);
+        $objModelo = new UsuarioModels();
+        $respuesta = $objModelo->registrarClienteModel($datos);
+       if ($respuesta) {
+    // Usamos el nombre que recibimos del formulario para el mensaje
+    $nombreUsuario = $_POST["nombre"];
 
-        if ($respuesta) {
-            echo "<script>
-                    alert('¡Bienvenido! Tu registro en La Providencia fue exitoso.');
-                    window.location.href = 'index.php?action=inicio';
-                  </script>";
-        } else {
-            echo "<script>alert('Error al guardar. Verifica los campos.');</script>";
-        }
+    echo "<script>
+            alert('¡Bienvenido(a) a La Providencia, " . $nombreUsuario . "! Tu registro ha sido exitoso.');
+            window.location.href = 'index.php?action=ver_catalogo'; 
+          </script>";
+} else {
+    echo "<script>
+            alert('Hubo un error en el registro. Por favor, intenta de nuevo.');
+            window.location.href = 'index.php?action=registro';
+          </script>";
+}
     }
 }
+public function mostrarLogin_registro() {
+        include "views/login_registro.php";
+    }
+
+    // Función para validar el correo y la clave
+    public function ingresar() {
+        if (isset($_POST["correo_ingreso"])) {
+            
+            $datos = array(
+                "correo" => $_POST["correo_ingreso"],
+                "clave"  => $_POST["clave_ingreso"]
+            );
+
+            $objModelo = new UsuarioModels();
+            $respuesta = $objModelo->buscarUsuarioModel($datos);
+
+            // Comparamos la clave escrita con el hash de la base de datos
+            if ($respuesta && password_verify($datos["clave"], $respuesta["clave"])) {
+                echo "<script>
+                        alert('¡Bienvenido(a) a La Providencia, " . $respuesta["nombre"] . "!');
+                        window.location.href = 'index.php?action=ver_catalogo';
+                      </script>";
+            } else {
+                echo "<script>
+                        alert('Error: El correo o la contraseña no coinciden.');
+                        window.location.href = 'index.php?action=mostrarLogin_registro';
+                      </script>";
+            }
+        }
+    }
+
+
 
 
     public function cerrarSesion() {

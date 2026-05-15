@@ -1,8 +1,5 @@
 <?php
 ini_set('display_errors', 1);
-ini_set('display_reporting', E_ALL);
-
-ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
 require_once 'config/db.php';
@@ -13,69 +10,48 @@ $db = Database::connect();
 $usuarioC = new UsuarioController($db); 
 $adminC = new AdminControllers(); 
 
-// Agarramos la acción. Si no hay, enviamos a 'inicio'
 $action = $_GET['action'] ?? 'inicio';
 
-// --- 1. CARGAMOS EL HEADER (Trae <html>, <head> y <nav>) ---
+// --- PASO 1: Lógica de procesamiento (ACCIONES QUE NO TIENEN VISTA) ---
+// Ejecutamos primero las funciones que guardan o validan para que el redirect funcione bien
+if ($action == 'registrar_cliente') {
+    $usuarioC->guardarCliente();
+    exit(); // Detenemos la ejecución para que no cargue el header si hay redirección
+}
+
+if ($action == 'valider_login_registro') {
+    $usuarioC->ingresar();
+    exit();
+}
+
+// --- PASO 2: Carga de Interfaz (VISTAS) ---
 include 'views/layout/header.php'; 
 
 echo '<main id="app">'; 
 
 switch ($action) {
-    // --- VISTAS DE USUARIO / INICIO ---
     case 'inicio':
         $usuarioC->mostrarInicio();
         break;
 
-    case 'login':
-        $usuarioC->mostrarLogin();
+    case 'login_usuario':
+        $usuarioC->mostrarLogin_registro();
         break;
 
-    case 'validar_login':
-        $usuarioC->validarLogin();
-        break;
-
-   
-
-    
-    case 'dashboard':
-        $adminC->mostrarDashboard();
-        break;
-        
-        
-case 'registro':
-    $usuarioC->mostrarRegistro(); // Para ver el formulario
-    break;
-
-case 'registrar_cliente':
-    $usuarioC->guardarCliente(); // Para procesar los datos y guardarlos
-    break;
-    case 'admin':
-        $adminC->mostrarPanel();
-        break;
-
-    case 'listado':
-        $adminC->mostrarListado();
+    case 'registro':
+        $usuarioC->mostrarRegistro();
         break;
 
     case 'ver_catalogo':
         $adminC->catalogo();
         break;
 
-    case 'editar':
-        $adminC->editar();
+    case 'dashboard':
+        $adminC->mostrarDashboard();
         break;
 
-    case 'guardar_producto':
-        $adminC->agregar();
-        break;
-
-    case 'eliminar_producto':
-        $adminC->eliminar();
-        break;
-
-    case 'actualizar_producto':
-        $adminC->actualizar();
+    case 'admin':
+        $adminC->mostrarPanel();
         break;
 
     default:
@@ -84,5 +60,4 @@ case 'registrar_cliente':
 }
 
 echo '</main>';
-
 ?>

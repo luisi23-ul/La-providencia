@@ -3,7 +3,7 @@ class AdminControllers {
     private $productoModelo;
 
     public function __construct() {
-        // Instanciamos el modelo para usar despues
+        // Instancia el modelo para usar despues
         require_once 'models/ProductoModel.php';
         $this->productoModelo = new ProductoModel();
     }

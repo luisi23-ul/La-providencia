@@ -32,5 +32,13 @@
         </fieldset>
         
         <button type="submit" class="btn-ingresar">Registrarme e Iniciar</button>
+
+        <br>
+<section style="text-align: center;">
+    <p>¿Ya tienes una cuenta?</p>
+    <a href="index.php?action=login_usuario" style="color: #8e44ad; font-weight: bold; text-decoration: none; border: 1px solid #8e44ad; padding: 10px; border-radius: 5px;">
+        Iniciar Sesión
+    </a>
+</section>
     </form>
 </main>

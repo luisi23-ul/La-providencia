@@ -3,8 +3,8 @@ require_once 'config/db.php';
 class UsuarioModels {
     private $db;
 
-    public function __construct($db) {
-        $this->db = $db;
+    public function __construct() {
+      $this->db = Database::connect(); 
     }
 
     public function login($correo, $clave) {
@@ -23,7 +23,7 @@ class UsuarioModels {
                 VALUES (?, ?, ?, ?, ?, ?)";
         
         // Usamos Conexion::conectar() para obtener el objeto PDO
-        $stmt = Conexion::conectar()->prepare($sql);
+         $stmt = $this->db->prepare($sql);
         
         return $stmt->execute([
             $datos['nombre'], 
@@ -34,6 +34,41 @@ class UsuarioModels {
             $datos['id_rol']
         ]);
     }
+
+    public function buscarUsuarioModel($datos) {
+    // CAMBIO AQUÍ: Usamos $this->db en lugar de Conexion::conectar()
+    $stmt = $this->db->prepare("SELECT id, nombre, correo, clave FROM usuarios WHERE correo = :correo");
+    
+    $stmt->bindParam(":correo", $datos["correo"], PDO::PARAM_STR);
+    $stmt->execute();
+
+    return $stmt->fetch();
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     public function cerrarSesion() {
