@@ -1,0 +1,136 @@
+/* ==========================================================================
+   ESTILOS COMPLETOS DEL DASHBOARD ADMINISTRATIVO - LA PROVIDENCIA
+   ========================================================================== */
+
+/* Fondo general de la sección administrativa */
+.admin-body, main#app:has(.panel-administracion) {
+    background-color: #f4f6f9 !important;
+    font-family: 'Poppins', 'Segoe UI', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 80vh;
+    margin: 0;
+}
+
+/* Tarjeta Principal del Panel (El contenedor con degradado de tu foto) */
+.panel-administracion {
+    background: linear-gradient(135deg, #2b4c7e 0%, #3a6096 40%, #f1c40f 100%) !important;
+    /* Nota: Si prefieres el tono exacto rosa/azul suave de la foto, usa este en su lugar: */
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #fbc2eb 100%) !important;
+    
+    width: 100%;
+    max-width: 650px;
+    padding: 40px;
+    border-radius: 24px !important; /* Esquinas súper redondeadas y suaves */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
+    color: #ffffff !important;
+    text-align: left;
+    margin: 40px auto;
+}
+
+/* Título Principal */
+.panel-administracion h1, 
+.panel-administracion h2 {
+    font-size: 28px !important;
+    font-weight: 700 !important;
+    color: #ffffff !important;
+    margin-bottom: 5px !important;
+    letter-spacing: 0.5px;
+}
+
+/* Subtítulo de bienvenida (Bienvenida, Luisana...) */
+.panel-administracion .bienvenida-sub {
+    font-size: 14px !important;
+    color: #e0e6ed !important;
+    margin-bottom: 35px !important;
+    font-weight: 300;
+}
+
+/* Contenedor de los bloques de opciones */
+.row-opciones {
+    display: flex;
+    justify-content: space-between;
+    gap: 25px;
+    margin-bottom: 20px;
+}
+
+/* Bloques individuales de servicios (Cargar Producto / Gestionar Productos) */
+.bloque-opcion {
+    flex: 1;
+}
+
+/* Iconos pequeños sobre los títulos de las acciones */
+.bloque-opcion .icon-admin {
+    font-size: 16px;
+    margin-bottom: 8px;
+    display: block;
+    color: #e0e6ed;
+}
+
+/* Títulos de las acciones dentro del panel */
+.bloque-opcion h3 {
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    color: #ffffff !important;
+    margin: 0 0 8px 0 !important;
+}
+
+/* Textos descriptivos pequeños abajo de cada título */
+.bloque-opcion p {
+    font-size: 12px !important;
+    color: #c3d1e0 !important;
+    line-height: 1.5 !important;
+    margin-bottom: 20px !important;
+    min-height: 36px; /* Mantiene la alineación si un texto es más largo */
+}
+
+/* --- ESTILOS DE LOS BOTONES --- */
+
+/* Botón "AGREGAR NUEVO" (Azul brillante/Celeste) */
+.btn-admin-azul {
+    display: block;
+    width: 100%;
+    background-color: #007bff !important; /* Celeste/Azul corporativo */
+    color: #ffffff !important;
+    text-transform: uppercase;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    letter-spacing: 1px;
+    padding: 12px 20px !important;
+    border: none !important;
+    border-radius: 8px !important;
+    text-decoration: none !important;
+    text-align: center !important;
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3) !important;
+    transition: all 0.3s ease;
+}
+
+.btn-admin-azul:hover {
+    background-color: #0056b3 !important;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0, 123, 255, 0.4) !important;
+}
+
+/* Botón "IR AL LISTADO" (Azul Oscuro/Plomizo) */
+.btn-admin-oscuro {
+    display: block;
+    width: 100%;
+    background-color: #1a365d !important; /* Azul marino profundo */
+    color: #ffffff !important;
+    text-transform: uppercase;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    letter-spacing: 1px;
+    padding: 12px 20px !important;
+    border: none !important;
+    border-radius: 8px !important;
+    text-decoration: none !important;
+    text-align: center !important;
+}
+
+.btn-admin-oscuro:hover {
+    background-color: #102a43 !important;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(26, 54, 93, 0.4) !important;
+}

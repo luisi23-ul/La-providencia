@@ -33,6 +33,11 @@ if ($action == 'valider_login_registro') {
     exit();
 }
 
+if ($action == 'validar_login') {
+    $usuarioC->validarLogin();
+    exit();
+}
+
 // --- PASO 2: Carga de la Interfaz (Vistas) ---
 include 'views/layout/header.php'; 
 
@@ -44,9 +49,17 @@ switch ($action) {
         $usuarioC->mostrarInicio();
         break;
 
+        case 'login':
+        $usuarioC->mostrarLogin();
+        break;
+
     case 'login_usuario':
         $usuarioC->mostrarLogin_registro();
         break;
+
+        case 'validar_login':
+                $usuarioC->validarLogin();
+                break;
 
     case 'registro':
         $usuarioC->mostrarRegistro();
@@ -58,12 +71,25 @@ switch ($action) {
         break;
 
     case 'dashboard':
-        $adminC->mostrarDashboard();
+        $adminC->mostrarDashboard(); 
         break;
-
     case 'admin':
         $adminC->mostrarPanel();
         break;
+
+        case 'listado_productos':
+        $adminC->mostrarListado(); 
+        break;
+
+        case 'formulario_producto':
+        include "views/formulario_producto.php";
+        break;
+
+        case 'guardar_producto':
+        $adminC->agregar();
+        break;
+
+    
 
 case 'ver_carrito':
         $ventaC->mostrarCarrito();

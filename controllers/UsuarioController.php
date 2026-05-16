@@ -2,9 +2,9 @@
 class UsuarioController {
     private $modelo;
 
-    public function __construct() {
+    public function __construct($db) {
         require_once 'models/UsuarioModels.php';
-        $this->modelo = new UsuarioModels();
+        $this->modelo = new UsuarioModels($db);
     }
 
     public function mostrarLogin() {
@@ -14,13 +14,18 @@ class UsuarioController {
     public function mostrarInicio() {
         include 'views/inicio.php';
     }
+   
+     public function mostrarDashboard() {
+        include 'views/dashboard.php';
+    }
+    
 
     public function validarLogin() {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $email = isset($_POST['email']) ? $_POST['email'] : '';
             $pass = isset($_POST['password']) ? $_POST['password'] : '';
 
-            if ($email === 'luisa@gmail.com' && $pass === 'Dios1234') {
+            if ($email === 'luisi@gmail.com' && $pass === 'Dios1234') {
                 if (session_status() == PHP_SESSION_NONE) {
                     session_start();
                 }

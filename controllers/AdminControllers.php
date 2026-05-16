@@ -8,9 +8,9 @@ class AdminControllers {
         $this->productoModelo = new ProductoModel();
     }
 
-    
     public function mostrarDashboard() {
-        include 'views/admin_dashboard.php';
+        // Busca exactamente el archivo views/dashboard.php
+        include "views/dashboard.php"; 
     }
 
     public function mostrarPanel() {

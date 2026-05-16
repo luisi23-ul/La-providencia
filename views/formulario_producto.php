@@ -1,6 +1,8 @@
 <article class="card-formulario">
     <h2>Nuevo Componente</h2>
     <p class="subtitle">Añade los detalles del producto para el catálogo.</p>
+     <link rel="stylesheet" href="public/css/formulario_producto.css?v=<?php echo time(); ?>">
+
     
     <form id="formProducto" action="index.php?action=guardar_producto" method="POST" enctype="multipart/form-data">
         
@@ -50,7 +52,7 @@
 </p>
 
 <p style="text-align: center; margin-top: 15px;">
-    <a href="index.php?action=listado" style="display: block; background: #6c757d; color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; font-size: 1.1em; text-decoration: none; box-sizing: border-box;">
+    <a href="index.php?action=listado_productos" style="display: block; background: #6c757d; color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; font-size: 1.1em; text-decoration: none; box-sizing: border-box;">
         VOLVER AL INVENTARIO
     </a>
 </p>
