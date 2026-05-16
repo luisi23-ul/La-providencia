@@ -1,0 +1,154 @@
+/* Contenedor principal del carrito */
+.contenedor-carrito {
+    width: 90%;
+    max-width: 1000px;
+    margin: 40px auto;
+    background: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.contenedor-carrito h2 {
+    text-align: center;
+    color: #2c3e50;
+    margin-bottom: 30px;
+    font-family: 'Arial', sans-serif;
+}
+
+/* Estilos de la Tabla */
+.tabla-carrito {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+.tabla-carrito th {
+    background-color: #f8f9fa;
+    color: #333;
+    padding: 15px;
+    text-align: left;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.tabla-carrito td {
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+    vertical-align: middle;
+}
+
+/* Filas alternas para mejor lectura */
+.tabla-carrito tbody tr:hover {
+    background-color: #f1f1f1;
+}
+
+/* Estilo para el botón de eliminar (Quitar) */
+.btn-eliminar {
+    color: #e74c3c;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 0.9em;
+    padding: 5px 10px;
+    border: 1px solid #e74c3c;
+    border-radius: 4px;
+    transition: 0.3s;
+}
+
+.btn-eliminar:hover {
+    background-color: #e74c3c;
+    color: white;
+}
+
+/* Footer de la tabla (Totales) */
+.total-seccion {
+    font-size: 1.2em;
+    color: #2c3e50;
+    background-color: #fdfdfd;
+}
+
+/* Botones de acción inferior */
+.acciones-carrito {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 30px;
+}
+
+.btn-seguir-comprando {
+    color: #7f8c8d;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.btn-confirmar {
+    background-color: #27ae60;
+    color: white;
+    padding: 12px 25px;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: bold;
+    font-size: 1.1em;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    transition: 0.3s;
+}
+
+.btn-confirmar:hover {
+    background-color: #219150;
+    transform: translateY(-2px);
+}
+
+/* Mensaje de carrito vacío */
+.carrito-vacio {
+    text-align: center;
+    padding: 50px;
+    color: #95a5a6;
+}
+/* Forzar que el texto sea oscuro y legible */
+.tabla-carrito td, 
+.tabla-carrito td strong {
+    color: #333333 !important; /* Un gris casi negro */
+    font-size: 16px;
+}
+
+.tabla-carrito tr {
+    background-color: white;
+}
+
+/* Para que el nombre del producto resalte */
+.tabla-carrito td b, .tabla-carrito td strong {
+    display: block;
+    margin-bottom: 5px;
+}
+
+/* --- CORRECCIÓN REVENTA DE LETRAS EN EL CARRITO --- */
+
+/* Forzamos a que el título y la tabla tengan color oscuro visible */
+.contenedor-carrito h2 {
+    color: #5c2c16 !important; /* Tu color marrón característico */
+}
+
+.contenedor-carrito table {
+    width: 100%;
+    border-collapse: collapse;
+    color: #333333 !important; /* Color gris oscuro/negro para el texto */
+}
+
+/* Forzamos el color de los encabezados de la tabla (Producto, Precio, etc) */
+.contenedor-carrito th {
+    background-color: #f2f2f2 !important;
+    color: #5c2c16 !important; /* Color marrón para los títulos de la tabla */
+    font-weight: bold;
+    padding: 12px;
+}
+
+/* Forzamos el color de las celdas donde van los nombres de tus productos */
+.contenedor-carrito td {
+    color: #333333 !important;
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+}
+
+/* Aseguramos que el total final también se vea */
+.contenedor-carrito div {
+    color: #333333 !important;
+}

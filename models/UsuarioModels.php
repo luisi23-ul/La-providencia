@@ -35,13 +35,14 @@ class UsuarioModels {
         ]);
     }
 
-    public function buscarUsuarioModel($datos) {
-    // CAMBIO AQUÍ: Usamos $this->db en lugar de Conexion::conectar()
+   public function buscarUsuarioModel($datos) {
+    // Usamos el objeto $this->db que creaste en el constructor
     $stmt = $this->db->prepare("SELECT id, nombre, correo, clave FROM usuarios WHERE correo = :correo");
     
     $stmt->bindParam(":correo", $datos["correo"], PDO::PARAM_STR);
     $stmt->execute();
 
+    // fetch() devolverá un array asociativo con los datos del usuario
     return $stmt->fetch();
 }
 

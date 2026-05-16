@@ -106,3 +106,35 @@
     border-radius: 12px;
     cursor: pointer;
 }
+
+.btn-agregar {
+    display: inline-block;
+    background-color: #27ae60;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-size: 0.9em;
+    margin-top: 5px;
+}
+
+.btn-login-comprar {
+    display: block;
+    font-size: 0.8em;
+    color: #e74c3c;
+    text-decoration: none;
+    margin-top: 5px;
+}
+
+.tabla-carrito td {
+    padding: 18px 15px; /* Más espacio arriba y abajo */
+    border-bottom: 1px solid #ececec;
+    color: #2c3e50; /* Color elegante para que se vea bien */
+}
+
+.tabla-carrito thead th {
+    background-color: #f4f7f6;
+    text-transform: uppercase;
+    font-size: 0.85em;
+    letter-spacing: 1px;
+}

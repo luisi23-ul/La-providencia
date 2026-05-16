@@ -98,10 +98,13 @@ public function mostrarLogin_registro() {
 
             // Comparamos la clave escrita con el hash de la base de datos
             if ($respuesta && password_verify($datos["clave"], $respuesta["clave"])) {
-                echo "<script>
-                        alert('¡Bienvenido(a) a La Providencia, " . $respuesta["nombre"] . "!');
-                        window.location.href = 'index.php?action=ver_catalogo';
-                      </script>";
+    $_SESSION["id_usuario"] = $respuesta["id"]; 
+    // ------------------------------
+
+    echo "<script>
+            alert('¡Bienvenido(a) a La Providencia, " . $respuesta["nombre"] . "!');
+            window.location.href = 'index.php?action=ver_catalogo';
+          </script>";
             } else {
                 echo "<script>
                         alert('Error: El correo o la contraseña no coinciden.');
