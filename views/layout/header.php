@@ -20,17 +20,15 @@
     <header class="main-header">
         <nav class="nav-container">
           
-            <?php if ($action == 'inicio' || $action == ''): ?>
-                <section class="nav-brand">
-                    <a href="index.php?action=inicio">
-                        <img src="public/img/logo-removebg.png" alt="La Providencia" class="brand-logo">
-                    </a>
-                </section>
-            <?php endif; ?>
+            <section class="nav-brand">
+                <a href="index.php?action=inicio">
+                    <img src="public/img/logo-removebg.png" alt="La Providencia" class="brand-logo">
+                </a>
+            </section>
             
             <?php if ($action == 'inicio' || $action == ''): ?>
                 <ul class="nav-menu">
-                    <li><a href="index.php?action=inicio" class="nav-link active">Inicio</a></li>
+                    <li><a href="index.php" class="nav-link">Inicio</a></li>
                     <li><a href="#products" class="nav-link">Categorías</a></li>
                     <li><a href="#nosotros" class="nav-link">Nosotros</a></li>
                     <li><a href="#contacto" class="nav-link">Contacto</a></li>
@@ -64,7 +62,7 @@
                 <?php endif; ?>
             </section>
 
-                <?php if ($action !== 'inicio' && $action !== ''): ?>
+            <?php if ($action !== 'inicio' && $action !== ''): ?>
                 <aside class="nav-menu-responsive">
                     
                     <a href="index.php?action=ver_catalogo" class="cart-btn-responsive">
@@ -75,9 +73,9 @@
                     <nav class="responsive-nav">
                         <ul class="responsive-links-list">
                             <li><a href="index.php?action=inicio" class="nav-link-res active-res">Inicio</a></li>
-                            <li><a href="index.php?action=categorias" class="nav-link-res">Categorías</a></li>
-                            <li><a href="index.php?action=nosotros" class="nav-link-res">Nosotros</a></li>
-                            <li><a href="index.php?action=contacto" class="nav-link-res">Contacto</a></li>
+                            <li><a href="index.php#products" class="nav-link-res">Categorías</a></li>
+                            <li><a href="index.php#nosotros" class="nav-link-res">Nosotros</a></li>
+                            <li><a href="index.php#contacto" class="nav-link-res">Contacto</a></li>
                         </ul>
                     </nav>
 
@@ -88,4 +86,4 @@
     </header>
 
    <script src="js/navbar.js?v=<?php echo time(); ?>" defer></script>
-    <main>
+   <main>
