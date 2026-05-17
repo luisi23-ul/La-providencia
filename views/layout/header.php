@@ -19,37 +19,73 @@
 
     <header class="main-header">
         <nav class="nav-container">
-            <h1 class="brand-logo">
-                <a href="index.php?action=inicio">La<span>Providencia</span></a>
-            </h1>
+          
+            <?php if ($action == 'inicio' || $action == ''): ?>
+                <section class="nav-brand">
+                    <a href="index.php?action=inicio">
+                        <img src="public/img/logo-removebg.png" alt="La Providencia" class="brand-logo">
+                    </a>
+                </section>
+            <?php endif; ?>
             
-            <ul class="nav-menu">
-               <li><a href="#inicio" class="<?php echo ($action == 'inicio' || $action == '') ? 'active' : ''; ?>">Inicio</a></li>
-    
-    <li><a href="#products">Categorías</a></li>
-    
-    <li><a href="#nosotros">Nosotros</a></li>
-    
-    <li><a href="#contacto">Contacto</a></li>
-            </ul>
+            <?php if ($action == 'inicio' || $action == ''): ?>
+                <ul class="nav-menu">
+                    <li><a href="index.php?action=inicio" class="nav-link active">Inicio</a></li>
+                    <li><a href="#products" class="nav-link">Categorías</a></li>
+                    <li><a href="#nosotros" class="nav-link">Nosotros</a></li>
+                    <li><a href="#contacto" class="nav-link">Contacto</a></li>
+                </ul>
+            <?php endif; ?>
 
-           <aside class="header-actions">
-    <a href="index.php?action=login" class="action-item" aria-label="Iniciar Sesión">
-        <i class="fas fa-user-circle"></i>
-        <span>Iniciar Sesión</span>
-    </a>
+            <section class="nav-actions">
+                <?php if ($action == 'inicio' || $action == ''): ?>
+                    <a href="index.php?action=login_usuario" class="action-link login-btn" aria-label="Iniciar Sesión">
+                        <i class="fas fa-user-circle"></i>
+                        <span>Iniciar Sesión</span>
+                    </a>
 
-    <a href="index.php?action=registro" class="action-item" aria-label="Registrarse">
-        <i class="fas fa-user-plus"></i>
-        <span>Registrarse</span>
-    </a>
+                    <a href="index.php?action=registro" class="action-link register-btn" aria-label="Registrarse">
+                        <i class="fas fa-user-plus"></i>
+                        <span>Registrarse</span>
+                    </a>
 
-    <a href="index.php?action=ver_catalogo" class="action-item" aria-label="Carrito">
-        <i class="fas fa-shopping-basket"></i>
-        <span class="cart-count">0</span>
-    </a>
-</aside>
+                    <a href="index.php?action=ver_catalogo" class="cart-btn" aria-label="Carrito">
+                        <i class="fas fa-shopping-basket cart-icon"></i>
+                        <span class="cart-badge">0</span>
+                    </a>
+                <?php endif; ?>
+
+                <?php if ($action !== 'inicio' && $action !== ''): ?>
+                    <button class="menu-toggle" aria-label="Abrir menú">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </button>
+                <?php endif; ?>
+            </section>
+
+                <?php if ($action !== 'inicio' && $action !== ''): ?>
+                <aside class="nav-menu-responsive">
+                    
+                    <a href="index.php?action=ver_catalogo" class="cart-btn-responsive">
+                        <i class="fas fa-shopping-basket"></i>
+                        <span>Ver Carrito (0)</span>
+                    </a>
+
+                    <nav class="responsive-nav">
+                        <ul class="responsive-links-list">
+                            <li><a href="index.php?action=inicio" class="nav-link-res active-res">Inicio</a></li>
+                            <li><a href="index.php?action=categorias" class="nav-link-res">Categorías</a></li>
+                            <li><a href="index.php?action=nosotros" class="nav-link-res">Nosotros</a></li>
+                            <li><a href="index.php?action=contacto" class="nav-link-res">Contacto</a></li>
+                        </ul>
+                    </nav>
+
+                </aside>
+            <?php endif; ?>
+
         </nav>
     </header>
 
+   <script src="js/navbar.js?v=<?php echo time(); ?>" defer></script>
     <main>

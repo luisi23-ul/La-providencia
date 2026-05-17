@@ -1,26 +1,36 @@
-<section style="text-align: center; color: #8e44ad;">
-    <h1>Ingreso al Sistema</h1>
-    <p>Comercial La Providencia</p>
-    <link rel="stylesheet" href="public/css/login_registro.css?v=<?php echo time(); ?>">
+<section class="auth-page-container">
+    <link rel="stylesheet" href="public/css/components/forms.css?v=<?php echo time(); ?>">
 
-   <form method="post" action="index.php?action=valider_login_registro">
-        <p>
-            <label>Correo Electrónico:</label><br>
-            <input type="email" name="correo_ingreso" required placeholder="ejemplo@gmail.com">
-        </p>
+    <header class="auth-banner">
+        <h1>BIENVENIDO</h1>
+    </header>
+    
+    <main class="auth-main-content">
+        
+        <article class="auth-card">
+            
+            <form method="post" action="index.php?action=valider_login_registro">
+                
+                <fieldset class="form-group">
+                    <label for="correo_ingreso">Correo Electrónico:</label>
+                    <input type="email" name="correo_ingreso" id="correo_ingreso" required placeholder="ejemplo@gmail.com">
+                </fieldset>
 
-        <p>
-            <label>Contraseña:</label><br>
-            <input type="password" name="clave_ingreso" required placeholder="Tu clave">
-        </p>
+                <fieldset class="form-group">
+                    <label for="clave_ingreso">Contraseña:</label>
+                    <input type="password" name="clave_ingreso" id="clave_ingreso" required placeholder="Tu clave">
+                </fieldset>
 
-        <p>
-            <input type="submit" value="Entrar al Catálogo">
-        </p>
-    </form>
+                <button type="submit" class="btn-submit">Iniciar Sesion</button>
+                
+                <footer class="auth-footer">
+                    <p>¿No tienes cuenta?</p>
+                    <a href="index.php?action=registro" class="enlace-registro">Regístrate aquí</a>
+                </footer>
+                
+            </form>
 
-    <p>
-        ¿No tienes cuenta? 
-        <a href="index.php?action=registro">Regístrate aquí</a>
-    </p>
+        </article>
+
+    </main>
 </section>

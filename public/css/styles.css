@@ -1,6 +1,7 @@
 html {
     scroll-behavior: smooth;
     scroll-padding-top: 80px; /* Esto evita que la navbar tape el título al llegar a la sección */
+    
 }
 
 /* public/css/style.css */

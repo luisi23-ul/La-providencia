@@ -1,110 +1,276 @@
-/* public/css/header.css */
+/* ==========================================================================
+   CSS CORRECTO ADAPTATIVO: INICIO VS CÁPSULA HAMBURGUESA (public/css/header.css)
+   ========================================================================== */
 
 .main-header {
     position: fixed;
     top: 20px;
-    left: 0;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    z-index: 1000;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 92%;
+    max-width: 1400px;
+    background: #ffffff;
+    border-radius: 100px; 
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+    z-index: 2000;
+    padding: 15px 45px;
+    box-sizing: border-box;
+    transition: all 0.3s ease-in-out;
 }
 
-/* La pastilla (nav) estilo Glassmorphism */
 .nav-container {
-    background: rgba(255, 255, 255, 0.8); /* Fondo blanco traslúcido */
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    padding: 0.6rem 2.5rem;
-    border-radius: 100px;
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    width: 90%;
-    max-width: 1100px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
+    align-items: center;
+    width: 100%;
 }
 
-/* Logo */
 .brand-logo {
-    font-size: 1.3rem;
-    margin: 0;
+    height: 52px;
+    width: auto;
+    display: block;
+    object-fit: contain;
 }
 
-.brand-logo a {
-    text-decoration: none;
-    color: var(--dark-surface); /* Azul oscuro para las letras */
-    font-weight: 700;
-}
-
-.brand-logo span {
-    color: var(--primary-blue); /* El azul vibrante de La Providencia */
-    margin-left: 3px;
-}
-
-/* Menú Central */
+/* MENÚ ESCRITORIO (INICIO) */
 .nav-menu {
     display: flex;
-    gap: 30px;
-    list-style: none;
+    align-items: center;
+    gap: 35px;
     margin: 0;
     padding: 0;
+    list-style: none;
 }
 
-.nav-menu a {
+.nav-link {
     text-decoration: none;
-    color: var(--dark-surface); /* Letras azul oscuro */
-    font-size: 1rem;
-    font-weight: 500;
-    transition: 0.3s;
+    color: #475569;
+    font-size: 0.95rem;
+    font-weight: 600;
+    transition: color 0.2s ease;
 }
 
-.nav-menu a:hover, 
-.nav-menu a.active {
-    color: var(--primary-blue);
-}
+.nav-link:hover, .nav-link.active { color: #0052d4; }
+.nav-actions { display: flex; align-items: center; gap: 24px; }
 
-/* Iconos de la derecha */
-.main-header aside {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.boton-login {
-    color: var(--primary-blue);
-    font-size: 1.6rem;
+.action-link {
     text-decoration: none;
-    transition: 0.3s;
-    display: flex;
+    font-size: 0.95rem;
+    font-weight: 700;
+    display: inline-flex;
     align-items: center;
+    gap: 8px;
 }
 
-.boton-carrito {
-    background: transparent;
-    border: none;
-    color: var(--dark-surface);
-    font-size: 1.4rem;
-    cursor: pointer;
+.login-btn { color: #0f172a; }
+.login-btn:hover { color: #0052d4; }
+
+.register-btn {
+    background-color: #0052d4;
+    color: #ffffff;
+    padding: 12px 26px;
+    border-radius: 50px;
+    box-shadow: 0 4px 12px rgba(0, 82, 212, 0.15);
+}
+
+.register-btn:hover { background-color: #0044b1; transform: translateY(-1px); }
+
+/* CARRITO EN HOME */
+.cart-btn {
     position: relative;
+    text-decoration: none;
     display: flex;
     align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background-color: #f1f5f9;
+    border-radius: 50%;
+    color: #0f172a;
 }
 
-.insignia {
+.cart-badge {
     position: absolute;
-    top: -5px;
-    right: -10px;
-    background: var(--primary-blue);
-    color: white;
+    top: -3px;
+    right: -3px;
+    background-color: #0052d4;
+    color: #ffffff;
     font-size: 0.7rem;
-    width: 18px;
+    font-weight: 700;
+    min-width: 18px;
     height: 18px;
     border-radius: 50%;
     display: flex;
-    justify-content: center;
     align-items: center;
-    border: 2px solid #fff;
+    justify-content: center;
+    border: 2px solid #ffffff;
+}
+
+/* ==========================================================================
+   MODO MINI-HAMBURGUESA PURA (OTRAS VISTAS)
+   ========================================================================== */
+
+.main-header:has(.menu-toggle) {
+    width: auto; 
+    left: auto;  
+    right: 4%;   
+    transform: none; 
+    padding: 15px; 
+    border-radius: 50px; /* Cambiado a píldora redondeada para evitar romper la herencia */
+}
+
+.menu-toggle {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 24px;
+    height: 16px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    position: relative;
+    z-index: 99999 !important; 
+    pointer-events: auto !important;
+}
+
+.menu-toggle span {
+    width: 100%;
+    height: 3px;
+    background-color: #0F172A;
+    border-radius: 3px;
+    transition: all 0.3s ease-in-out;
+}
+
+/* ANIMACIÓN "X" */
+.menu-toggle.active span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); background-color: #0F172A; }
+.menu-toggle.active span:nth-child(2) { opacity: 0; }
+.menu-toggle.active span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); background-color: #0F172A; }
+
+/* ==========================================================================
+   CORTINA RESPONSIVA MINIMALISTA PREMIUM (SIN DIVS Y SIN DUPLICADOS)
+   ========================================================================== */
+.nav-menu-responsive {
+    display: none;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 320px;
+    height: 100vh;
+    background-color: #ffffff;
+    padding: 100px 32px 40px 32px;
+    box-shadow: -15px 0 50px rgba(15, 23, 42, 0.08);
+    z-index: 2050;
+    box-sizing: border-box;
+    border-radius: 0 !important;
+}
+
+/* Animación de entrada fluida */
+.nav-menu-responsive.active {
+    display: flex !important;
+    animation: slideInMenu 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Cápsula de Acción Principal: Ver Carrito (Estilo Moderno e Iluminado) */
+.cart-btn-responsive {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    text-decoration: none;
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 1rem;
+    background: linear-gradient(135deg, #0052d4, #4364f7); /* Gradiente azul premium vibrante */
+    padding: 16px 24px;
+    border-radius: 30px; /* Cápsula perfecta */
+    width: 100%;
+    box-sizing: border-box;
+    box-shadow: 0 10px 20px rgba(67, 100, 247, 0.15);
+    margin-bottom: 48px;
+    transition: all 0.3s ease;
+}
+
+/* Hover más luminoso con efecto de elevación sutil */
+.cart-btn-responsive:hover {
+    background: linear-gradient(135deg, #0044b1, #3152e7);
+    box-shadow: 0 12px 24px rgba(67, 100, 247, 0.28);
+    transform: translateY(-2px);
+}
+
+.cart-btn-responsive i {
+    font-size: 1.1rem;
+}
+
+/* Estructura de Enlaces de Navegación */
+.responsive-nav {
+    width: 100%;
+}
+
+.responsive-links-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+}
+
+.nav-link-res {
+    display: inline-block;
+    text-decoration: none;
+    color: #1e293b;
+    font-size: 1.35rem;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    position: relative;
+    padding: 4px 0;
+    transition: color 0.2s ease;
+}
+
+/* Línea indicadora sutil para Hover y Estado Activo */
+.nav-link-res::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 3px;
+    background-color:  #0f172a;
+    border-radius: 2px;
+    transition: width 0.25s ease;
+}
+
+.nav-link-res:hover {
+    color:  #0f172a;
+}
+
+.nav-link-res:hover::after {
+    width: 40px;
+}
+
+/* Si usas clases de control para marcar la página activa */
+.nav-link-res.active-res {
+    color:  #0f172a;
+    font-weight: 600;
+}
+
+.nav-link-res.active-res::after {
+    width: 40px;
+}
+
+/* Keyframes optimizados */
+@keyframes slideInMenu {
+    from {
+        transform: translateX(100%);
+    }
+    to {
+        transform: translateX(0);
+    }
+}
+
+/* Media Query de Soporte Móvil */
+@media (max-width: 1024px) {
+    .nav-menu { display: none !important; }
 }

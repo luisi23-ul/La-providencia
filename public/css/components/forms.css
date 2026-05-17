@@ -1,0 +1,228 @@
+/* ==========================================================================
+   1. CONFIGURACIÓN UNIFICADA DE LA PANTALLA (SECTION)
+   ========================================================================== */
+.auth-page-container {
+    min-height: 100vh;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    font-family: 'Poppins', sans-serif;
+    box-sizing: border-box;
+    position: relative;
+    overflow-x: hidden;
+    
+    /* Fondo dividido nativo: 35% azul oscuro satinado arriba, 65% claro abajo */
+    background: linear-gradient(to bottom, 
+        #0F172A 0%,    
+        #1E293B 35%,   
+        #1E293B 35%,   
+        #F8FAFC 35%,   
+        #F8FAFC 100%
+    );
+}
+
+/* El destello azul pro reflejado en la zona superior */
+.auth-page-container::before {
+    content: '';
+    position: absolute;
+    top: -100px;
+    right: -50px;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(67, 100, 247, 0.4) 0%, rgba(0, 82, 212, 0) 70%);
+    filter: blur(60px);
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* ==========================================================================
+   2. NAVBAR INTEGRADA
+   ========================================================================== */
+.auth-page-container header.global-navbar,
+.auth-page-container nav {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 5%; 
+    background: transparent; 
+    z-index: 1000;
+    box-sizing: border-box;
+}
+
+.auth-page-container header .menu-hamburger,
+.auth-page-container header .btn-menu,
+.auth-page-container header .hamburger-icon {
+    display: block !important;
+    font-size: 1.8rem;
+    color: #ffffff !important; /* Blanco para contrastar en el azul */
+    cursor: pointer;
+}
+
+/* ==========================================================================
+   3. TEXTOS DE BIENVENIDA (HEADER)
+   ========================================================================== */
+.auth-banner {
+    width: 100%;
+    padding: 140px 20px 40px 20px; /* Margen superior para no chocar con la navbar */
+    text-align: center;
+    box-sizing: border-box;
+    position: relative;
+    z-index: 5;
+}
+
+.auth-banner h2 {
+    color: #ffffff !important; 
+    font-size: 2.3rem;
+    font-weight: 800;
+    margin: 0 0 5px 0;
+}
+
+.auth-banner p {
+    color: #94A3B8 !important; 
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+/* ==========================================================================
+   4. ENTORNO CLARO INFERIOR (MAIN)
+   ========================================================================== */
+.auth-main-content {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; /* Permite que la tarjeta suba y cruce la línea divisoria */
+    width: 100%;
+    flex-grow: 1;
+    padding: 0 20px 80px 20px;
+    box-sizing: border-box;
+    position: relative;
+    z-index: 5;
+
+    /* Tu imagen de curvas original se mantiene en la parte inferior */
+    background: linear-gradient(rgba(248, 250, 252, 0.85), rgba(248, 250, 252, 0.85)), 
+                url('../../img/section-hero1.png'); 
+    background-size: cover;
+    background-position: center bottom;
+}
+
+/* ==========================================================================
+   5. TARJETA BLANCA DEL FORMULARIO (ARTICLE)
+   ========================================================================== */
+.auth-card {
+    background-color: #ffffff !important; 
+    width: 100%;
+    max-width: 500px; 
+    padding: 45px 40px;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08) !important; 
+    box-sizing: border-box;
+    position: relative;
+    z-index: 10;
+    margin-top: -20px; /* Hace que la tarjeta muerda la franja azul de arriba de forma elegante */
+}
+/* ==========================================================================
+   6. CAMPOS VERTICALES ESTRICTOS (FIELDSET)
+   ========================================================================== */
+.form-group {
+    border: none;
+    margin-bottom: 24px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    display: block;
+    color: #0f172a; 
+    font-weight: 700;
+    font-size: 1.05rem;
+    margin-bottom: 8px;
+    text-align: left;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 16px 18px;
+    background-color: #f8fafc; 
+    border: 2px solid #cbd5e1;
+    border-radius: 12px;
+    color: #0f172a;
+    font-size: 1.1rem;
+    box-sizing: border-box;
+    transition: all 0.3s ease;
+}
+
+.form-group input:focus {
+    border-color: #0052d4;
+    background-color: #ffffff;
+    box-shadow: 0 0 0 4px rgba(0, 82, 212, 0.15);
+    outline: none;
+}
+
+/* ==========================================================================
+   7. BOTÓN INDUSTRIAL AZUL
+   ========================================================================== */
+.btn-submit {
+    width: 100%;
+    background-color: #0052d4; 
+    color: #ffffff;
+    padding: 18px;
+    border: none;
+    border-radius: 12px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-top: 10px;
+    box-shadow: 0 8px 20px rgba(0, 82, 212, 0.2);
+}
+
+.btn-submit:hover {
+    background-color: #0044b1;
+    transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   8. ENLACES DEL FOOTER
+   ========================================================================== */
+.auth-footer {
+    margin-top: 30px;
+    text-align: center;
+}
+
+.auth-footer p {
+    color: #64748b;
+    margin: 0 0 8px 0;
+    font-size: 1rem;
+}
+
+.auth-footer a {
+    color: #0052d4;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 1.05rem;
+}
+
+.auth-footer a:hover {
+    text-decoration: underline;
+}
+
+/* ==========================================================================
+   9. RESPONSIVIDAD MÓVIL
+   ========================================================================== */
+@media (max-width: 600px) {
+    .auth-banner {
+        padding: 110px 20px 30px 20px;
+    }
+    .auth-banner h2 {
+        font-size: 1.8rem;
+    }
+    .auth-card {
+        padding: 30px 20px;
+    }
+}
