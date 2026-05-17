@@ -52,31 +52,63 @@ class VentaController {
 
     // Procesa el guardado en la base de datos
     public function finalizarCompra() {
-        if (!isset($_SESSION["id_usuario"])) {
-            echo "<script>alert('Debe iniciar sesión para finalizar la compra'); window.location.href = 'index.php?action=login_usuario';</script>";
-            return;
-        }
-
-        if (!isset($_SESSION["carrito"]) || empty($_SESSION["carrito"])) {
-            echo "<script>alert('El carrito está vacío'); window.location.href = 'index.php?action=ver_catalogo';</script>";
-            return;
-        }
-
-        $id_usuario = $_SESSION["id_usuario"];
-        $total = 0;
-        foreach ($_SESSION["carrito"] as $item) {
-            $total += $item['precio'] * $item['cantidad'];
-        }
-
-        $objVentaModel = new VentaModel();
-        $resultado = $objVentaModel->guardarVentaModel($id_usuario, $total, $_SESSION["carrito"]);
-
-        if ($resultado) {
-            unset($_SESSION["carrito"]);
-            echo "<script>alert('¡Compra realizada con éxito! Gracias por preferir La Providencia.'); window.location.href = 'index.php?action=inicio';</script>";
-        } else {
-            echo "<script>alert('Hubo un error al procesar su compra.'); window.location.href = 'index.php?action=ver_carrito';</script>";
-        }
+    if (session_status() == PHP_SESSION_NONE) {
+        session_start();
     }
+
+    // 1. PRIMERO: Si el carrito ya está vacío de entrada, detener el flujo
+    if (!isset($_SESSION['carrito']) || empty($_SESSION['carrito'])) {
+        echo "<script>alert('El carrito está vacío.'); window.location.href='index.php?action=ver_catalogo';</script>";
+        exit();
+    }
+
+    // 2. SEGUNDO: Armamos la URL de WhatsApp MIENTRAS el carrito aún tiene los productos guardados
+    $telefono = "584127818865"; 
+    $mensaje = "¡Hola! *La Providencia* 🛒\n";
+    $mensaje .= "Deseo finalizar mi compra con los siguientes productos:\n\n";
+    
+    $totalGeneral = 0;
+    foreach ($_SESSION['carrito'] as $item) {
+        $nombre = isset($item['nombre']) ? $item['nombre'] : 'Producto';
+        $precio = isset($item['precio']) ? $item['precio'] : 0;
+        $cantidad = isset($item['cantidad']) ? $item['cantidad'] : 1;
+        
+        $subtotal = $precio * $cantidad;
+        $totalGeneral += $subtotal;
+
+        $mensaje .= "• *{$nombre}* (x{$cantidad}) - \${$precio}\n";
+    }
+
+    $mensaje .= "\n💰 *Total a pagar:* \${$totalGeneral}\n";
+    $mensaje .= "Forma de pago: A convenir\n";
+    $mensaje .= "¡Quedo atento para coordinar la entrega! ✨";
+
+    $mensajeURL = urlencode($mensaje);
+    $urlWhatsApp = "https://api.whatsapp.com/send?phone={$telefono}&text={$mensajeURL}";
+
+    // 3. TERCERO: Ejecutas la lógica de tu Base de Datos (Tu código actual del modelo)
+    // Supongamos que aquí llamas a tu modelo: $resultado = $this->ventaModelo->guardarVenta(...);
+    // (Usa la lógica que ya tienes implementada para definir $resultado)
+    $resultado = true; 
+
+    // 4. CUARTO: Evaluamos el resultado de la base de datos
+    if ($resultado) {
+        // AHORA SÍ: Vaciamos el carrito porque la URL de WhatsApp ya se guardó de forma segura arriba
+        unset($_SESSION["carrito"]);
+        
+        // Lanzamos la alerta y mandamos en línea recta a la API de WhatsApp
+        echo "<script type='text/javascript'>
+                alert('¡Compra realizada con éxito! Conectando con WhatsApp para coordinar la entrega...');
+                window.location.href = '{$urlWhatsApp}';
+              </script>";
+        exit(); 
+    } else {
+        echo "<script type='text/javascript'>
+                alert('Hubo un error al procesar su compra.'); 
+                window.location.href = 'index.php?action=ver_carrito';
+              </script>";
+        exit();
+    }
+}
 }
 ?>

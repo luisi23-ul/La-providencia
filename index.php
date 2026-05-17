@@ -19,6 +19,7 @@ $adminC = new AdminControllers();
 $ventaC = new VentaController($db);
 
 
+
 // 4. Captura de la acción (por defecto 'inicio')
 $action = $_GET['action'] ?? 'inicio';
 
@@ -115,8 +116,8 @@ switch ($action) {
         break;
 
     case 'finalizar_compra':
-        $ventaC->finalizarCompra();
-        break;
+    $ventaC->finalizarCompra(); // Usa el objeto de tu controlador de ventas
+    break;
 
     // EL DEFAULT SIEMPRE RIGUROSAMENTE AL FINAL
     default:
