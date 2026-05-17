@@ -25,16 +25,19 @@ class ProductoModel {
     }
 
     public function obtenerProductos() {
-    // Consulta todos los productos de la base de datos
-    $sql = "SELECT * FROM productos ORDER BY id DESC";
+    $sql = "SELECT * FROM productos WHERE estado = 1 ORDER BY id DESC";
     $stmt = $this->db->prepare($sql);
     $stmt->execute();
-    return $stmt->fetchAll(PDO::FETCH_OBJ); // Retorna una lista de objetos
+    return $stmt->fetchAll(PDO::FETCH_OBJ);
 }
 
 
+
 public function obtenerTodos() {
-     $sql = "SELECT id, nombre_producto, descripcion, precio, stock, imagen, id_categoria FROM productos ORDER BY id DESC";
+    $sql = "SELECT id, nombre_producto, descripcion, precio, stock, imagen, id_categoria 
+            FROM productos 
+            WHERE estado = 1 
+            ORDER BY id DESC";
     $stmt = $this->db->prepare($sql);
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_OBJ);
@@ -42,7 +45,7 @@ public function obtenerTodos() {
 
 // Borra de la base de datos
 public function borrarProducto($id) {
-    $sql = "DELETE FROM productos WHERE id = ?";
+    $sql = "UPDATE productos SET estado = 0 WHERE id = ?";
     $stmt = $this->db->prepare($sql);
     return $stmt->execute([$id]);
 }
@@ -57,7 +60,7 @@ public function obtenerPorId($id) {
 }
 
 //  ES SOLO PARA GUARDAR LOS CAMBIOS
-public function modificarProducto($datos) { 
+public function modificarproducto($datos) { 
     $sql = "UPDATE productos SET 
                 nombre_producto = :nombre, 
                 precio = :precio, 
