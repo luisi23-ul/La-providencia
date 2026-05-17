@@ -56,9 +56,15 @@ class AdminControllers {
 
     //  para eliminar
 public function eliminar() {
-    $id = $_GET['id'];
-    $this->productoModelo->borrarProducto($id);
-    header("Location: index.php?action=listado");
+    $id = $_GET['id'] ?? null;
+    
+    if ($id) {
+        $this->productoModelo->borrarProducto($id);
+    }
+    
+    // Redirecciona limpio a la tabla de productos activa
+    header("Location: index.php?action=listado_productos");
+    exit();
 }
 
 //  para abrir el formulario de edición
@@ -102,7 +108,7 @@ public function actualizar() {
         ];
 
         //  la actualización y se redirecciona al listado
-        if ($this->productoModelo->modificarProducto($datos)) {
+        if ($this->productoModelo->modificarproducto($datos)) {
             header("Location: index.php?action=listado");
             exit(); 
         } else {

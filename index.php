@@ -89,6 +89,18 @@ switch ($action) {
         $adminC->agregar();
         break;
 
+        case 'eliminar_producto':
+                $adminC->eliminar();
+                break;
+
+                case 'editar':
+             $adminC->editar();
+             break;
+
+             case 'actualizar_producto':
+            $adminC->actualizar();
+            break;
+
     
 
 case 'ver_carrito':
