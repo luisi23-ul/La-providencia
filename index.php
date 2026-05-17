@@ -101,9 +101,8 @@ switch ($action) {
             $adminC->actualizar();
             break;
 
-    
 
-case 'ver_carrito':
+    case 'ver_carrito':
         $ventaC->mostrarCarrito();
         break;
 

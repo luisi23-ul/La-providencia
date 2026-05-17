@@ -60,25 +60,32 @@ public function obtenerPorId($id) {
 }
 
 //  ES SOLO PARA GUARDAR LOS CAMBIOS
-public function modificarproducto($datos) { 
-    $sql = "UPDATE productos SET 
-                nombre_producto = :nombre, 
-                precio = :precio, 
-                stock = :stock, 
-                descripcion = :desc, 
-                imagen = :imagen 
-            WHERE id = :id"; 
+public function modificarProducto($datos) { 
+    try {
+        $sql = "UPDATE productos SET 
+                    nombre_producto = :nombre, 
+                    precio = :precio, 
+                    stock = :stock, 
+                    descripcion = :desc, 
+                    imagen = :imagen 
+                WHERE id = :id"; 
 
-    $stmt = $this->db->prepare($sql); 
-    
-    $stmt->bindParam(':nombre', $datos['nombre']); 
-    $stmt->bindParam(':precio', $datos['precio']); 
-    $stmt->bindParam(':stock', $datos['stock']); 
-    $stmt->bindParam(':desc', $datos['desc']); 
-    $stmt->bindParam(':imagen', $datos['imagen']); 
-    $stmt->bindParam(':id', $datos['id']); 
+        $stmt = $this->db->prepare($sql); 
+        
+        $stmt->bindParam(':nombre', $datos['nombre']); 
+        $stmt->bindParam(':precio', $datos['precio']); 
+        $stmt->bindParam(':stock', $datos['stock']); 
+        $stmt->bindParam(':desc', $datos['desc']); 
+        $stmt->bindParam(':imagen', $datos['imagen']); 
+        $stmt->bindParam(':id', $datos['id']); 
 
-    return $stmt->execute(); 
+        return $stmt->execute(); 
+    } catch (PDOException $e) {
+        // Si la base de datos truena, esto nos pintará el error real en la pantalla
+        echo "<h3>Error interno en la Base de Datos:</h3>";
+        echo "<p>" . $e->getMessage() . "</p>";
+        exit();
+    }
 }
 
 

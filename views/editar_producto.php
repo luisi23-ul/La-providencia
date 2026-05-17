@@ -1,58 +1,61 @@
-<?php if(isset($p) && $p): ?>
-<article style="max-width: 650px; margin: 20px auto; border: 2px solid #0052d4; padding: 30px; background: #f0f7ff; border-radius: 10px; font-family: Arial, sans-serif;">
+<?php 
+//views/editar_producto.php 
+if(isset($p) && $p): 
+?>
+<article class="contenedor-editar">
+     <link rel="stylesheet" href="public/css/editar_producto.css?v=<?php echo time(); ?>">
     <header>
-        <h2 style="color: #0052d4; text-align: center; margin-bottom: 25px; text-transform: uppercase;">Actualizar Producto</h2>
+        <h2 class="titulo-editar">Actualizar Producto</h2>
     </header>
     
     <form id="formEditar" action="index.php?action=actualizar_producto" method="POST" enctype="multipart/form-data">
         <input type="hidden" name="id" value="<?php echo $p->id; ?>">
 
         <p>
-            <label style="color: #003a94; font-weight: bold;">Nombre del Producto:</label><br>
-            <input type="text" name="nombre" value="<?php echo $p->nombre_producto; ?>" style="width: 100%; padding: 12px; border: 1px solid #0052d4; border-radius: 5px;" required>
+            <label class="etiqueta-formulario">Nombre del Producto:</label><br>
+            <input type="text" name="nombre" value="<?php echo $p->nombre_producto; ?>" class="input-formulario" required>
         </p>
 
         <p>
-    <label style="color: #003a94; font-weight: bold;">Descripción:</label><br>
-    <textarea name="desc" style="width: 100%; padding: 12px; border: 1px solid #0052d4; border-radius: 5px; height: 100px;" required><?php echo $p->descripcion; ?></textarea>
-</p>
-
-        <p>
-            <label style="color: #003a94; font-weight: bold;">Precio Unitario ($):</label><br>
-            <input type="number" step="0.01" name="precio" value="<?php echo $p->precio; ?>" style="width: 100%; padding: 12px; border: 1px solid #0052d4; border-radius: 5px;" required>
+            <label class="etiqueta-formulario">Descripción:</label><br>
+            <textarea name="desc" class="textarea-formulario" required><?php echo $p->descripcion; ?></textarea>
         </p>
 
         <p>
-            <label style="color: #003a94; font-weight: bold;">Stock en Inventario:</label><br>
-            <input type="number" name="stock" value="<?php echo $p->stock; ?>" style="width: 100%; padding: 12px; border: 1px solid #0052d4; border-radius: 5px;" required>
+            <label class="etiqueta-formulario">Precio Unitario ($):</label><br>
+            <input type="number" step="0.01" name="precio" value="<?php echo $p->precio; ?>" class="input-formulario" required>
         </p>
 
         <p>
-    <label style="color: #003a94; font-weight: bold;">Imagen del Producto:</label><br>
-    <?php if(!empty($p->imagen)): ?>
-        <img src="public/uploads/<?php echo $p->imagen; ?>" width="150" style="border: 2px solid #0052d4; border-radius: 8px;">
-        <br>
-        <small>Archivo: <?php echo $p->imagen; ?></small>
-    <?php else: ?>
-        <p>No hay imagen cargada actualmente.</p>
-    <?php endif; ?>
-    <br>
-    <input type="file" name="imagen" accept="image/*">
-</p>
+            <label class="etiqueta-formulario">Stock en Inventario:</label><br>
+            <input type="number" name="stock" value="<?php echo $p->stock; ?>" class="input-formulario" required>
+        </p>
 
-       <p style="text-align: center; margin-top: 30px;">
-    <button type="submit" form="formEditar" style="background: #0052d4; color: white; padding: 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; font-size: 1.1em;">
-        GUARDAR CAMBIOS
-    </button>
-</p>
-        <footer style="text-align: center; margin-top: 20px;">
-            <a href="index.php?action=listado_productos" style="color: #0052d4; text-decoration: none; font-weight: bold;">← Volver al Listado</a>
+        <p>
+            <label class="etiqueta-formulario">Imagen del Producto:</label><br>
+            <?php if(!empty($p->imagen)): ?>
+                <img src="public/uploads/<?php echo $p->imagen; ?>" width="150" class="imagen-actual">
+                <br>
+                <small>Archivo: <?php echo $p->imagen; ?></small>
+            <?php else: ?>
+                <span class="texto-error-imagen">No hay imagen cargada actualmente.</span>
+            <?php endif; ?>
+            <br><br>
+            <input type="file" name="imagen" accept="image/*">
+        </p>
+
+        <p class="p-boton-guardar">
+            <input type="button" value="GUARDAR CAMBIOS" onclick="document.getElementById('formEditar').submit();" class="boton-guardar">
+        </p>
+
+        <footer class="pie-formulario">
+            <a href="index.php?action=listado_productos" class="enlace-volver">← Volver al Listado</a>
         </footer>
     </form>
 </article>
 <?php else: ?>
-    <section style="text-align: center; margin-top: 50px;">
-        <p style="color: red; font-weight: bold;">Error: No se pudo encontrar la información del producto para editar.</p>
-        <a href="index.php?action=listado" style="color: #0052d4;">Regresar</a>
+    <section class="seccion-error">
+        <p class="mensaje-error">Error: No se pudo encontrar la información del producto para editar.</p>
+        <a href="index.php?action=listado_productos" class="enlace-volver">Regresar al Listado</a>
     </section>
 <?php endif; ?>

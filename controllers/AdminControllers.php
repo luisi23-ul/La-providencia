@@ -109,7 +109,7 @@ public function actualizar() {
 
         //  la actualización y se redirecciona al listado
         if ($this->productoModelo->modificarproducto($datos)) {
-            header("Location: index.php?action=listado");
+            header("Location: index.php?action=listado_productos");
             exit(); 
         } else {
             echo "Error al intentar actualizar el producto.";
