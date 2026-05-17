@@ -1,73 +1,57 @@
-/* Contenedor Principal del Formulario */
+/* public/css/editar_producto.css */
+
 .contenedor-editar {
-    max-width: 600px;
-    margin: 40px auto;
+    max-width: 650px;
+    margin: 20px auto;
     border: 2px solid #0052d4;
     padding: 30px;
     background: #f0f7ff;
     border-radius: 10px;
     font-family: Arial, sans-serif;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
-/* Título de la sección */
-.contenedor-editar h2 {
+.titulo-editar {
     color: #0052d4;
     text-align: center;
     margin-bottom: 25px;
     text-transform: uppercase;
-    font-size: 1.6em;
 }
 
-/* Etiquetas de los formularios */
-.contenedor-editar label {
-    display: block;
+.etiqueta-formulario {
     color: #003a94;
     font-weight: bold;
-    margin-bottom: 8px;
 }
 
-/* Campos de Texto, Números y Textareas */
-.contenedor-editar input[type="text"],
-.contenedor-editar input[type="number"],
-.contenedor-editar textarea {
+.input-formulario, .textarea-formulario {
     width: 100%;
     padding: 12px;
     border: 1px solid #0052d4;
     border-radius: 5px;
-    box-sizing: border-box;
-    font-size: 1em;
+    box-sizing: border-box; /* Evita que se desborde el ancho */
 }
 
-/* Estilo específico para el área de descripción */
-.contenedor-editar textarea {
+.textarea-formulario {
     height: 100px;
     resize: vertical;
 }
 
-/* Ajustes de los párrafos como separadores espaciados */
-.contenedor-editar p {
-    margin-bottom: 20px;
-}
-
-/* Control de la vista previa de la imagen */
-.contenedor-editar .seccion-imagen img {
-    display: block;
-    max-width: 150px;
-    height: auto;
+.imagen-actual {
     border: 2px solid #0052d4;
     border-radius: 8px;
-    margin-bottom: 8px;
+    margin-top: 10px;
 }
 
-.contenedor-editar .seccion-imagen small {
-    display: block;
+.texto-error-imagen {
     color: #555;
-    margin-bottom: 12px;
+    font-style: italic;
 }
 
-/* Botón personalizado de Guardar Cambios */
-.contenedor-editar .btn-guardar {
+.p-boton-guardar {
+    text-align: center;
+    margin-top: 30px;
+}
+
+.boton-guardar {
     background: #0052d4;
     color: white;
     padding: 15px;
@@ -77,45 +61,30 @@
     font-weight: bold;
     width: 100%;
     font-size: 1.1em;
-    transition: background 0.3s ease;
+    text-transform: uppercase;
 }
 
-.contenedor-editar .btn-guardar:hover {
+.boton-guardar:hover {
     background: #003a94;
 }
 
-/* Enlace inferior de regreso */
-.contenedor-editar footer {
+.pie-formulario {
     text-align: center;
-    margin-top: 25px;
+    margin-top: 20px;
 }
 
-.contenedor-editar .btn-volver {
+.enlace-volver {
     color: #0052d4;
     text-decoration: none;
     font-weight: bold;
-    font-size: 1em;
 }
 
-.contenedor-editar .btn-volver:hover {
-    text-decoration: underline;
-}
-
-/* Sección de Alerta de Error */
-.error-editar {
+.seccion-error {
     text-align: center;
     margin-top: 50px;
-    font-family: Arial, sans-serif;
 }
 
-.error-editar p {
+.mensaje-error {
     color: red;
-    font-weight: bold;
-    font-size: 1.2em;
-}
-
-.error-editar a {
-    color: #0052d4;
-    text-decoration: none;
     font-weight: bold;
 }

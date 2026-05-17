@@ -55,5 +55,46 @@ class VentaModel {
             return false;
         }
     }
+    public function finalizarCompra() {
+    // 1. Validar que el carrito tenga productos
+    if (!isset($_SESSION['carrito']) || empty($_SESSION['carrito'])) {
+        echo "<script>window.location.href='index.php?action=ver_catalogo';</script>";
+        exit();
+    }
+
+    $telefono = "584127818865"; 
+    $mensaje = "¡Hola! *La Providencia* 🛒\n";
+    $mensaje .= "Deseo finalizar mi compra con los siguientes productos:\n\n";
+    
+    $totalGeneral = 0;
+
+    // 2. Recorrer el carrito para armar el texto
+    foreach ($_SESSION['carrito'] as $item) {
+        $nombre = isset($item['nombre']) ? $item['nombre'] : 'Producto';
+        $precio = isset($item['precio']) ? $item['precio'] : 0;
+        $cantidad = isset($item['cantidad']) ? $item['cantidad'] : 1;
+        
+        $subtotal = $precio * $cantidad;
+        $totalGeneral += $subtotal;
+
+        $mensaje .= "• *{$nombre}* (x{$cantidad}) - \${$precio}\n";
+    }
+
+    $mensaje .= "\n💰 *Total a pagar:* \${$totalGeneral}\n";
+    $mensaje .= "Forma de pago: A convenir\n";
+    $mensaje .= "¡Quedo atento para coordinar la entrega! ✨";
+
+    // 3. Codificar el mensaje de forma segura para la URL
+    $mensajeURL = urlencode($mensaje);
+    
+    // API Nativa y gratuita de WhatsApp
+    $urlWhatsApp = "https://api.whatsapp.com/send?phone={$telefono}&text={$mensajeURL}";
+
+    // 4. LA SOLUCIÓN: Forzar la apertura con JavaScript saltando bloqueos de cabecera
+    echo "<script type='text/javascript'>
+            window.location.href = '{$urlWhatsApp}';
+          </script>";
+    exit();
+}
 }
 ?>

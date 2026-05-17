@@ -25,7 +25,7 @@ class UsuarioController {
             $email = isset($_POST['email']) ? $_POST['email'] : '';
             $pass = isset($_POST['password']) ? $_POST['password'] : '';
 
-            if ($email === 'luisi@gmail.com' && $pass === 'Dios1234') {
+            if ($email === 'luisa@gmail.com' && $pass === 'Dios1234') {
                 if (session_status() == PHP_SESSION_NONE) {
                     session_start();
                 }
