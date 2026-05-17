@@ -91,23 +91,29 @@ class VentaController {
     // (Usa la lógica que ya tienes implementada para definir $resultado)
     $resultado = true; 
 
-    // 4. CUARTO: Evaluamos el resultado de la base de datos
     if ($resultado) {
-        // AHORA SÍ: Vaciamos el carrito porque la URL de WhatsApp ya se guardó de forma segura arriba
+        
+        // 🚀 AQUÍ HACEMOS LA MAGIA: Recorremos el carrito para restar el stock en la BD
+        require_once 'models/ProductoModel.php';
+        $productoModelo = new ProductoModel(); // Instanciamos el modelo de productos
+
+        foreach ($_SESSION['carrito'] as $item) {
+            $id_producto = $item['id_producto'];
+            $cantidad_comprada = $item['cantidad'];
+
+            // Llamamos a una función en el modelo que reste: stock_actual - cantidad_comprada
+            $productoModelo->descontarStock($id_producto, $cantidad_comprada);
+        }
+
+        // Una vez descontado el inventario de todos los productos, borramos la sesión
         unset($_SESSION["carrito"]);
         
-        // Lanzamos la alerta y mandamos en línea recta a la API de WhatsApp
+        // Lanzamos la alerta y mandamos directo a WhatsApp
         echo "<script type='text/javascript'>
-                alert('¡Compra realizada con éxito! Conectando con WhatsApp para coordinar la entrega...');
+                alert('¡Pedido procesado con éxito! Descontando del inventario y conectando con WhatsApp...');
                 window.location.href = '{$urlWhatsApp}';
               </script>";
         exit(); 
-    } else {
-        echo "<script type='text/javascript'>
-                alert('Hubo un error al procesar su compra.'); 
-                window.location.href = 'index.php?action=ver_carrito';
-              </script>";
-        exit();
     }
 }
 }

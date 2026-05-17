@@ -59,6 +59,23 @@ public function obtenerPorId($id) {
     return $stmt->fetch(PDO::FETCH_OBJ);
 }
 
+public function descontarStock($id, $cantidad) {
+    try {
+        // CORREGIDO: 'id' es el nombre exacto de tu columna en phpMyAdmin
+        $sql = "UPDATE productos SET stock = stock - :cantidad WHERE id = :id";
+        
+        $stmt = $this->db->prepare($sql);
+        
+        // Aseguramos que pasen como números enteros limpios
+        $stmt->bindValue(':cantidad', (int)$cantidad, PDO::PARAM_INT);
+        $stmt->bindValue(':id', (int)$id, PDO::PARAM_INT);
+        
+        return $stmt->execute();
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
 //  ES SOLO PARA GUARDAR LOS CAMBIOS
 public function modificarProducto($datos) { 
     try {
