@@ -39,7 +39,7 @@
 
             <section class="nav-actions">
                 <?php if ($action == 'inicio' || $action == ''): ?>
-                    <a href="index.php?action=login_usuario" class="action-link login-btn" aria-label="Iniciar Sesión">
+                   <a href="index.php?action=login" style="color: #0052d4; font-weight: bold; text-decoration: none;">Iniciar Sesión</a>
                         <i class="fas fa-user-circle"></i>
                         <span>Iniciar Sesión</span>
                     </a>

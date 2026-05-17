@@ -40,12 +40,13 @@
     <input type="file" name="imagen" accept="image/*">
 </p>
 
-        <p style="text-align: center; margin-top: 30px;">
-            <input type="button" value="GUARDAR CAMBIOS" onclick="document.getElementById('formEditar').submit();" style="background: #0052d4; color: white; padding: 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; font-size: 1.1em;">
-        </p>
-
+       <p style="text-align: center; margin-top: 30px;">
+    <button type="submit" form="formEditar" style="background: #0052d4; color: white; padding: 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; font-size: 1.1em;">
+        GUARDAR CAMBIOS
+    </button>
+</p>
         <footer style="text-align: center; margin-top: 20px;">
-            <a href="index.php?action=listado" style="color: #0052d4; text-decoration: none; font-weight: bold;">← Volver al Listado</a>
+            <a href="index.php?action=listado_productos" style="color: #0052d4; text-decoration: none; font-weight: bold;">← Volver al Listado</a>
         </footer>
     </form>
 </article>
