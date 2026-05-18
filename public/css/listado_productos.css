@@ -1,0 +1,285 @@
+/* ==========================================================================
+   ESTILOS MODULARES DEFINITIVOS - LISTADO DE INVENTARIO (LA PROVIDENCIA)
+   Alineación geométrica y botones UX unificados al 100% (Simetría Quirúrgica)
+   ========================================================================== */
+
+.card-inventario {
+    background: #ffffff;
+    width: 100%;
+    max-width: 1000px;
+    margin: 50px auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 40px;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.03);
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Encabezado Principal */
+.inventario-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 24px;
+    margin-bottom: 25px;
+}
+
+.inventario-header h2 {
+    color: #0f172a;
+    font-size: 1.9rem;
+    font-weight: 800;
+    margin: 0;
+    letter-spacing: -0.5px;
+}
+
+/* Grupo de botones en la cabecera */
+.inventario-header-acciones {
+    display: flex;
+    align-items: center;
+    gap: 12px; /* Espacio simétrico entre ambos botones */
+}
+
+/* ==========================================================================
+   UNIFICACIÓN DE BOTONES (EJE HORIZONTAL PERFECTO)
+   ========================================================================== */
+
+/* 1. BOTÓN REGRESAR AL PANEL */
+/* 1. BOTÓN REGRESAR AL PANEL */
+.btn-regresar-panel {
+    background-color: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    color: #475569 !important;
+    border-radius: 10px;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-decoration: none !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* Bloque de alineación estricto */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-sizing: border-box;
+    
+    /* MEDIDAS IDÉNTICAS EN PÍXELES */
+    height: 46px !important;
+    min-width: 145px !important; /* Fuerza a que midan lo mismo de ancho */
+    padding: 0 16px !important;
+}
+
+.btn-regresar-panel:hover {
+    background-color: #e2e8f0;
+    color: #0f172a !important;
+    border-color: #94a3b8;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+
+/* 2. BOTÓN NUEVO (Azul Satinado Premium) */
+.btn-satin-nuevo {
+    background: linear-gradient(135deg, #0052d4 0%, #1d4ed8 100%);
+    color: #ffffff !important;
+    border: none;
+    border-radius: 10px;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-decoration: none !important;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 82, 212, 0.15);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* Bloque de alineación estricto */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-sizing: border-box;
+    
+    /* MEDIDAS IDÉNTICAS EN PÍXELES */
+    height: 46px !important;
+    min-width: 145px !important; /* Fuerza a que midan lo mismo de ancho */
+    padding: 0 16px !important;
+}
+
+.btn-satin-nuevo:hover {
+    background: linear-gradient(135deg, #0044b1 0%, #1a44b8 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 82, 212, 0.25);
+}
+
+/* Contenedor responsivo */
+.tabla-responsiva-contenedor {
+    width: 100%;
+    overflow-x: visible;
+    display: block;
+}
+
+/* Estructura de la Tabla */
+.tabla-inventario {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 5px;
+    table-layout: auto;
+}
+
+/* Cabeceras de la Tabla */
+.tabla-inventario thead tr {
+    border-bottom: 2px solid #0052d4;
+    color: #0052d4;
+}
+
+.tabla-inventario th {
+    padding: 16px 14px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    letter-spacing: 0.3px;
+}
+
+/* Filas del Cuerpo */
+.tabla-inventario tbody tr {
+    border-bottom: 1px solid #e2e8f0;
+    transition: background-color 0.2s ease;
+}
+
+.tabla-inventario tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+.tabla-inventario td {
+    padding: 20px 14px;
+    vertical-align: middle;
+    font-size: 0.95rem;
+}
+
+/* Separadores verticales sutiles */
+.tabla-inventario th:not(:last-child),
+.tabla-inventario td:not(:last-child) {
+    border-right: 1px solid #f1f5f9;
+}
+
+/* Alineaciones estrictas por columnas */
+.tabla-inventario th:nth-child(1), .tabla-inventario td:nth-child(1) { text-align: left; }
+.tabla-inventario th:nth-child(2), .tabla-inventario td:nth-child(2) { text-align: center; }
+.tabla-inventario th:nth-child(3), .tabla-inventario td:nth-child(3) { text-align: center; }
+.tabla-inventario th:nth-child(4), .tabla-inventario td:nth-child(4) { text-align: left !important; }
+.tabla-inventario th:nth-child(5), .tabla-inventario td:nth-child(5) { text-align: center; }
+.tabla-inventario th:nth-child(6), .tabla-inventario td:nth-child(6) { text-align: center; }
+.tabla-inventario th:nth-child(7), .tabla-inventario td:nth-child(7) { text-align: right; }
+
+/* Estilos de Contraste Fuertes */
+.columna-producto {
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.columna-precio {
+    font-weight: 700;
+    color: #0052d4;
+}
+
+.columna-stock {
+    font-weight: 600;
+    color: #334155;
+}
+
+.columna-descripcion {
+    color: #64748b;
+    max-width: 240px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: left;
+}
+
+/* Badge de Categoría */
+.badge-categoria {
+    background-color: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    color: #475569;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Miniatura de Imagen */
+.columna-imagen img {
+    width: 45px;
+    height: 45px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 1px solid #cbd5e1;
+    display: inline-block;
+}
+
+.sin-foto {
+    color: #94a3b8;
+    font-size: 0.85rem;
+    font-style: italic;
+    display: inline-block;
+}
+
+/* Botones de Control de Acciones */
+.texto-centrado {
+    padding-right: 5px !important;
+    white-space: nowrap !important;
+}
+
+.btn-accion {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2rem;
+    padding: 6px;
+    transition: transform 0.2s ease, color 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-accion:hover {
+    transform: scale(1.18);
+}
+
+.btn-editar {
+    color: #0052d4;
+    margin-right: 12px;
+}
+
+.btn-editar:hover {
+    color: #0044b1;
+}
+
+.btn-eliminar {
+    color: #ef4444;
+}
+
+.btn-eliminar:hover {
+    color: #dc2626;
+}
+
+/* RESPONSIVIDAD */
+@media (max-width: 900px) {
+    .tabla-responsiva-contenedor {
+        overflow-x: auto;
+    }
+    .inventario-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+    .inventario-header-acciones {
+        width: 100%;
+        justify-content: space-between;
+    }
+}

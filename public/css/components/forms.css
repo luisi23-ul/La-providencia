@@ -124,7 +124,7 @@
     margin-top: -20px; /* Hace que la tarjeta muerda la franja azul de arriba de forma elegante */
 }
 /* ==========================================================================
-   6. CAMPOS VERTICALES ESTRICTOS (FIELDSET)
+   6. CAMPOS VERTICALES ESTRICTOS CON ÍCONOS (FIELDSET & SPAN)
    ========================================================================== */
 .form-group {
     border: none;
@@ -143,9 +143,29 @@
     text-align: left;
 }
 
+/* El span contenedor relativo para que no rompa el diseño */
+.input-icon-wrapper {
+    position: relative;
+    width: 100%;
+    display: block;
+}
+
+/* Propiedades del icono en gris slate */
+.input-icon-wrapper .input-icon {
+    position: absolute;
+    top: 50%;
+    left: 18px;
+    transform: translateY(-50%);
+    color: #64748b;
+    font-size: 1.1rem;
+    transition: color 0.3s ease;
+    z-index: 5;
+}
+
+/* Inputs actualizados con padding-left extra para dar espacio al icono */
 .form-group input {
     width: 100%;
-    padding: 16px 18px;
+    padding: 16px 18px 16px 48px; /* 48px a la izquierda para que el texto no pise el icono */
     background-color: #f8fafc; 
     border: 2px solid #cbd5e1;
     border-radius: 12px;
@@ -153,13 +173,20 @@
     font-size: 1.1rem;
     box-sizing: border-box;
     transition: all 0.3s ease;
+    outline: none;
 }
 
+/* Foco interactivo: Ilumina borde, fondo y cambia el icono a azul simultáneamente */
 .form-group input:focus {
     border-color: #0052d4;
     background-color: #ffffff;
     box-shadow: 0 0 0 4px rgba(0, 82, 212, 0.15);
-    outline: none;
+}
+
+/* El truco mágico: Si el input tiene foco, el icono de al lado se pinta de azul */
+.form-group input:focus + .input-icon,
+.input-icon-wrapper:focus-within .input-icon {
+    color: #0052d4;
 }
 
 /* ==========================================================================

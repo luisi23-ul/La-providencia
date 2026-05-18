@@ -9,26 +9,32 @@
         
         <article class="auth-card">
             
-            <form method="post" action="index.php?action=valider_login_registro">
-                
-                <fieldset class="form-group">
-                    <label for="correo_ingreso">Correo Electrónico:</label>
-                    <input type="email" name="correo_ingreso" id="correo_ingreso" required placeholder="ejemplo@gmail.com">
-                </fieldset>
+           <form action="index.php?action=valider_login_registro" method="POST">
+    
+    <fieldset class="form-group">
+        <label for="correo_ingreso">Correo Electrónico:</label>
+        <span class="input-icon-wrapper">
+            <i class="fas fa-envelope input-icon"></i>
+            <input type="email" name="correo_ingreso" id="correo_ingreso" placeholder="ejemplo@gmail.com" required>
+        </span>
+    </fieldset>
 
-                <fieldset class="form-group">
-                    <label for="clave_ingreso">Contraseña:</label>
-                    <input type="password" name="clave_ingreso" id="clave_ingreso" required placeholder="Tu clave">
-                </fieldset>
+    <fieldset class="form-group">
+        <label for="clave_ingreso">Contraseña:</label>
+        <span class="input-icon-wrapper">
+            <i class="fas fa-lock input-icon"></i>
+            <input type="password" name="clave_ingreso" id="clave_ingreso" placeholder="Tu clave" required>
+        </span>
+    </fieldset>
+    
+    <button type="submit" class="btn-submit">Iniciar Sesión</button>
 
-                <button type="submit" class="btn-submit">Iniciar Sesion</button>
-                
-                <footer class="auth-footer">
-                    <p>¿No tienes cuenta?</p>
-                    <a href="index.php?action=registro" class="enlace-registro">Regístrate aquí</a>
-                </footer>
-                
-            </form>
+    <footer class="auth-footer">
+        <p>¿No tienes cuenta?</p>
+        <a href="index.php?action=registro" class="enlace-registro">Regístrate aquí</a>
+    </footer>
+</form>
+            
 
         </article>
 

@@ -12,22 +12,34 @@
                 
                 <fieldset class="form-group">
                     <label for="nombre">Nombre</label>
-                    <input type="text" name="nombre" id="nombre" placeholder="Tu nombre completo" required>
+                    <span class="input-icon-wrapper">
+                        <i class="fas fa-user input-icon"></i>
+                        <input type="text" name="nombre" id="nombre" placeholder="Tu nombre completo" required>
+                    </span>
                 </fieldset>
 
                 <fieldset class="form-group">
                     <label for="telefono">Teléfono</label>
-                    <input type="tel" name="telefono" id="telefono" placeholder="0412..." required>
+                    <span class="input-icon-wrapper">
+                        <i class="fas fa-phone input-icon"></i>
+                        <input type="tel" name="telefono" id="telefono" placeholder="0412..." required>
+                    </span>
                 </fieldset>
                 
                 <fieldset class="form-group">
                     <label for="correo">Correo Electrónico</label>
-                    <input type="email" name="correo" id="correo" placeholder="ejemplo@correo.com" required>
+                    <span class="input-icon-wrapper">
+                        <i class="fas fa-envelope input-icon"></i>
+                        <input type="email" name="correo" id="correo" placeholder="ejemplo@correo.com" required>
+                    </span>
                 </fieldset>
                 
                 <fieldset class="form-group">
                     <label for="clave">Contraseña</label>
-                    <input type="password" name="clave" id="clave" placeholder="Crea una clave segura" required>
+                    <span class="input-icon-wrapper">
+                        <i class="fas fa-lock input-icon"></i>
+                        <input type="password" name="clave" id="clave" placeholder="Crea una clave segura" required>
+                    </span>
                 </fieldset>
                 
                 <button type="submit" class="btn-submit">Registrarme e Iniciar</button>

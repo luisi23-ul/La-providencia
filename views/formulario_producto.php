@@ -1,8 +1,10 @@
 <article class="card-formulario">
-    <h2>Nuevo Componente</h2>
-    <p class="subtitle">Añade los detalles del producto para el catálogo.</p>
-     <link rel="stylesheet" href="public/css/formulario_producto.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="public/css/formulario_producto.css?v=<?php echo time(); ?>">
 
+    <header class="formulario-header">
+        <h2>Nuevo Componente</h2>
+        <p class="subtitle">Añade los detalles del producto para el catálogo.</p>
+    </header>
     
     <form id="formProducto" action="index.php?action=guardar_producto" method="POST" enctype="multipart/form-data">
         
@@ -23,36 +25,40 @@
 
         <fieldset class="grupo-control">
             <label>Descripción Técnica</label>
-            <textarea name="descripcion" class="providencia-field" rows="4"></textarea>
+            <textarea name="descripcion" class="providencia-field" rows="4" placeholder="Especificaciones del componente..."></textarea>
         </fieldset>
 
         <section class="fila-dual">
             <fieldset class="grupo-control">
                 <label>Precio ($)</label>
-                <input type="number" step="0.01" name="precio" class="providencia-field" required>
+                <input type="number" step="0.01" name="precio" class="providencia-field" required placeholder="0.00">
             </fieldset>
+            
             <fieldset class="grupo-control">
-                <label>stock</label>
-                <input type="number" name="stock" class="providencia-field" required>
+                <label>Stock</label>
+                <input type="number" name="stock" class="providencia-field" required placeholder="0">
             </fieldset>
         </section>
 
         <fieldset class="grupo-control">
             <label>Imagen del Producto</label>
-            <input type="file" name="imagen" class="input-file-providencia" accept="image/*" required>
+            <span class="custom-file-upload">
+                <i class="fas fa-cloud-upload-alt"></i> Seleccionar Imagen
+                <input type="file" name="imagen" class="input-file-providencia" accept="image/*" required>
+            </span>
         </fieldset>
-<p style="text-align: center; margin-top: 30px;">
-    <input type="button" value="GUARDAR PRODUCTO" onclick="document.getElementById('formProducto').submit();" style="background: #0052d4; color: white; padding: 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; font-size: 1.1em;">
-</p>
 
-<p style="text-align: center; margin-top: 15px;">
-    <a href="index.php?action=ver_catalogo" style="display: block; background: #28a745; color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; font-size: 1.1em; text-decoration: none; box-sizing: border-box;">
-        VER CATÁLOGO
-    </a>
-</p>
+        <footer class="formulario-acciones">
+            <input type="button" value="GUARDAR PRODUCTO" class="btn-providencia-save" onclick="document.getElementById('formProducto').submit();">
+            
+            <a href="index.php?action=ver_catalogo" class="btn-providencia-link btn-success-satin">
+                <i class="fas fa-images"></i> VER CATÁLOGO
+            </a>
+            
+            <a href="index.php?action=listado_productos" class="btn-providencia-link btn-secondary-satin">
+                <i class="fas fa-boxes"></i>INVENTARIO
+            </a>
+        </footer>
 
-<p style="text-align: center; margin-top: 15px;">
-    <a href="index.php?action=listado_productos" style="display: block; background: #6c757d; color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; font-size: 1.1em; text-decoration: none; box-sizing: border-box;">
-        VOLVER AL INVENTARIO
-    </a>
-</p>
+    </form>
+</article>

@@ -19,7 +19,7 @@
 
     </header>
     <figure class="hero-img">
-        <img src="public/img/logo-removebg-preview.png" alt="Logo La Providencia" class="hero-logo-img">
+        <img src="public/img/logo-removebg.png" alt="Logo La Providencia" class="hero-logo-img">
     </figure>
     </article>
 </section>

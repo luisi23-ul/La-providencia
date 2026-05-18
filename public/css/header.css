@@ -110,42 +110,70 @@
    MODO MINI-HAMBURGUESA PURA (OTRAS VISTAS)
    ========================================================================== */
 
+/* ==========================================================================
+   MODO MINI-HAMBURGUESA PURA (OTRAS VISTAS: LOGIN Y REGISTRO)
+   ========================================================================== */
 .main-header:has(.menu-toggle) {
     width: auto; 
     left: auto;  
     right: 4%;   
     transform: none; 
     padding: 15px; 
-    border-radius: 50px; /* Cambiado a píldora redondeada para evitar romper la herencia */
+    border-radius: 0;
+    
+    /* EL TRUCO MÁGICO: Removemos el fondo blanco y las sombras para que pase tu azul satinado */
+    background: transparent !important; 
+    box-shadow: none !important; 
 }
 
+/* ==========================================================================
+   BOTÓN HAMBURGUESA LIMPIO Y MINIMALISTA (SIN LOGOS INTEGRADOS)
+   ========================================================================== */
 .menu-toggle {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    width: 24px;
-    height: 16px;
-    background: transparent;
-    border: none;
+    width: 28px; /* Un toque más amplio para mejor usabilidad táctil */
+    height: 18px;
+    background: transparent !important; /* Fuerza la eliminación de cualquier fondo previo */
+    border: none !important;
+    box-shadow: none !important; /* Limpia cualquier residuo de bordes circulares */
     cursor: pointer;
     padding: 0;
     position: relative;
     z-index: 99999 !important; 
     pointer-events: auto !important;
+    background: transparent !important; 
+    background-image: none !important;
 }
 
+.menu-toggle::before,
+.menu-toggle::after {
+    content: none !important;
+    display: none !important;
+}
+
+/* Las tres líneas de la hamburguesa en color blanco para contrastar con el fondo azul */
 .menu-toggle span {
     width: 100%;
     height: 3px;
-    background-color: #0F172A;
+    background-color: #ffffff !important; 
     border-radius: 3px;
     transition: all 0.3s ease-in-out;
 }
 
-/* ANIMACIÓN "X" */
-.menu-toggle.active span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); background-color: #0F172A; }
-.menu-toggle.active span:nth-child(2) { opacity: 0; }
-.menu-toggle.active span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); background-color: #0F172A; }
+/* ANIMACIÓN "X" (Cuando el menú responsive se abre, las líneas cambian a oscuro para verse sobre la cortina blanca) */
+.menu-toggle.active span:nth-child(1) { 
+    transform: translateY(7.5px) rotate(45deg); 
+    background-color: #0F172A !important; 
+}
+.menu-toggle.active span:nth-child(2) { 
+    opacity: 0; 
+}
+.menu-toggle.active span:nth-child(3) { 
+    transform: translateY(-7.5px) rotate(-45deg); 
+    background-color: #0F172A !important; 
+}
 
 /* ==========================================================================
    CORTINA RESPONSIVA MINIMALISTA PREMIUM (SIN DIVS Y SIN DUPLICADOS)
@@ -260,6 +288,10 @@
     width: 40px;
 }
 
+.main-header:has(.menu-toggle) .nav-brand {
+    display: none !important;
+}
+
 /* Keyframes optimizados */
 @keyframes slideInMenu {
     from {
@@ -269,6 +301,7 @@
         transform: translateX(0);
     }
 }
+
 
 /* Media Query de Soporte Móvil */
 @media (max-width: 1024px) {

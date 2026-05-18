@@ -19,7 +19,7 @@
 
     <header class="main-header">
         <nav class="nav-container">
-          
+        
             <section class="nav-brand">
                 <a href="index.php?action=inicio">
                     <img src="public/img/logo-removebg.png" alt="La Providencia" class="brand-logo">
@@ -37,9 +37,15 @@
 
             <section class="nav-actions">
                 <?php if ($action == 'inicio' || $action == ''): ?>
-                   <a href="index.php?action=login" style="color: #0052d4; font-weight: bold; text-decoration: none;">Iniciar Sesión</a>
-                        <i class="fas fa-user-circle"></i>
+                    
+                    <a href="index.php?action=login_usuario" class="action-link login-btn" aria-label="Login Clientes">
+                        <i class="fas fa-user"></i>
                         <span>Iniciar Sesión</span>
+                    </a>
+
+                    <a href="index.php?action=login" class="action-link admin-btn" aria-label="Panel Administrativo" style="color: #0052d4; font-weight: bold; text-decoration: none;">
+                        <i class="fas fa-user-shield"></i>
+                        <span>Admin</span>
                     </a>
 
                     <a href="index.php?action=registro" class="action-link register-btn" aria-label="Registrarse">

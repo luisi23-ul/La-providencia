@@ -1,129 +1,277 @@
 /* ==========================================================================
-   ESTILOS GENERALES DEL FORMULARIO DE PRODUCTOS (Semántica Pura)
+   FORMULARIO PREMIUM - LA PROVIDENCIA (GESTIÓN & CONTROL DIGITAL)
+   Estilos unificados con enfoque de alta accesibilidad corporativa
    ========================================================================== */
 
-/* Contenedor tipo Tarjeta (Hereda la estética del panel azul) */
-article.card-formulario {
-    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #fbc2eb 100%) !important;
+/* ==========================================================================
+   FONDO CON TEXTURA (CONCORDANCIA DASHBOARD)
+   ========================================================================== */
+body, .card-formulario-container {
+    background-color: #f8fafc;
+    /* Trama sutil de puntos grises para eliminar el vacío blanco de fondo */
+    background-image: 
+        radial-gradient(#cbd5e1 1px, transparent 1px), 
+        radial-gradient(#cbd5e1 1px, #f8fafc 1px);
+    background-size: 24px 24px;
+    background-position: 0 0, 12px 12px;
+}
+
+/* ==========================================================================
+   TARJETA DEL FORMULARIO CON CABECERA SATINADA
+   ========================================================================== */
+.card-formulario {
+    background: #ffffff;
     width: 100%;
-    max-width: 600px;
-    padding: 40px;
-    border-radius: 24px !important;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
-    color: #ffffff !important;
+    max-width: 680px;
     margin: 40px auto;
-    font-family: 'Poppins', 'Segoe UI', sans-serif;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 0; /* Espacio general controlado internamente */
+    box-shadow: 0 15px 35px rgba(15, 23, 42, 0.06);
     box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+    overflow: hidden; /* Mantiene las esquinas de la cabecera redondeadas */
 }
 
-/* Títulos y Subtítulos */
-article.card-formulario h2 {
-    font-size: 26px !important;
-    font-weight: 700 !important;
-    margin: 0 0 5px 0 !important;
+/* Cabecera Sólida en Azul Satinado Vivo */
+.formulario-header {
+    text-align: left;
+    background: linear-gradient(135deg, #0052d4 0%, #1e40af 100%);
+    padding: 35px 45px;
+    margin-bottom: 35px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.card-formulario h2 {
+    color: #ffffff !important; /* Contraste óptimo */
+    font-size: 1.9rem;
+    font-weight: 800;
+    margin: 0 0 6px 0;
+    letter-spacing: -0.5px;
     text-align: center;
 }
 
-article.card-formulario .subtitle {
-    font-size: 14px !important;
-    color: #e0e6ed !important;
-    margin: 0 0 30px 0 !important;
+.card-formulario .subtitle {
+    color: #93c5fd; /* Azul cielo legible sobre fondo oscuro */
+    font-size: 0.95rem;
+    margin: 0;
+    font-weight: 500;
     text-align: center;
-    font-weight: 300;
 }
 
-/* Campos del Formulario (Alineación con Fieldset) */
-fieldset.grupo-control {
+/* Contenedor del formulario interno para recuperar sus márgenes */
+.card-formulario form {
+    padding: 0 45px 45px 45px;
+}
+
+/* ==========================================================================
+   ESTILIZACIÓN DE CAMPOS DE CONTROL (PROVIDENCIA-FIELD)
+   ========================================================================== */
+.grupo-control {
     border: none !important;
     padding: 0 !important;
-    margin: 0 0 20px 0 !important;
-    display: flex;
-    flex-direction: column;
+    margin: 0 0 24px 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
 }
 
-fieldset.grupo-control label {
-    font-size: 13px;
-    font-weight: 600;
-    margin-bottom: 8px;
-    color: #ffffff;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+.grupo-control label {
+    color: #0f172a; /* Negro pizarra legible para personas mayores */
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin-bottom: 10px;
+    text-align: left;
+    letter-spacing: 0.3px;
 }
 
-/* Estilo unificado para inputs, select y textarea */
+/* Cajas de texto e inputs industriales */
 .providencia-field {
-    width: 100% !important;
-    padding: 12px 15px !important;
-    background: rgba(255, 255, 255, 0.9) !important;
-    border: 2px solid transparent !important;
-    border-radius: 10px !important;
-    font-size: 14px !important;
-    color: #1a365d !important;
-    font-family: inherit;
-    box-sizing: border-box !important;
-    transition: all 0.3s ease;
+    width: 100%;
+    padding: 15px 16px;
+    background-color: #f8fafc;
+    border: 2px solid #cbd5e1;
+    border-radius: 10px;
+    color: #0f172a;
+    font-size: 1rem;
+    font-family: 'Poppins', sans-serif;
+    box-sizing: border-box;
+    transition: all 0.25s ease;
+    outline: none;
 }
 
-.providencia-field:focus {
-    outline: none !important;
-    background: #ffffff !important;
-    border-color: #fbc2eb !important;
-    box-shadow: 0 0 10px rgba(251, 194, 235, 0.5);
-}
-
-/* Textarea específico */
 textarea.providencia-field {
     resize: vertical;
-    min-height: 80px;
+    min-height: 110px;
 }
 
-/* Fila de doble columna (Precio y Stock) usando Sección Semántica */
-section.fila-dual {
-    display: flex !important;
-    justify-content: space-between !important;
-    gap: 20px !important;
-    margin: 0 !important;
-    padding: 0 !important;
+/* Selector estilizado con flecha limpia */
+select.providencia-field {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23475569'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    background-size: 18px;
+    padding-right: 40px;
 }
 
-section.fila-dual fieldset {
-    flex: 1 !important;
+/* Brillo reactivo al seleccionar un campo en azul satinado */
+.providencia-field:focus {
+    border-color: #0052d4;
+    background-color: #ffffff;
+    box-shadow: 0 0 0 5px rgba(0, 82, 212, 0.15);
 }
 
-/* Input File Personalizado */
+/* FILA DOBLE / DUAL SIMÉTRICA */
+.fila-dual {
+    display: flex;
+    gap: 20px;
+    width: 100%;
+}
+
+.fila-dual .grupo-control {
+    flex: 1;
+}
+
+/* ==========================================================================
+   INPUT DE CARGA DE ARCHIVO (PERFECCIONADO)
+   ========================================================================== */
+.custom-file-upload {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background-color: #f8fafc;
+    border: 2px dashed #0052d4; /* Marco azul satinado sutil */
+    border-radius: 10px;
+    padding: 22px;
+    cursor: pointer; /* Fuerza la manito de clic */
+    color: #0052d4;
+    font-weight: 600;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.custom-file-upload i {
+    font-size: 1.4rem;
+    color: #0052d4;
+}
+
+/* Efecto hover suave al pasar por encima de la carga */
+.custom-file-upload:hover {
+    border-color: #0044b1;
+    background-color: rgba(0, 82, 212, 0.05);
+    color: #0044b1;
+    transform: translateY(-1px);
+}
+
 .input-file-providencia {
-    width: 100% !important;
-    padding: 10px !important;
-    background: rgba(255, 255, 255, 0.15) !important;
-    border: 2px dashed rgba(255, 255, 255, 0.5) !important;
-    border-radius: 10px !important;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+/* ==========================================================================
+   BOTONES DE ACCIÓN UNIFICADOS (JERARQUÍA CROMÁTICA UX)
+   ========================================================================== */
+.formulario-acciones {
+    margin-top: 35px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+/* 1. Botón Principal: Guardar Producto (Sólido Satinado Eléctrico) */
+.btn-providencia-save {
+    width: 100%;
+    background: linear-gradient(135deg, #0052d4 0%, #1d4ed8 100%) !important;
     color: #ffffff !important;
-    cursor: pointer;
-    box-sizing: border-box !important;
-}
-
-.input-file-providencia::-webkit-file-upload-button {
-    background: #1a365d;
-    color: white;
+    padding: 16px;
     border: none;
-    padding: 8px 14px;
-    border-radius: 6px;
+    border-radius: 10px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
     cursor: pointer;
-    font-weight: bold;
-    margin-right: 10px;
-    transition: background 0.2s;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 14px rgba(0, 82, 212, 0.2);
+    outline: none;
 }
 
-.input-file-providencia::-webkit-file-upload-button:hover {
-    background: #0052d4;
+.btn-providencia-save:hover, 
+.btn-providencia-save:focus {
+    background: linear-gradient(135deg, #0044b1 0%, #1a44b8 100%) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 82, 212, 0.35);
 }
 
-/* Efectos hover para los botones que pusiste con estilos en línea */
-p input[type="button"], p a {
-    transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+/* Estructura base para los enlaces */
+.btn-providencia-link {
+    width: 100%;
+    padding: 14px;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-sizing: border-box;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    outline: none;
 }
 
-p input[type="button"]:hover, p a:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2) !important;
+/* 2. Botón Secundario: Ver Catálogo (Estilo Outline Calado) */
+.btn-success-satin {
+    background-color: transparent !important;
+    border: 2px solid #0052d4 !important;
+    color: #0052d4 !important;
+}
+
+.btn-success-satin:hover,
+.btn-success-satin:focus {
+    background-color: rgba(0, 82, 212, 0.06) !important;
+    color: #0044b1 !important;
+    border-color: #0044b1 !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 82, 212, 0.1);
+}
+
+/* 3. Botón Terciario: Volver al Inventario (Azul Noche del Sidebar) */
+.btn-secondary-satin {
+    background-color: #0f172a !important;
+    color: #ffffff !important;
+    border: none !important;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.1);
+}
+
+.btn-secondary-satin:hover,
+.btn-secondary-satin:focus {
+    background-color: #1e293b !important;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.2);
+}
+
+/* ==========================================================================
+   RESPONSIVIDAD ESTRICTA
+   ========================================================================== */
+@media (max-width: 600px) {
+    .card-formulario form {
+        padding: 0 20px 30px 20px;
+    }
+    .formulario-header {
+        padding: 30px 20px;
+    }
+    .fila-dual {
+        flex-direction: column;
+        gap: 0;
+    }
 }
