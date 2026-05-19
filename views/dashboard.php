@@ -33,5 +33,23 @@
             Ver Gráficos <i class="fas fa-arrow-right"></i>
         </a>
     </article>
+
+    <article class="bloque-opcion">
+        <span class="icon-admin"><i class="fas fa-receipt"></i></span>
+        <h3>Pagos Pendientes</h3>
+        <p>Revisa las órdenes y confirma los pagos recibidos.</p>
+        <a href="index.php?action=ver_pagos_pendientes" class="btn-admin-azul">
+            Ver Pagos <i class="fas fa-arrow-right"></i>
+        </a>
+    </article>
+
+    <article class="bloque-opcion">
+        <span class="icon-admin"><i class="fas fa-box-open"></i></span>
+        <h3>Retiro de Pedidos</h3>
+        <p>Gestiona las entregas y pedidos listos para retirar.</p>
+        <a href="index.php?action=ver_retiros" class="btn-admin-azul">
+            Ver Retiros <i class="fas fa-arrow-right"></i>
+        </a>
+    </article>
     
 </nav>

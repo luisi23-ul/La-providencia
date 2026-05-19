@@ -129,7 +129,7 @@
 /* Cabecera Premium Estilo SaaS */
 .dashboard-header {
     width: 100%;
-    max-width: 1100px; /* Alineado exacto con el ancho del Grid */
+    max-width: 100%; /* Alineado exacto con el ancho del Grid */
     margin-bottom: 45px;
     border-bottom: 1px solid #e2e8f0; /* Línea más sutil */
     padding-bottom: 20px;
@@ -163,18 +163,18 @@
    ========================================================================== */
 .row-opciones {
     width: 100%;
-    max-width: 1100px; /* Alineado con el encabezado */
+    max-width: 100%; /* Alineado con el encabezado */
     display: grid;
     
     /* >>> FUERZA LAS 3 COLUMNAS EN UNA SOLA FILA HORIZONTAL <<< */
     /* En vez de auto-fit que las tumba, definimos 3 columnas de tamaños idénticos */
-    grid-template-columns: repeat(3, minmax(280px, 340px));
+    grid-template-columns: repeat(auto-fit, minmax(280px, 320px));
     
     /* >>> ALINEACIÓN STRICTA A LA IZQUIERDA <<< */
     justify-content: flex-start; 
     
     gap: 24px; /* Ajustamos el espacio entre ellas para que quepan holgadamente */
-    margin: 0; /* Eliminamos el auto de los lados para que se pegue a la izquierda */
+    margin-left: 30px; /* Eliminamos el auto de los lados para que se pegue a la izquierda */
     box-sizing: border-box;
 }
 
