@@ -20,6 +20,13 @@
         <a href="index.php?action=seccion_graficos" class="menu-item <?php echo (in_array($_GET['action'] ?? '', ['seccion_graficos', 'grafico_barras', 'grafico_tortas'])) ? 'active' : ''; ?>">
             <i class="fas fa-chart-pie"></i> Estadísticas
         </a>
+
+        <a href="index.php?action=ver_pagos_pendientes" class="menu-item">
+            <i class="fas fa-receipt"></i> Pagos Pendientes
+        </a>
+        
+        <a href="index.php?action=ver_retiros" class="menu-item">
+            <i class="fas fa-box-open"></i> Retiro de Pedidos
         
         <a href="index.php?action=inicio" class="menu-item return-store">
             <i class="fas fa-store"></i> Tienda
