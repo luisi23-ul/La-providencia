@@ -1,6 +1,8 @@
-<article class="card-formulario">
-    <link rel="stylesheet" href="public/css/formulario_producto.css?v=<?php echo time(); ?>">
+<link rel="stylesheet" href="public/css/dashboard.css?v=<?php echo time(); ?>">
+<link rel="stylesheet" href="public/css/formulario_producto.css?v=<?php echo time(); ?>">
 
+<article class="card-formulario">
+    
     <header class="formulario-header">
         <h2>Nuevo Componente</h2>
         <p class="subtitle">Añade los detalles del producto para el catálogo.</p>
@@ -56,9 +58,11 @@
             </a>
             
             <a href="index.php?action=listado_productos" class="btn-providencia-link btn-secondary-satin">
-                <i class="fas fa-boxes"></i>INVENTARIO
+                <i class="fas fa-boxes"></i> INVENTARIO
             </a>
         </footer>
 
     </form>
 </article>
+
+</main> 

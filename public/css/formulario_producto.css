@@ -6,7 +6,7 @@
 /* ==========================================================================
    FONDO CON TEXTURA (CONCORDANCIA DASHBOARD)
    ========================================================================== */
-body, .card-formulario-container {
+.card-formulario-container {
     background-color: #f8fafc;
     /* Trama sutil de puntos grises para eliminar el vacío blanco de fondo */
     background-image: 
@@ -20,17 +20,24 @@ body, .card-formulario-container {
    TARJETA DEL FORMULARIO CON CABECERA SATINADA
    ========================================================================== */
 .card-formulario {
-    background: #ffffff;
+   background: #ffffff;
     width: 100%;
     max-width: 680px;
-    margin: 40px auto;
+    
+    /* >>> LIMPIEZA ABSOLUTA DE MÁRGENES Y FLUJOS <<< */
+    margin: 40px auto !important; /* El auto aquí obligará al navegador a equilibrar los lados */
+    display: block !important;
+    float: none !important;
+    position: relative !important;
+    left: 0 !important;
+    
     border: 1px solid #e2e8f0;
     border-radius: 16px;
-    padding: 0; /* Espacio general controlado internamente */
+    padding: 0; 
     box-shadow: 0 15px 35px rgba(15, 23, 42, 0.06);
     box-sizing: border-box;
     font-family: 'Poppins', sans-serif;
-    overflow: hidden; /* Mantiene las esquinas de la cabecera redondeadas */
+    overflow: hidden;
 }
 
 /* Cabecera Sólida en Azul Satinado Vivo */

@@ -1,11 +1,25 @@
 /* ==========================================================================
+   DASHBOARD MAESTRO - LA PROVIDENCIA (GESTIÓN & CONTROL DIGITAL)
+   Estilos globales unificados y optimizados para el panel administrativo
+   ========================================================================== */
+
+/* ==========================================================================
    1. ESTRUCTURA GENERAL (LAYOUT) DE SISTEMA PREMIUM
    ========================================================================== */
 .panel-administracion {
     min-height: 100vh;
     width: 100%;
-    display: flex; /* Divide la pantalla en Sidebar izquierdo y Contenido derecho */
+    
+    /* Dividimos la pantalla en dos columnas reales: Sidebar y Contenido */
+    display: flex; 
+    flex-direction: row;
+    align-items: stretch;
+    
+    /* Fondo premium con textura de punticos */
     background-color: #f8fafc;
+    background-image: radial-gradient(#e2e8f0 1.5px, transparent 1.5px);
+    background-size: 24px 24px;
+    
     font-family: 'Poppins', sans-serif;
     margin: 0;
     padding: 0;
@@ -13,20 +27,21 @@
 }
 
 /* ==========================================================================
-   2. BARRA LATERAL DE CONTROL (SIDEBAR INDEPENDIENTE OPTIMIZADO)
+   2. BARRA LATERAL DE CONTROL (SIDEBAR OCUPA ESPACIO REAL)
    ========================================================================== */
 .sidebar-admin {
     width: 260px;
+    min-width: 260px; /* Le prohíbe rigidamente a la barra encogerse */
     background-color: #0f172a; 
     color: #ffffff;
     display: flex;
     flex-direction: column;
-    padding: 40px 18px; /* Ajustamos padding para dar más espacio horizontal */
+    padding: 40px 18px; 
     box-sizing: border-box;
-    position: fixed;
-    top: 0;
-    left: 0;
-    height: 100vh;
+    
+    /* Quitamos el 'fixed' para que actúe como una columna física en el suelo */
+    position: relative; 
+    min-height: 100vh;
     z-index: 100;
     border-right: 1px solid rgba(255, 255, 255, 0.05);
 }
@@ -54,161 +69,195 @@
 .sidebar-menu {
     display: flex;
     flex-direction: column;
-    gap: 8px; /* Un poco más compacto y elegante */
+    gap: 8px;
 }
 
 .menu-item {
     color: #94a3b8;
     text-decoration: none;
-    padding: 12px 16px; /* Balance de burbuja */
+    padding: 12px 16px;
     border-radius: 10px;
     font-weight: 600;
-    font-size: 0.9rem; /* Un pelín más pequeña para evitar rupturas de línea */
+    font-size: 0.9rem;
     display: flex;
-    align-items: center; /* Alineación perfecta vertical */
-    gap: 14px; /* Separación elegante del icono */
-    white-space: nowrap; /* Fuerza a que el texto se quede en una sola línea */
+    align-items: center;
+    gap: 14px;
+    white-space: nowrap;
     transition: all 0.25s ease;
 }
 
 .menu-item i {
     font-size: 1.1rem;
-    width: 20px; /* Ancho fijo para que todos los iconos se alineen en el mismo eje */
+    width: 20px;
     text-align: center;
 }
 
-/* Estado Activo y Hover */
 .menu-item:hover {
     color: #ffffff;
     background-color: rgba(255, 255, 255, 0.05);
-    transform: translateX(3px); /* Microinteracción premium de desplazamiento */
+    transform: translateX(3px);
 }
 
 .menu-item.active {
     color: #ffffff;
     background-color: #0052d4; 
-    box-shadow: 0 4px 12px rgba(0, 82, 212, 0.3); /* Sutil resplandor azul en el botón activo */
+    box-shadow: 0 4px 12px rgba(0, 82, 212, 0.3);
 }
 
 .return-store {
-    margin-top: auto; /* Empuja de forma inteligente el botón de Tienda al fondo del sidebar */
+    margin-top: auto;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     padding-top: 20px;
     color: #38bdf8;
 }
 
 /* ==========================================================================
-   3. AREA DE CONTENIDO PRINCIPAL (DERECHA)
+   3. AREA DE CONTENIDO PRINCIPAL (DERECHA CENTRADA) - REFINADO UX
    ========================================================================== */
 .main-dashboard-content {
     flex-grow: 1;
-    margin-left: 260px; 
-    padding: 80px 60px; /* Más aire arriba y a los lados */
+    display: flex;
+    flex-direction: column;
+    align-items: left; 
+    justify-content: flex-start;
+    margin-left: 0; 
+    padding: 60px 40px; /* Más aire arriba y a los lados para que respire */
     box-sizing: border-box;
-    background-image: radial-gradient(#e2e8f0 1.5px, transparent 1.5px);
-    background-size: 24px 24px;
+
 }
 
-/* Cabecera del área interna */
+/* Cabecera Premium Estilo SaaS */
 .dashboard-header {
     width: 100%;
-    max-width: 1000px;
-    margin-bottom: 40px;
-    border-bottom: 2px solid #e2e8f0;
-    padding-bottom: 25px;
+    max-width: 1100px; /* Alineado exacto con el ancho del Grid */
+    margin-bottom: 45px;
+    border-bottom: 1px solid #e2e8f0; /* Línea más sutil */
+    padding-bottom: 20px;
+    text-align: left; /* Consistencia de lectura occidental */
 }
 
 .dashboard-header h2 {
     color: #0f172a;
-    font-size: 2rem;
+    font-size: 1.85rem; /* Un pelo más compacto y elegante */
     font-weight: 800;
+    letter-spacing: -0.5px;
     margin: 0 0 6px 0;
 }
 
 .dashboard-header .bienvenida-sub {
     color: #64748b;
-    font-size: 1.05rem;
+    font-size: 0.95rem;
     margin: 0;
 }
 
 .dashboard-header .bienvenida-sub span {
     color: #0052d4;
-    font-weight: 700;
+    font-weight: 600;
+    background-color: #eff6ff; /* Pequeño realce de fondo para el estado */
+    padding: 2px 8px;
+    border-radius: 6px;
 }
 
 /* ==========================================================================
-   4. GRID Y TARJETAS MODULARES ESTÁNDAR (UNIFICADO)
+   4. GRID Y TARJETAS MODULARES CON BALANCE DE AIRE (UX/UI SENIOR)
    ========================================================================== */
 .row-opciones {
     width: 100%;
-    max-width: 1000px;
+    max-width: 1100px; /* Alineado con el encabezado */
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-    gap: 30px;
+    
+    /* >>> FUERZA LAS 3 COLUMNAS EN UNA SOLA FILA HORIZONTAL <<< */
+    /* En vez de auto-fit que las tumba, definimos 3 columnas de tamaños idénticos */
+    grid-template-columns: repeat(3, minmax(280px, 340px));
+    
+    /* >>> ALINEACIÓN STRICTA A LA IZQUIERDA <<< */
+    justify-content: flex-start; 
+    
+    gap: 24px; /* Ajustamos el espacio entre ellas para que quepan holgadamente */
+    margin: 0; /* Eliminamos el auto de los lados para que se pegue a la izquierda */
+    box-sizing: border-box;
 }
 
 .bloque-opcion {
     background: #ffffff;
-    /* Borde superior e interno unificado en color pizarra oscuro */
+    border: 1px solid #e2e8f0;
     border-top: 4px solid #0f172a; 
-    border-left: 1px solid #e2e8f0;
-    border-right: 1px solid #e2e8f0;
-    border-bottom: 1px solid #e2e8f0;
-    border-radius: 16px;
-    padding: 40px;
+    border-radius: 20px; 
+    padding: 30px; /* Un pelo más compacto para mejorar el flujo interno */
     box-sizing: border-box;
+    
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    box-shadow: 0 4px 10px rgba(15, 23, 42, 0.03);
+    
+    /* Altura balanceada y uniforme para las tres */
+    min-height: 350px; 
+    height: 100%;
+    
+    box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.02), 0 2px 4px -2px rgba(15, 23, 42, 0.02);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Micro-interacción Premium al pasar el mouse */
 .bloque-opcion:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.06);
+    transform: translateY(-6px);
+    border-color: #cbd5e1;
+    box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.08);
 }
 
+/* Rediseño de la burbuja del ícono para UI moderna */
 .icon-admin {
-    width: 52px;
-    height: 52px;
+    width: 48px;
+    height: 48px;
     border-radius: 12px;
-    display: inline-flex; /* Cambiado para activación de centrado estricto */
-    align-items: center;  /* Centrado vertical perfecto del icono */
-    justify-content: center; /* Centrado horizontal perfecto del icono */
-    margin-bottom: 25px;
-    background-color: rgba(15, 23, 42, 0.06); 
+    display: inline-flex; 
+    align-items: center;  
+    justify-content: center; 
+    margin-bottom: 22px;
+    
+    /* Le metemos un tono azul sutil de fondo en vez de gris muerto */
+    background-color: #f0f6ff; 
     box-sizing: border-box;
+    transition: all 0.25s ease;
 }
 
 .icon-admin i {
-    font-size: 1.6rem;
-    color: #0f172a; /* Ícono estándar pizarra */
+    font-size: 1.35rem;
+    color: #0052d4; /* El ícono ahora es azul vivo, salta a la vista */
+}
+
+/* Al hacer hover a la tarjeta, el ícono reacciona de forma premium */
+.bloque-opcion:hover .icon-admin {
+    background-color: #0052d4;
+}
+.bloque-opcion:hover .icon-admin i {
+    color: #ffffff;
 }
 
 .bloque-opcion h3 {
-    color: #0f172a;
-    font-size: 1.35rem;
+    color: #1e293b;
+    font-size: 1.3rem;
     font-weight: 700;
-    margin: 0 0 10px 0;
+    margin: 0 0 12px 0;
+    letter-spacing: -0.3px;
 }
 
 .bloque-opcion p {
     color: #64748b;
-    font-size: 0.95rem;
-    line-height: 1.6;
-    margin: 0 0 30px 0;
+    font-size: 0.92rem;
+    line-height: 1.5;
+    margin: 0 0 25px 0;
     text-align: left;
 }
 
 /* ==========================================================================
-   5. BOTONES INDUSTRIALES UNIFICADOS (ESTÁNDAR AZUL)
+   5. BOTONES INDUSTRIALES CON EFECTO SATINADO REFLEX
    ========================================================================== */
 .btn-admin-azul {
     width: 100%;
-    padding: 14px;
-    border-radius: 10px;
-    font-size: 0.95rem;
+    padding: 13px;
+    border-radius: 12px; /* Redondeado en armonía con la tarjeta */
+    font-size: 0.88rem; /* Un pelo más compacto para que se vea estilizado */
     font-weight: 700;
     text-decoration: none;
     display: inline-flex;
@@ -218,33 +267,34 @@
     box-sizing: border-box;
     transition: all 0.2s ease;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-top: auto; /* Empuja el botón al fondo */
+    letter-spacing: 0.8px;
+    margin-top: auto; 
     
-    /* Tu azul institucional */
     background-color: #0052d4;
     color: #ffffff;
 }
 
 .btn-admin-azul:hover {
     background-color: #0044b1;
-    gap: 12px; /* Efecto dinámico en la flecha */
-}
-
-.btn-admin-oscuro:hover {
-    background-color: #1e293b;
-    gap: 12px;
+    box-shadow: 0 4px 12px rgba(0, 82, 212, 0.25);
+    gap: 12px; /* La flecha se desplaza dinámicamente */
 }
 
 /* ==========================================================================
    6. RESPONSIVIDAD PARA PANTALLAS CHICAS
    ========================================================================== */
 @media (max-width: 900px) {
+    .panel-administracion {
+        flex-direction: column;
+    }
     .sidebar-admin {
-        display: none;
+        width: 100%;
+        min-width: 100%;
+        height: auto;
+        min-height: auto;
+        padding: 20px;
     }
     .main-dashboard-content {
-        margin-left: 0;
         padding: 40px 20px;
     }
 }

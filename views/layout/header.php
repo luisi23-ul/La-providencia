@@ -91,5 +91,17 @@
         </nav>
     </header>
 
-   <script src="js/navbar.js?v=<?php echo time(); ?>" defer></script>
-   <main>
+    <script src="js/navbar.js?v=<?php echo time(); ?>" defer></script>
+   
+<?php
+    // Evaluamos la bandera calculada desde el index
+    if (isset($es_admin) && $es_admin === true): 
+?>
+        <section class="panel-administracion layout-dashboard">
+            
+            <?php include __DIR__ . '/../sidebar.php'; ?>
+            
+            <main class="main-dashboard-content">
+<?php else: ?>
+        <main>
+<?php endif; ?>

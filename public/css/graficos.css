@@ -1,0 +1,104 @@
+/* ==========================================================================
+   MÓDULO DE GRÁFICOS Y ESTADÍSTICAS (LA PROVIDENCIA) - GLOBAL DEFINITIVO
+   ========================================================================== */
+
+/* --- Contenedor Base Estándar (Usado en Barras) --- */
+.contenedor-grafico-canvas {
+    width: 100%;
+    max-width: 1100px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    padding: 30px;
+    margin-top: 40px;
+    box-sizing: border-box;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+/* Forzar que los canvas sean responsivos pero controlados en altura */
+#canvasBarras {
+    width: 100% !important;
+    max-height: 400px;
+}
+
+#canvasTorta {
+    width: 100% !important;
+    max-height: 380px !important;
+}
+
+/* ==========================================================================
+   TARJETAS ESTADÍSTICAS SUPERIORES (ESTILO OSCURO EJECUTIVO)
+   Aplica a ambos módulos para asegurar contraste y legibilidad total
+   ========================================================================== */
+.row-opciones .bloque-opcion {
+    background: #1e293b !important; /* Fondo gris oscuro premium */
+    border-radius: 12px !important;
+    padding: 20px !important;
+    min-height: 140px !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    box-sizing: border-box;
+}
+
+/* Bordes superiores de colores para identificar cada métrica */
+.bloque-opcion.card-estadistica-media { border-top: 5px solid #0052d4 !important; }
+.bloque-opcion.card-estadistica-mediana { border-top: 5px solid #10b981 !important; }
+.bloque-opcion.card-estadistica-moda { border-top: 5px solid #f59e0b !important; }
+
+/* Títulos principales dentro de las tarjetas (Media, Mediana, Moda) */
+.bloque-opcion .etiqueta-formulario {
+    color: #38bdf8 !important; /* Azul cielo brillante para alto contraste */
+    font-size: 1.1rem !important;
+    font-weight: 700 !important;
+    text-transform: capitalize;
+    margin-bottom: 2px;
+}
+
+/* Subtítulos aclaratorios debajo del título (Promedio, Centro, Más repetido) */
+.bloque-opcion .sub-etiqueta {
+    color: #94a3b8 !important; /* Gris claro sutil */
+    font-size: 0.85rem !important;
+    margin-bottom: 6px;
+}
+
+/* Formato para los números grandes (Media, Mediana y Moda) */
+.bloque-opcion h3[id^="txt"] {
+    color: #ffffff !important; /* Forzamos color blanco puro sobre el fondo oscuro */
+    font-size: 2.3rem !important;
+    font-weight: 800 !important;
+    margin: 10px 0 0 0 !important;
+    line-height: 1 !important;
+}
+
+/* Formato para la palabra "uds" al lado del número */
+.bloque-opcion h3[id^="txt"] span {
+    font-size: 1rem !important;
+    color: #cbd5e1 !important; /* Gris blanquecino legible */
+    font-weight: 500 !important;
+    margin-left: 6px !important;
+}
+
+/* Respaldo: Si una tarjeta no tiene sub-etiqueta, le mete un margen al h3 para que no se pegue */
+.bloque-opcion h3[id^="txt"]:only-child,
+.bloque-opcion .etiqueta-formulario + h3[id^="txt"] {
+    margin-top: 15px !important;
+}
+
+/* ==========================================================================
+   DISEÑO EXCLUSIVO PARA EL CONTENEDOR DEL GRÁFICO DE TORTA
+   ========================================================================== */
+.contenedor-grafico-torta {
+  width: 100%;
+    max-width: 850px; /* Mantiene su proporción controlada */
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    padding: 35px;
+    margin-top: 40px;     /* Reducido y limpio: solo espacio arriba */
+    margin-left: 0;       /* Forzamos a que se pegue a la izquierda */
+    margin-right: auto;   /* Empuja todo el espacio muerto sobrante a la derecha */
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+    box-sizing: border-box;
+}
