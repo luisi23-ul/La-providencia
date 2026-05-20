@@ -104,23 +104,22 @@ switch ($action) {
     // ==========================================================================
     // MÓDULO ESTADÍSTICO - TOTALMENTE ENLAZADO AL OBJETO GLOBAL $adminC provicional
     // ==========================================================================
-    case 'grafico_barras':
-        // Si  ya creaste el método en el backend, corre el real automáticamente
-        if (method_exists($adminC, 'grafico_barras')) {
-            $adminC->grafico_barras();
-        } else {
-            // Si no, cargamos los datos de prueba
-            require_once 'views/grafico_barras.php'; 
-        }
-        break;
+    // Reemplaza las líneas 107 a 122 en index.php por este bloque limpio:
+case 'grafico_barras':
+    if (method_exists($adminC, 'grafico_barras')) {
+        $adminC->grafico_barras();
+    } else {
+        require_once 'views/grafico_barras.php';
+    }
+    break;
 
-    case 'grafico_tortas':
-        if (method_exists($adminC, 'grafico_tortas')) {
-            $adminC->grafico_tortas();
-        } else {
-            require_once 'views/grafico_tortas.php';
-        }
-        break;
+case 'grafico_tortas':
+    if (method_exists($adminC, 'grafico_torta')) {
+        $adminC->grafico_torta();
+    } else {
+        require_once 'views/grafico_tortas.php';
+    }
+    break;
     // ==========================================================================
 
     case 'guardar_producto':
@@ -160,6 +159,11 @@ switch ($action) {
     default:
         $usuarioC->mostrarInicio();
         break;
+
+        case 'api_estadisticas':
+    // Ajusta '$adminC' por el nombre de la variable de tu controlador de administración
+    $adminC->cargarDatosEstadisticosJSON(); 
+    break;
 }
 
 echo '</main>';

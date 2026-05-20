@@ -1,3 +1,9 @@
+<?php 
+// Convertimos el arreglo PHP en una cadena de texto JSON para JavaScript
+$jsonBackend = isset($datosEstadisticas) ? json_encode($datosEstadisticas) : "null"; 
+?>
+<input type="hidden" id="datosBackendOcultos" value='<?php echo $jsonBackend; ?>'>
+
 <link rel="stylesheet" href="public/css/dashboard.css?v=<?php echo time(); ?>">
 <link rel="stylesheet" href="public/css/graficos.css?v=<?php echo time(); ?>">
 
@@ -31,8 +37,6 @@
 <section class="contenedor-grafico-canvas">
     <canvas id="canvasBarras"></canvas>
 </section>
-
-<input type="hidden" id="datosBackendOcultos" value='<?php echo (!empty($listaProductos)) ? json_encode($listaProductos) : "null"; ?>'>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="public/js/grafico_barras.js?v=<?php echo time(); ?>"></script>

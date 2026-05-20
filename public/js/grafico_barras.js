@@ -1,99 +1,189 @@
-window.addEventListener('load', function () {
-    
-    // 1. LEER EL INPUT OCULTO DESDE EL HTML
-    const inputOculto = document.getElementById('datosBackendOcultos');
-    let datosCrudos = inputOculto ? inputOculto.value : "null";
-
-    // 2. CONVERTIR TEXTO A DATOS REALES (O usar los de prueba si viene vacío)
-    let productosDesdeBackend = null;
-
-    if (datosCrudos !== "null") {
-        // Si el backend mandó datos, los transformamos de texto a objetos JS
-        productosDesdeBackend = JSON.parse(datosCrudos);
+// ==========================================================================
+// 1. CLASE MATEMÁTICA PURA PARA DATOS NO AGRUPADOS (TODO EL INVENTARIO)
+// ==========================================================================
+class Estadistica {
+    constructor(datosNumericos) {
+        // Filtramos para asegurar que trabajamos solo con números válidos
+        this.datos = datosNumericos.map(val => parseInt(val || 0));
     }
 
-    // 3. RESPALDO FRONTEND (Mock Data): Si no hay datos reales, usamos estos de una vez
-    if (!productosDesdeBackend || productosDesdeBackend.length === 0) {
-        productosDesdeBackend = [
-            { nombre_producto: "Sillas Plásticas Confort", stock: "45" },
-            { nombre_producto: "Mesas Organizadoras", stock: "15" },
-            { nombre_producto: "Contenedor Industrial 20L", stock: "85" },
-            { nombre_producto: "Cesta Multiuso Grande", stock: "120" },
-            { nombre_producto: "Gavetero Modular Premium", stock: "15" }
-        ];
+    // Media Aritmética (Suma de todos los stocks dividida entre el número total de productos)
+    getMedia() {
+        if (this.datos.length === 0) return 0;
+        const suma = this.datos.reduce((acumulado, valor) => acumulado + valor, 0);
+        return (suma / this.datos.length).toFixed(2);
     }
 
-    // 4. EXTRAER LISTAS PARA EL GRÁFICO (Nombres y Cantidades)
-    const labels = productosDesdeBackend.map(p => p.nombre_producto);
-    const stocks = productosDesdeBackend.map(p => parseInt(p.stock || 0));
-    const totalProductos = stocks.length;
-
-    // ==========================================================================
-    // CÁLCULOS ESTADÍSTICOS (MEDIA, MEDIANA Y MODA)
-    // ==========================================================================
-
-    // A. MEDIA
-    const sumaStock = stocks.reduce((acumulador, valorActual) => acumulador + valorActual, 0);
-    const media = (sumaStock / totalProductos).toFixed(2);
-
-    // B. MEDIANA
-    const stocksOrdenados = [...stocks].sort((a, b) => a - b);
-    const mitad = Math.floor(totalProductos / 2);
-    let mediana = 0;
-    if (totalProductos % 2 !== 0) {
-        mediana = stocksOrdenados[mitad];
-    } else {
-        mediana = (stocksOrdenados[mitad - 1] + stocksOrdenados[mitad]) / 2;
+    // Mediana (El valor central de los datos ordenados de menor a mayor)
+    getMediana() {
+        if (this.datos.length === 0) return 0;
+        const ordenados = [...this.datos].sort((a, b) => a - b);
+        const mitad = Math.floor(ordenados.length / 2);
+        
+        // Si es impar, es el del medio. Si es par, el promedio de los dos centrales.
+        return ordenados.length % 2 !== 0 
+            ? ordenados[mitad] 
+            : (ordenados[mitad - 1] + ordenados[mitad]) / 2;
     }
 
-    // C. MODA
-    const frecuencias = {};
-    let maxFrecuencia = 0;
-    let moda = stocks[0];
-    stocks.forEach(val => {
-        frecuencias[val] = (frecuencias[val] || 0) + 1;
-        if (frecuencias[val] > maxFrecuencia) {
-            maxFrecuencia = frecuencias[val];
-            moda = val;
-        }
-    });
+    // Moda (El valor o cantidad de stock que más se repite en la tabla)
+    getModa() {
+        if (this.datos.length === 0) return 0;
+        const frecuencias = {};
+        let maxRepetidos = 0;
+        let moda = this.datos[0];
 
-    // ==========================================================================
-    // INYECTAR RESULTADOS EN LAS TARJETAS DEL PANEL
-    // ==========================================================================
-    document.getElementById("txtMedia").innerHTML = `${media} <span>uds</span>`;
-    document.getElementById("txtMediana").innerHTML = `${mediana} <span>uds</span>`;
-    document.getElementById("txtModa").innerHTML = `${moda} <span>uds</span>`;
-
-    // ==========================================================================
-    // DIBUJAR EL GRÁFICO DE BARRAS CON CHART.JS
-    // ==========================================================================
-    const ctx = document.getElementById('canvasBarras').getContext('2d');
-    
-    new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Unidades en Stock',
-                data: stocks,
-                backgroundColor: 'rgba(0, 82, 212, 0.15)', 
-                borderColor: '#0052d4',                     
-                borderWidth: 2,
-                borderRadius: 8,                            
-                hoverBackgroundColor: '#0052d4'             
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false }
-            },
-            scales: {
-                y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
-                x: { grid: { display: false } }
+        this.datos.forEach(val => {
+            frecuencias[val] = (frecuencias[val] || 0) + 1;
+            if (frecuencias[val] > maxRepetidos) {
+                maxRepetidos = frecuencias[val];
+                moda = val;
             }
+        });
+        return moda;
+    }
+}
+
+// ==========================================================================
+// 2. CONTROLADOR CENTRAL DE LA VISTA
+// ==========================================================================
+window.addEventListener('load', function () {
+    const inputOculto = document.getElementById('datosBackendOcultos');
+    let miGraficoInstancia = null;
+
+    if (!inputOculto || inputOculto.value === "null" || inputOculto.value === "") {
+        console.error("No se detectaron datos provenientes de la base de datos.");
+        return;
+    }
+
+    const datosBackend = JSON.parse(inputOculto.value);
+    
+    // CAPTURAMOS EL INVENTARIO COMPLETO (Base de datos real)
+    const inventarioCompleto = datosBackend.inventario || [];
+
+    if (inventarioCompleto.length === 0) {
+        console.warn("El inventario está vacío.");
+        return;
+    }
+
+    // Extraemos todos los stocks individuales de la tabla de la empresa
+    const todosLosStocks = inventarioCompleto.map(p => parseInt(p.stock || 0));
+
+    // ==========================================================================
+    // CÁLCULO ESTADÍSTICO DE DATOS NO AGRUPADOS
+    // ==========================================================================
+    // Pasamos el arreglo completo a la clase para que calcule sobre todo el universo de productos
+    const calculadoraCompleta = new Estadistica(todosLosStocks);
+
+    // Inyectamos de inmediato los valores reales y definitivos en las tarjetas del Dashboard
+    if (document.getElementById("txtMedia")) {
+        document.getElementById("txtMedia").innerHTML = `${calculadoraCompleta.getMedia()} <span>uds</span>`;
+    }
+    if (document.getElementById("txtMediana")) {
+        document.getElementById("txtMediana").innerHTML = `${calculadoraCompleta.getMediana()} <span>uds</span>`;
+    }
+    if (document.getElementById("txtModa")) {
+        document.getElementById("txtModa").innerHTML = `${calculadoraCompleta.getModa()} <span>uds</span>`;
+    }
+
+    // Determinar el pico más alto del inventario general para la escala del eje Y
+    const stockMaximoInventario = Math.max(...todosLosStocks);
+
+    // ==========================================================================
+    // FILTRADO DE LOS 5 CRÍTICOS PARA EL GRÁFICO DE BARRAS
+    // ==========================================================================
+    const topMenosStock = inventarioCompleto.slice(0, 5);
+
+    // Formateamos las etiquetas en dos líneas para mantenerlas rectas y legibles
+    const labelsDobleLinea = topMenosStock.map(p => [
+        `${p.nombre_producto}`, 
+        `(${p.stock} uds)`
+    ]);
+
+    const datosGrafico = topMenosStock.map(p => parseInt(p.stock || 0));
+
+    // ==========================================================================
+    // RENDERIZADO DEL GRÁFICO
+    // ==========================================================================
+    const canvas = document.getElementById('canvasBarras');
+    if (canvas) {
+        const ctx = canvas.getContext('2d');
+        
+        if (miGraficoInstancia) {
+            miGraficoInstancia.destroy();
         }
-    });
+
+        miGraficoInstancia = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labelsDobleLinea,
+                datasets: [{
+                    label: 'Nivel de Existencias Críticas (Unidades Disponibles)',
+                    data: datosGrafico,
+                    backgroundColor: 'rgba(0, 82, 212, 0.12)',
+                    borderColor: '#0052d4',
+                    borderWidth: 2,
+                    borderRadius: 5,
+                    hoverBackgroundColor: '#0052d4',
+                    barPercentage: 0.55
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: {
+                    duration: 1200,
+                    easing: 'easeOutQuart'
+                },
+                plugins: {
+                    legend: { 
+                        display: true, 
+                        position: 'top',
+                        labels: { 
+                            font: { family: 'Poppins', size: 12, weight: '500' },
+                            color: '#1e293b'
+                        } 
+                    },
+                    tooltip: {
+                        backgroundColor: '#1e293b',
+                        titleFont: { family: 'Poppins', size: 13, weight: '600' },
+                        bodyFont: { family: 'Poppins', size: 12 },
+                        padding: 12,
+                        callbacks: {
+                            label: function (context) {
+                                return ` Cantidad en Inventario: ${context.parsed.y} uds`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: { 
+                        beginAtZero: true, 
+                        max: stockMaximoInventario, 
+                        grid: { color: '#f1f5f9' },
+                        ticks: {
+                            font: { family: 'Poppins', size: 11, color: '#64748b' },
+                            stepSize: Math.ceil(stockMaximoInventario / 5)
+                        },
+                        title: {
+                            display: true,
+                            text: 'Escala Comparativa del Inventario',
+                            font: { family: 'Poppins', size: 12, weight: '500' }
+                        }
+                    },
+                    x: { 
+                        grid: { display: false },
+                        ticks: { 
+                            font: { family: 'Poppins', size: 10, weight: '500' },
+                            color: '#334155',
+                            padding: 8,
+                            minRotation: 0,
+                            maxRotation: 0,
+                            autoSkip: false 
+                        }
+                    }
+                }
+            }
+        });
+    }
 });

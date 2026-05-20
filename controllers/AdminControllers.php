@@ -116,4 +116,24 @@ public function actualizar() {
         }
     }
 }
+ public function grafico_barras() {
+    require_once 'models/ProductoModel.php';
+    $productoModelo = new ProductoModel();
+
+    // Traemos de la base de datos el array estructurado con el inventario crítico y ventas
+    // Asegurándonos de que 'inventario' contenga los 5 con MENOS stock
+    $datosEstadisticas = $productoModelo->obtenerEstadisticasGenerales();
+
+    require_once 'views/grafico_barras.php';
+}
+
+public function grafico_torta() {
+    require_once 'models/ProductoModel.php';
+    $productoModelo = new ProductoModel();
+
+    // Llamamos a la misma estructura para que el JSON reciba exactamente el mismo array
+    $datosEstadisticas = $productoModelo->obtenerEstadisticasGenerales();
+
+    require_once 'views/grafico_tortas.php';
+}
 }

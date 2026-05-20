@@ -105,6 +105,35 @@ public function modificarProducto($datos) {
     }
 }
 
+public function obtenerEstadisticasGenerales() {
+        try {
+            // 1. SOLICITUD DE TODO EL INVENTARIO REAL: Traemos todos los productos activos o registrados
+            $sqlInventario = "SELECT nombre_producto, stock FROM productos ORDER BY stock ASC";
+            $stmtInventario = $this->db->query($sqlInventario);
+            $inventarioCompleto = $stmtInventario->fetchAll(PDO::FETCH_ASSOC);
 
+            // 2. PRODUCTOS MÁS VENDIDOS: Cruce de datos con la tabla detalle_ventas
+            $sqlVentas = "SELECT p.nombre_producto, COALESCE(SUM(dv.cantidad), 0) as total_vendido 
+                          FROM productos p
+                          LEFT JOIN detalle_ventas dv ON p.id = dv.id_producto 
+                          GROUP BY p.id 
+                          ORDER BY total_vendido DESC"; 
+            $stmtVentas = $this->db->query($sqlVentas);
+            $ventasCompleto = $stmtVentas->fetchAll(PDO::FETCH_ASSOC);
+
+            return [
+                'inventario' => $inventarioCompleto ? $inventarioCompleto : [],
+                'ventas'     => $ventasCompleto ? $ventasCompleto : []
+            ];
+
+        } catch (PDOException $e) {
+            return [
+                'inventario' => [],
+                'ventas'     => []
+            ];
+        }
+    }
 
 }
+
+
