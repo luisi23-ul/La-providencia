@@ -18,9 +18,10 @@ class VentaModel {
             $this->db->beginTransaction();
 
             // 2. Insertamos el encabezado de la venta
-            $sqlVenta = "INSERT INTO ventas (id_usuario, total, fecha) VALUES (?, ?, NOW())";
-            $stmt = $this->db->prepare($sqlVenta);
-            $stmt->execute([$id_usuario, $total]);
+            // En models/VentaModel.php dentro de guardarVentaModel
+        $sqlVenta = "INSERT INTO ventas (id_usuario, total, fecha, estado) VALUES (?, ?, NOW(), 'pendiente')";
+        $stmt = $this->db->prepare($sqlVenta);
+        $stmt->execute([$id_usuario, $total]);
             
             // Recuperamos el ID que la base de datos le asignó a esta venta
             $idVenta = $this->db->lastInsertId();
@@ -55,46 +56,62 @@ class VentaModel {
             return false;
         }
     }
-    public function finalizarCompra() {
-    // 1. Validar que el carrito tenga productos
-    if (!isset($_SESSION['carrito']) || empty($_SESSION['carrito'])) {
-        echo "<script>window.location.href='index.php?action=ver_catalogo';</script>";
-        exit();
+  public function obtenerPorEstado($estado) {
+        // Buscamos las ventas que coincidan exactamente con el estado enviado
+        $sql = "SELECT v.*, u.nombre 
+                FROM ventas v 
+                JOIN usuarios u ON v.id_usuario = u.id 
+                WHERE v.estado = ? 
+                ORDER BY v.fecha DESC";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$estado]);
+        return $stmt->fetchAll(PDO::FETCH_OBJ);
     }
-
-    $telefono = "584127818865"; 
-    $mensaje = "¡Hola! *La Providencia* 🛒\n";
-    $mensaje .= "Deseo finalizar mi compra con los siguientes productos:\n\n";
-    
-    $totalGeneral = 0;
-
-    // 2. Recorrer el carrito para armar el texto
-    foreach ($_SESSION['carrito'] as $item) {
-        $nombre = isset($item['nombre']) ? $item['nombre'] : 'Producto';
-        $precio = isset($item['precio']) ? $item['precio'] : 0;
-        $cantidad = isset($item['cantidad']) ? $item['cantidad'] : 1;
+    public function actualizarEstado($id_venta, $nuevo_estado) {
+        // Usamos nombres ultra claros para no equivocarnos en el orden del array
+        $sql = "UPDATE ventas SET estado = ? WHERE id = ?";
+        $stmt = $this->db->prepare($sql);
         
-        $subtotal = $precio * $cantidad;
-        $totalGeneral += $subtotal;
+        // El primer '?' es el estado, el segundo '?' es el ID.
+        $stmt->execute([$nuevo_estado, $id_venta]);
+    }
+    public function descontarStockDeVenta($id) {
+        // 1. Obtenemos los productos asociados a la venta utilizando la conexión del modelo ($this->db)
+        $sql = "SELECT id_producto, cantidad FROM detalle_ventas WHERE id_venta = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$id]);
+        $detalles = $stmt->fetchAll(PDO::FETCH_OBJ);
 
-        $mensaje .= "• *{$nombre}* (x{$cantidad}) - \${$precio}\n";
+        // 2. Recorremos cada producto y restamos del inventario
+        foreach ($detalles as $d) {
+            $sqlUp = "UPDATE productos SET stock = stock - ? WHERE id = ?";
+            $stmtUp = $this->db->prepare($sqlUp);
+            $stmtUp->execute([$d->cantidad, $d->id_producto]);
+        }
+    }
+    
+    // 1. Obtener los datos generales de una venta específica (Encabezado)
+    public function obtenerVenta($id) {
+        $sql = "SELECT v.*, u.nombre 
+                FROM ventas v 
+                JOIN usuarios u ON v.id_usuario = u.id 
+                WHERE v.id = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$id]);
+        return $stmt->fetch(PDO::FETCH_OBJ);
     }
 
-    $mensaje .= "\n💰 *Total a pagar:* \${$totalGeneral}\n";
-    $mensaje .= "Forma de pago: A convenir\n";
-    $mensaje .= "¡Quedo atento para coordinar la entrega! ✨";
-
-    // 3. Codificar el mensaje de forma segura para la URL
-    $mensajeURL = urlencode($mensaje);
-    
-    // API Nativa y gratuita de WhatsApp
-    $urlWhatsApp = "https://api.whatsapp.com/send?phone={$telefono}&text={$mensajeURL}";
-
-    // 4. LA SOLUCIÓN: Forzar la apertura con JavaScript saltando bloqueos de cabecera
-    echo "<script type='text/javascript'>
-            window.location.href = '{$urlWhatsApp}';
-          </script>";
-    exit();
-}
+    // 2. Obtener todos los productos asociados a esa venta (Tabla de productos)
+    // 2. Obtener todos los productos asociados a esa venta (Tabla de productos)
+    public function obtenerDetalles($id) {
+        // Cambiamos p.nombre por p.nombre_producto para que coincida con tu tabla de productos
+        $sql = "SELECT dv.*, p.nombre_producto AS producto_nombre 
+                FROM detalle_ventas dv 
+                JOIN productos p ON dv.id_producto = p.id 
+                WHERE dv.id_venta = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$id]);
+        return $stmt->fetchAll(PDO::FETCH_OBJ);
+    }
 }
 ?>

@@ -164,6 +164,26 @@ case 'grafico_tortas':
     // Ajusta '$adminC' por el nombre de la variable de tu controlador de administración
     $adminC->cargarDatosEstadisticosJSON(); 
     break;
+
+    case 'pagos_pendientes':
+            $ventaC->pagosPendientes(); // Ejecuta el controlador (él se encargará de incluir la vista)
+            break;
+
+        case 'retiro_pedidos':
+            $ventaC->retiroPedidos();   // Ejecuta el controlador
+            break;
+
+        case 'confirmar_pago':
+            $ventaC->confirmarPago($_GET['id']);
+            break;
+
+        case 'procesar_retiro':
+            $ventaC->procesarRetiro($_GET['id']);
+            break;
+
+          case 'detalle_venta':
+            $ventaC->verDetalle($_GET['id']);
+            break;
 }
 
 echo '</main>';

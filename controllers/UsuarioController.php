@@ -118,7 +118,20 @@ public function mostrarLogin_registro() {
             }
         }
     }
-
+// Carga la vista de detalles pasándole la información de la base de datos
+    public function verDetalle($id) {
+        if (isset($id) && !empty($id)) {
+            // Consultamos al modelo usando los métodos que acabamos de crear
+            $venta = $this->model->obtenerVenta($id);
+            $detalles = $this->model->obtenerDetalles($id);
+            
+            // Incluimos la vista limpia dentro de la carpeta views
+            include "views/detalle_venta.php";
+        } else {
+            echo "<script>alert('ID de venta no válido.'); window.location.href='index.php?action=pagos_pendientes';</script>";
+            exit();
+        }
+    }
    
 
 

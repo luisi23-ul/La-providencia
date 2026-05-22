@@ -1,0 +1,202 @@
+/* ==========================================================================
+   ESTILOS MODULARES DEFINITIVOS - LISTADO DE PAGOS PENDIENTES (LA PROVIDENCIA)
+   Alineación geométrica y botones UX unificados al 100% (Simetría Quirúrgica)
+   ========================================================================== */
+
+.card-pagos {
+    background: #ffffff;
+    width: 100%;
+    max-width: 1000px;
+    margin: 50px auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 40px;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.03);
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Encabezado Principal */
+.pagos-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 24px;
+    margin-bottom: 25px;
+}
+
+.pagos-header h2 {
+    color: #0f172a;
+    font-size: 1.9rem;
+    font-weight: 800;
+    margin: 0;
+    letter-spacing: -0.5px;
+}
+
+/* Botón Regresar unificado */
+.btn-regresar-panel {
+    background-color: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    color: #475569 !important;
+    border-radius: 10px;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-decoration: none !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-sizing: border-box;
+    
+    height: 46px !important;
+    min-width: 160px !important;
+    padding: 0 16px !important;
+}
+
+.btn-regresar-panel:hover {
+    background-color: #e2e8f0;
+    color: #0f172a !important;
+    border-color: #94a3b8;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+
+/* Contenedor responsivo de la tabla */
+.tabla-responsiva-contenedor {
+    width: 100%;
+    overflow-x: visible;
+    display: block;
+}
+
+/* Estructura de la Tabla */
+.tabla-pagos {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 5px;
+    table-layout: auto;
+}
+
+/* Cabeceras de la Tabla */
+.tabla-pagos thead tr {
+    border-bottom: 2px solid #0052d4;
+    color: #0052d4;
+}
+
+.tabla-pagos th {
+    padding: 16px 14px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    letter-spacing: 0.3px;
+    text-align: center; /* Por defecto centrado */
+}
+
+/* Filas del Cuerpo */
+.tabla-pagos tbody tr {
+    border-bottom: 1px solid #e2e8f0;
+    transition: background-color 0.2s ease;
+}
+
+.tabla-pagos tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+.tabla-pagos td {
+    padding: 20px 14px;
+    vertical-align: middle;
+    font-size: 0.95rem;
+    text-align: center; /* Alineación simétrica */
+}
+
+/* Separadores verticales sutiles */
+.tabla-pagos th:not(:last-child),
+.tabla-pagos td:not(:last-child) {
+    border-right: 1px solid #f1f5f9;
+}
+
+/* Alineaciones específicas por columna */
+.tabla-pagos th:nth-child(1), .tabla-pagos td:nth-child(1) { text-align: left; font-weight: 700; color: #0f172a; } /* Cliente */
+.tabla-pagos th:nth-child(2), .tabla-pagos td:nth-child(2) { color: #64748b; } /* Fecha */
+.tabla-pagos th:nth-child(3), .tabla-pagos td:nth-child(3) { font-weight: 700; color: #0052d4; } /* Total */
+
+/* Badge para el Estado 'pendiente' */
+.badge-pendiente {
+    background-color: #fff7ed;
+    border: 1px solid #ffedd5;
+    color: #ea580c;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    text-transform: capitalize;
+}
+
+/* Grupo de acciones en la celda final */
+.columna-acciones {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    border-right: none !important;
+}
+
+/* Botón Confirmar Pago (Estilo Éxito Satinado) */
+.btn-confirmar-pago {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: #ffffff !important;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-decoration: none !important;
+    padding: 8px 16px;
+    box-shadow: 0 4px 10px rgba(16, 185, 129, 0.15);
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.btn-confirmar-pago:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 12px rgba(16, 185, 129, 0.25);
+}
+
+/* Botón Ver Detalle (Estilo Azul Corporativo) */
+.btn-ver-detalle {
+    background-color: #ffffff;
+    border: 1px solid #0052d4;
+    color: #0052d4 !important;
+    border-radius: 8px;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-decoration: none !important;
+    padding: 7px 14px;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.btn-ver-detalle:hover {
+    background-color: #0052d4;
+    color: #ffffff !important;
+    transform: translateY(-1px);
+}
+
+/* RESPONSIVIDAD */
+@media (max-width: 768px) {
+    .tabla-responsiva-contenedor {
+        overflow-x: auto;
+    }
+    .pagos-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+}
