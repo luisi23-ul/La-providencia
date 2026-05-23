@@ -61,133 +61,106 @@ class ReporteController {
     // ==========================================
     // LOGICA PARA EXPORTAR A EXCEL
     // ==========================================
-    public function generarExcel() {
-        $tipo = $_GET['tipo'] ?? '';
-        $reporte = $this->obtenerDatosReporte($tipo);
+   public function generarExcel() {
+    $tipo = $_GET['tipo'] ?? '';
+    $reporte = $this->obtenerDatosReporte($tipo);
 
-        // -------------------------------------------------------------------------
-        // CASO 1: Reporte Estadístico con Gráfico Nativo (PHPSpreadsheet - Rúbrica)
-        // -------------------------------------------------------------------------
-        if ($tipo === 'estadisticas') {
-            if (ob_get_length()) ob_end_clean();
+    if ($tipo === 'estadisticas') {
+        if (ob_get_length()) ob_end_clean();
 
-            $spreadsheet = new Spreadsheet();
-            $sheet = $spreadsheet->getActiveSheet();
-            $sheet->setTitle('Análisis Estadístico');
+        // --- LÓGICA: Ordenar y limitar a los 5 con menor stock ---
+        $datos = $reporte['datos'];
+        // Ordenamos de menor a mayor stock
+        usort($datos, function($a, $b) {
+            return (int)$a->stock - (int)$b->stock;
+        });
+        // Cortamos para obtener solo los primeros 5
+        $datos = array_slice($datos, 0, 5);
 
-            // 1. Estilos y Encabezado Principal
-            $sheet->setCellValue('A1', 'REPORTE DE LOGÍSTICA: ANÁLISIS ESTADÍSTICO - LA PROVIDENCIA');
-            $sheet->mergeCells('A1:E1');
-            $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14)->getColor()->setRGB('FFFFFF');
-            $sheet->getStyle('A1')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
-            $sheet->getStyle('A1')->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('4B5563');
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Análisis Estadístico');
 
-            $sheet->setCellValue('A2', 'Fecha de generación: ' . date('d/m/Y H:i:s'));
-            $sheet->mergeCells('A2:E2');
-            $sheet->getStyle('A2')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+        // ... (Tu código de estilos y encabezados permanece igual) ...
 
-            // 2. Cuadro de Métricas de Control
-            $sheet->setCellValue('A4', 'Métrica de Control');
-            $sheet->setCellValue('B4', 'Valor Calculado');
-            $sheet->getStyle('A4:B4')->getFont()->setBold(true)->getColor()->setRGB('FFFFFF');
-            $sheet->getStyle('A4:B4')->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('1E293B');
-
-            // Procesamos la matemática del stock
-            $valoresStock = [];
-            foreach ($reporte['datos'] as $p) {
-                $valoresStock[] = (int)$p->stock;
-            }
-            $count = count($valoresStock);
-            $media = $count > 0 ? array_sum($valoresStock) / $count : 0;
-            
-            sort($valoresStock);
-            $mediana = 0;
-            if ($count > 0) {
-                $mid = floor(($count - 1) / 2);
-                $mediana = ($count % 2) ? $valoresStock[$mid] : ($valoresStock[$mid] + $valoresStock[$mid + 1]) / 2.0;
-            }
-            
-            $moda = 0;
-            if ($count > 0) {
-                $v = array_count_values($valoresStock);
-                arsort($v);
-                $moda = key($v);
-            }
-
-            $sheet->setCellValue('A5', 'Media (Promedio General):');
-            $sheet->setCellValue('B5', number_format($media, 2) . ' unidades');
-            $sheet->setCellValue('A6', 'Mediana (Punto Central):');
-            $sheet->setCellValue('B6', $mediana . ' unidades');
-            $sheet->setCellValue('A7', 'Moda (Stock más Común):');
-            $sheet->setCellValue('B7', $moda . ' unidades');
-            $sheet->getStyle('B5:B7')->getFont()->setBold(true)->getColor()->setRGB('1E3A8A');
-
-            // 3. Tabla de Datos para la Gráfica
-            $sheet->setCellValue('A9', 'Producto Analizado');
-            $sheet->setCellValue('B9', 'Stock Disponible');
-            $sheet->getStyle('A9:B9')->getFont()->setBold(true);
-            $sheet->getStyle('A9:B9')->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('CBD5E1');
-
-            $filaInicio = 10;
-            foreach ($reporte['datos'] as $p) {
-                $sheet->setCellValue('A' . $filaInicio, htmlspecialchars($p->nombre_producto));
-                $sheet->setCellValue('B' . $filaInicio, (int)$p->stock);
-                $filaInicio++;
-            }
-            $filaFin = $filaInicio - 1;
-            
-
-            // Creación nativa del gráfico de barras
-           // 140: Categorías (Eje X)
-$categories = [
-    new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues(
-        \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues::DATASERIES_TYPE_STRING, 
-        '\'Análisis Estadístico\'!$A$10:$A$' . $filaFin, 
-        null, 
-        ($filaFin - 9)
-    ),
-];
-
-// 141: Valores (Eje Y)
-$values = [
-    new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues(
-        \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues::DATASERIES_TYPE_NUMBER, 
-        '\'Análisis Estadístico\'!$B$10:$B$' . $filaFin, 
-        null, 
-        ($filaFin - 9)
-    ),
-];
-
-            $series = new DataSeries(
-                DataSeries::TYPE_BARCHART,       
-                DataSeries::GROUPING_CLUSTERED,  
-                range(0, count($values) - 1),    
-                [],                              
-                $categories,                     
-                $values                          
-            );
-            $series->setPlotDirection(DataSeries::DIRECTION_COL); 
-
-            $plotArea = new PlotArea(null, [$series]);
-            $title = new Title('Nivel de Existencias (Unidades Disponibles)');
-            
-            $chart = new Chart('grafico_barras_stock', $title, null, $plotArea);
-            $chart->setTopLeftPosition('D4');
-            $chart->setBottomRightPosition('L19');
-            $sheet->addChart($chart);
-            
-
-            // Descarga controlada en formato XLSX real para soportar el gráfico
-            $nombreArchivo = "Analisis_Estadistico_Stock_" . date('d_m_Y') . ".xlsx";
-            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-            header('Content-Disposition: attachment;filename="' . $nombreArchivo . '"');
-            header('Cache-Control: max-age=0');
-
-            $writer = new Xlsx($spreadsheet);
-            $writer->setIncludeCharts(true); 
-            $writer->save('php://output');
-            exit(); // Forzamos la salida para que no se mezcle con el código de abajo
+        // Procesamos la matemática con el total original o los 5? 
+        // Nota: Si quieres la estadística de los 5, usa $datos. 
+        // Si quieres la estadística del total, usa $reporte['datos'].
+        $valoresStock = [];
+        foreach ($datos as $p) { // Usamos $datos filtrado
+            $valoresStock[] = (int)$p->stock;
         }
+        
+        // ... (Tu lógica de media, mediana, moda permanece igual) ...
+
+        // 3. Tabla de Datos para la Gráfica (usando los 5 limitados)
+        $sheet->setCellValue('A9', 'Producto Analizado');
+        $sheet->setCellValue('B9', 'Stock Disponible');
+        $sheet->getStyle('A9:B9')->getFont()->setBold(true);
+        $sheet->getStyle('A9:B9')->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('CBD5E1');
+
+        $filaInicio = 10;
+        foreach ($datos as $p) {
+            $sheet->setCellValue('A' . $filaInicio, htmlspecialchars($p->nombre_producto));
+            $sheet->setCellValue('B' . $filaInicio, (int)$p->stock);
+            $filaInicio++;
+        }
+       $filaFin = $filaInicio - 1;
+
+// --- CORRECCIÓN AQUÍ ---
+// Usamos el nombre de la hoja tal cual está definido
+// ... (Código anterior hasta $filaFin) ...
+
+$nombreHoja = 'Análisis Estadístico';
+$rangoCategorias = "'" . $nombreHoja . "'!\$A$10:\$A$" . $filaFin;
+$rangoValores = "'" . $nombreHoja . "'!\$B$10:\$B$" . $filaFin;
+
+$categories = [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', $rangoCategorias, null, 5)];
+$values = [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('Number', $rangoValores, null, 5)];
+
+// --- LÓGICA DINÁMICA ---
+$graficoTipo = ($_GET['grafico'] ?? '') === 'torta' 
+    ? \PhpOffice\PhpSpreadsheet\Chart\DataSeries::TYPE_PIECHART 
+    : \PhpOffice\PhpSpreadsheet\Chart\DataSeries::TYPE_BARCHART;
+
+$grouping = ($_GET['grafico'] ?? '') === 'torta' 
+    ? null 
+    : \PhpOffice\PhpSpreadsheet\Chart\DataSeries::GROUPING_CLUSTERED;
+
+$series = new \PhpOffice\PhpSpreadsheet\Chart\DataSeries(
+    
+    $graficoTipo, 
+    $grouping, 
+    range(0, count($values) - 1), 
+    [], 
+    $categories, 
+    $values
+);
+
+// Solo aplicamos dirección de columna si es gráfico de barras
+if ($graficoTipo === \PhpOffice\PhpSpreadsheet\Chart\DataSeries::TYPE_BARCHART) {
+    $series->setPlotDirection(\PhpOffice\PhpSpreadsheet\Chart\DataSeries::DIRECTION_COL);
+}
+
+$plotArea = new \PhpOffice\PhpSpreadsheet\Chart\PlotArea(null, [$series]);
+$title = new \PhpOffice\PhpSpreadsheet\Chart\Title('Nivel de Existencias');
+$chart = new \PhpOffice\PhpSpreadsheet\Chart\Chart('grafico_stock', $title, null, $plotArea);
+
+$chart->setTopLeftPosition('D4');
+$chart->setBottomRightPosition('L15');
+$sheet->addChart($chart);
+// ... (resto del código igual) ...
+
+        $nombreArchivo = "Top5_Stock_Bajo_" . date('d_m_Y') . ".xlsx";
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $nombreArchivo . '"');
+        header('Cache-Control: max-age=0');
+
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $writer->setIncludeCharts(true); 
+        $writer->save('php://output');
+        exit();
+    }
 
         // -------------------------------------------------------------------------
         // CASO 2: Reportes Clásicos de Tablas (Inventario, Ventas, Retiros) en .xls

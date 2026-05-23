@@ -160,8 +160,51 @@ window.addEventListener('load', function () {
             
         });
     }
+
+    
 });
+function generarPDFGrafico() {
+    const canvas = document.getElementById('canvasTorta');
+    if (!canvas) return;
 
+    // FORZAR FONDO BLANCO
+    const context = canvas.getContext('2d');
+    context.globalCompositeOperation = 'destination-over';
+    context.fillStyle = '#ffffff';
+    context.fillRect(0, 0, canvas.width, canvas.height);
 
+    const imagenData = canvas.toDataURL("image/png");
 
-
+    // CORRECCIÓN: Definir la variable aquí
+    const ventanaImpresion = window.open('', '_blank');
+    
+    ventanaImpresion.document.write(`
+        <html>
+        <head>
+            <title>Reporte Estadístico - La Providencia</title>
+            <style>
+                body { font-family: 'Poppins', sans-serif; text-align: center; padding: 40px; }
+                .header { margin-bottom: 30px; border-bottom: 2px solid #334155; padding-bottom: 10px; }
+                img { max-width: 90%; height: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+                .fecha { color: #64748b; font-size: 0.9rem; }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>Reporte Estadístico</h1>
+                <p>Métricas de control de La Providencia</p>
+                <p class="fecha">Generado el: ${new Date().toLocaleString()}</p>
+            </div>
+            <img src="${imagenData}" />
+            <script>
+                window.onload = function() {
+                    window.print();
+                    setTimeout(function() { window.close(); }, 500);
+                };
+            <\/script>
+        </body>
+        </html>
+    `);
+    
+    ventanaImpresion.document.close();
+}
