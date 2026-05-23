@@ -57,16 +57,26 @@ class VentaModel {
         }
     }
   public function obtenerPorEstado($estado) {
-        // Buscamos las ventas que coincidan exactamente con el estado enviado
-        $sql = "SELECT v.*, u.nombre 
-                FROM ventas v 
-                JOIN usuarios u ON v.id_usuario = u.id 
-                WHERE v.estado = ? 
-                ORDER BY v.fecha DESC";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([$estado]);
-        return $stmt->fetchAll(PDO::FETCH_OBJ);
-    }
+        try {
+            // Modificamos el WHERE para que traiga tanto 'pendiente' como 'pagado'
+            // de esta manera saldrán todos los registros en el listado general del PDF/Excel
+            $sql = "SELECT v.id, u.nombre, v.fecha, v.total, v.estado 
+                    FROM ventas v
+                    JOIN usuarios u ON v.id_usuario = u.id
+                    WHERE v.estado = 'pendiente' OR v.estado = 'pagado'
+                    ORDER BY v.fecha DESC";
+                    
+            $stmt = $this->db->prepare($sql);
+            // Ejecutamos limpio sin amarrarlo a un solo estado estricto
+            $stmt->execute();
+            
+            return $stmt->fetchAll(PDO::FETCH_OBJ);
+        } catch (PDOException $e) {
+            exit("Error en VentaModel::obtenerPorEstado: " . $e->getMessage());
+        }
+    
+    
+}
     public function actualizarEstado($id_venta, $nuevo_estado) {
         // Usamos nombres ultra claros para no equivocarnos en el orden del array
         $sql = "UPDATE ventas SET estado = ? WHERE id = ?";

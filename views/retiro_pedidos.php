@@ -4,6 +4,9 @@
     
     <header class="pagos-header">
         <h2>Retiro de Pedidos (Pagados)</h2>
+        <a href="index.php?action=exportar_pdf&tipo=retiros" target="_blank" class="btn-regresar-panel" style="background-color: #4b5563; margin-right: 5px;">📄 PDF Retiros</a>
+        <a href="index.php?action=exportar_excel&tipo=retiros" class="btn-regresar-panel" style="background-color: #4b5563; margin-right: 5px;">📊 Excel Retiros</a>
+        
         <a href="index.php?action=dashboard" class="btn-regresar-panel">← Panel Principal</a>
     </header>
 

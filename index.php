@@ -10,12 +10,14 @@ require_once 'controllers/UsuarioController.php';
 require_once 'controllers/AdminControllers.php'; 
 require_once 'controllers/VentasController.php';
 require_once 'models/VentaModel.php';
+require_once 'controllers/ReporteController.php';
 
 // 3. Inicialización de la Base de Datos y Controladores
 $db = Database::connect(); 
 $usuarioC = new UsuarioController($db); 
 $adminC = new AdminControllers(); 
 $ventaC = new VentaController($db);
+$reporteC = new ReporteController($db);
 
 // 4. Captura de la acción (por defecto 'inicio')
 $action = $_GET['action'] ?? 'inicio';
@@ -184,6 +186,19 @@ case 'grafico_tortas':
           case 'detalle_venta':
             $ventaC->verDetalle($_GET['id']);
             break;
+
+           // ---- CONTROL DE REPORTES GENERALES ----
+    case 'exportar_excel':
+        // Pasamos la variable $db que se inicializó al principio del index.php
+        $reporteC = new ReporteController($db); 
+        $reporteC->generarExcel();
+        break;
+
+    case 'exportar_pdf':
+        // Pasamos la variable $db aquí también
+        $reporteC = new ReporteController($db); 
+        $reporteC->generarPDF();
+        break;
 }
 
 echo '</main>';

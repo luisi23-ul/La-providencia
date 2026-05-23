@@ -16,6 +16,13 @@
                 <a href="index.php?action=formulario_producto" class="btn-satin-nuevo" title="Agregar un nuevo producto">
                     <i class="fas fa-plus"></i> Nuevo
                 </a>
+
+                <a href="index.php?action=exportar_pdf&tipo=inventario" target="_blank" class="btn-regresar-panel" title="Exportar Inventario a PDF" style="background-color: #4b5563;">
+    <i class="fas fa-file-pdf"></i> PDF
+</a>
+<a href="index.php?action=exportar_excel&tipo=inventario" class="btn-regresar-panel" title="Exportar Inventario a Excel" style="background-color: #4b5563;">
+    <i class="fas fa-file-excel"></i> Excel
+</a>
             </nav>
         </header>
 

@@ -4,6 +4,9 @@
     
     <header class="pagos-header">
         <h2>Pagos Pendientes</h2>
+        <a href="index.php?action=exportar_pdf&tipo=pendientes" target="_blank" class="btn-regresar-panel" style="background-color: #4b5563; margin-right: 5px;">📄 PDF Pagos</a>
+        <a href="index.php?action=exportar_excel&tipo=pendientes" class="btn-regresar-panel" style="background-color: #4b5563; margin-right: 5px;">📊 Excel Pagos</a>
+        
         <a href="index.php?action=dashboard" class="btn-regresar-panel">← Panel Principal</a>
     </header>
 
