@@ -11,51 +11,51 @@ class VentaModel {
     }
 
     // Función principal para registrar la venta y su desglose de productos
-    public function guardarVentaModel($id_usuario, $total, $productosCarrito) {
-        try {
-            // 1. Iniciamos una transacción por seguridad
-            // Si un producto falla al guardarse, no se registra nada en la base de datos
-            $this->db->beginTransaction();
+    public function guardarVentaModel($id_usuario, $total, $carrito, $id_metodo_pago) {
+    try {
+        // 1. Iniciamos una transacción por seguridad
+        $this->db->beginTransaction();
 
-            // 2. Insertamos el encabezado de la venta
-            // En models/VentaModel.php dentro de guardarVentaModel
-        $sqlVenta = "INSERT INTO ventas (id_usuario, total, fecha, estado) VALUES (?, ?, NOW(), 'pendiente')";
+        // 2. Insertamos el encabezado de la venta (INCLUYENDO el id_metodo_pago)
+        $sqlVenta = "INSERT INTO ventas (id_usuario, total, id_metodo_pago, fecha, estado) VALUES (?, ?, ?, NOW(), 'pendiente')";
         $stmt = $this->db->prepare($sqlVenta);
-        $stmt->execute([$id_usuario, $total]);
+        // Pasamos los tres valores correspondientes
+        $stmt->execute([$id_usuario, $total, $id_metodo_pago]);
+        
+        // Recuperamos el ID que la base de datos le asignó a esta venta
+        $idVenta = $this->db->lastInsertId();
+
+        // 3. Insertamos cada artículo del carrito en el detalle
+        // Corregido: usando la variable $carrito que recibes como parámetro
+        foreach ($carrito as $item) {
+            $sqlDetalle = "INSERT INTO detalle_ventas 
+                (id_venta, id_producto, cantidad, precio_unitario, subtotal) 
+                VALUES (?, ?, ?, ?, ?)";
             
-            // Recuperamos el ID que la base de datos le asignó a esta venta
-            $idVenta = $this->db->lastInsertId();
-
-            // 3. Insertamos cada artículo del carrito en el detalle
-            foreach ($productosCarrito as $item) {
-                $sqlDetalle = "INSERT INTO detalle_ventas 
-                    (id_venta, id_producto, cantidad, precio_unitario, subtotal) 
-                    VALUES (?, ?, ?, ?, ?)";
-                
-                $stmtDetalle = $this->db->prepare($sqlDetalle);
-                
-                // Calculamos el subtotal multiplicando precio por cantidad
-                $subtotal = $item['precio'] * $item['cantidad'];
-                
-                $stmtDetalle->execute([
-                    $idVenta, 
-                    $item['id_producto'], 
-                    $item['cantidad'], 
-                    $item['precio'], 
-                    $subtotal
-                ]);
-            }
-
-            // Si todo salió bien, guardamos los cambios definitivamente
-            $this->db->commit();
-            return true;
-
-        } catch (Exception $e) {
-            // Si algo falla en el camino, deshacemos todo para no dejar datos corruptos
-            $this->db->rollBack();
-            return false;
+            $stmtDetalle = $this->db->prepare($sqlDetalle);
+            
+            // Calculamos el subtotal multiplicando precio por cantidad
+            $subtotal = $item['precio'] * $item['cantidad'];
+            
+            $stmtDetalle->execute([
+                $idVenta, 
+                $item['id_producto'], // Asegúrate de que coincida con la clave en tu array
+                $item['cantidad'], 
+                $item['precio'], 
+                $subtotal
+            ]);
         }
+
+        // Si todo salió bien, guardamos los cambios definitivamente
+        $this->db->commit();
+        return true;
+
+    } catch (Exception $e) {
+        // Si algo falla en el camino, deshacemos todo para no dejar datos corruptos
+        $this->db->rollBack();
+        return false;
     }
+}
   public function obtenerPorEstado($estado) {
         try {
             // Modificamos el WHERE para que traiga tanto 'pendiente' como 'pagado'

@@ -1,12 +1,10 @@
 <link rel="stylesheet" href="public/css/confirmar_pago.css">
 
 <section class="card-pagos">
-    
     <header class="pagos-header">
         <h2>Pagos Pendientes</h2>
         <a href="index.php?action=exportar_pdf&tipo=pendientes" target="_blank" class="btn-regresar-panel" style="background-color: #4b5563; margin-right: 5px;">📄 PDF Pagos</a>
         <a href="index.php?action=exportar_excel&tipo=pendientes" class="btn-regresar-panel" style="background-color: #4b5563; margin-right: 5px;">📊 Excel Pagos</a>
-        
         <a href="index.php?action=dashboard" class="btn-regresar-panel">← Panel Principal</a>
     </header>
 
@@ -16,17 +14,20 @@
                 <tr>
                     <th>Cliente</th>
                     <th>Fecha</th>
-                    <th>Total</th>
-                    <th>Estado</th>
+                    <th>Método</th>
+                    <th>Total ($)</th>
+                    <th>Total (Bs)</th> <th>Estado</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
-          <tbody>
+            <tbody>
                 <?php foreach ($ventas as $venta): ?>
                 <tr>
-                    <td><?php echo htmlspecialchars($venta->nombre); ?></td>
+                    <td><?php echo htmlspecialchars($venta->nombre_cliente); ?></td>
                     <td><?php echo htmlspecialchars($venta->fecha); ?></td>
+                    <td><?php echo htmlspecialchars($venta->nombre_metodo ?? 'N/A'); ?></td>
                     <td>$<?php echo number_format($venta->total, 2); ?></td>
+                    <td><?php echo number_format($venta->total_bs ?? 0, 2); ?> Bs</td>
                     <td>
                         <?php if ($venta->estado == 'pendiente'): ?>
                             <span class="badge" style="background-color: #ffedd5; color: #ea580c; padding: 5px 10px; border-radius: 15px; font-weight: bold;">Pendiente</span>
@@ -48,5 +49,4 @@
             </tbody>
         </table>
     </main>
-    
 </section>

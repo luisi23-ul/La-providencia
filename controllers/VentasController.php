@@ -12,59 +12,58 @@ class VentaController {
 
     // Carga la tabla con los productos seleccionados
     public function mostrarCarrito() {
-      // --- EXTRACCIÓN DIRECTA Y REAL DESDE LA PÁGINA DEL BCV ---
-$urlBcv = "https://www.bcv.org.ve";
-$tasaCambio = 526.86940000; // Colocamos la tasa real que ves en pantalla como respaldo principal
+    // --- MANTENEMOS TU LÓGICA DE LA API DEL BCV SIN TOCAR NADA ---
+    $urlBcv = "https://www.bcv.org.ve";
+    $tasaCambio = 526.86940000; 
 
-// Configuramos la conexión simulando un navegador para que el BCV permita la lectura segura
-$opciones = [
-    "http" => [
-        "method" => "GET",
-        "header" => "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36\r\n",
-        "timeout" => 4 // Tiempo máximo de espera: 4 segundos
-    ]
-];
-$contexto = stream_context_create($opciones);
-$html = @file_get_contents($urlBcv, false, $contexto);
+    $opciones = [
+        "http" => [
+            "method" => "GET",
+            "header" => "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36\r\n",
+            "timeout" => 4 
+        ]
+    ];
+    $contexto = stream_context_create($opciones);
+    $html = @file_get_contents($urlBcv, false, $contexto);
 
-if ($html !== false) {
-    // Desactivamos errores temporales de HTML mal estructurado para procesar limpiamente
-    libxml_use_internal_errors(true);
-    $doc = new DOMDocument();
-    $doc->loadHTML($html);
-    libxml_clear_errors();
+    if ($html !== false) {
+        libxml_use_internal_errors(true);
+        $doc = new DOMDocument();
+        $doc->loadHTML($html);
+        libxml_clear_errors();
 
-    $xpath = new DOMXPath($doc);
-    
-    // Buscamos directamente el contenedor exacto del Dólar ($ USD) en la web del BCV
-    $nodoDolar = $xpath->query('//div[@id="dolar"]//strong');
-    
-    if ($nodoDolar->length > 0) {
-        // Extraemos el texto, limpiamos espacios y cambiamos la coma decimal por punto para PHP
-        $textoPrecio = trim($nodoDolar->item(0)->nodeValue);
-        $textoPrecio = str_replace('.', '', $textoPrecio); // Quitamos puntos de miles si los hay
-        $textoPrecio = str_replace(',', '.', $textoPrecio); // Convertimos coma a punto decimal
+        $xpath = new DOMXPath($doc);
+        $nodoDolar = $xpath->query('//div[@id="dolar"]//strong');
         
-        if (is_numeric($textoPrecio) && (float)$textoPrecio > 0) {
-            $tasaCambio = (float)$textoPrecio;
+        if ($nodoDolar->length > 0) {
+            $textoPrecio = trim($nodoDolar->item(0)->nodeValue);
+            $textoPrecio = str_replace('.', '', $textoPrecio); 
+            $textoPrecio = str_replace(',', '.', $textoPrecio); 
+            
+            if (is_numeric($textoPrecio) && (float)$textoPrecio > 0) {
+                $tasaCambio = (float)$textoPrecio;
+            }
         }
     }
-}
-// --------------------------------------------------------
+    // --------------------------------------------------------
 
-// Calculamos los totales reales del carrito
-$totalFinal = 0;
-if (isset($_SESSION["carrito"])) {
-    foreach ($_SESSION["carrito"] as $item) {
-        $totalFinal += $item["precio"] * $item["cantidad"];
+    // 1. AGREGADO: Consulta para obtener los métodos de pago de tu BD
+    $db = Database::connect();
+    $query = $db->query("SELECT * FROM metodos_pago");
+    $metodos = $query->fetchAll(PDO::FETCH_OBJ);
+
+    // Calculamos los totales reales del carrito
+    $totalFinal = 0;
+    if (isset($_SESSION["carrito"])) {
+        foreach ($_SESSION["carrito"] as $item) {
+            $totalFinal += $item["precio"] * $item["cantidad"];
+        }
     }
-}
 
-// Ahora sí, la multiplicación usará los 526.86 o la tasa exacta del día del BCV
-$totalBolivares = $totalFinal * $tasaCambio;
+    $totalBolivares = $totalFinal * $tasaCambio;
 
-// Incluimos tu vista limpia
-include "views/carrito.php";
+    // 2. Incluimos tu vista pasando la variable $metodos para que la use el <select>
+    include "views/carrito.php";
 }
     // Añade el producto a la sesión y salta de una vez a la vista del carrito
     public function añadir() {
@@ -105,99 +104,144 @@ include "views/carrito.php";
     // Procesa el guardado en la base de datos
     // Procesa el guardado en la base de datos
     public function finalizarCompra() {
-        if (session_status() == PHP_SESSION_NONE) {
-            session_start();
-        }
-
-        // 1. PRIMERO: Si el carrito está vacío, detener el flujo
-        if (!isset($_SESSION['carrito']) || empty($_SESSION['carrito'])) {
-            echo "<script>alert('El carrito está vacío.'); window.location.href='index.php?action=ver_catalogo';</script>";
-            exit();
-        }
-
-        // 2. SEGUNDO: Recuperar datos esenciales del usuario logueado
-        // Asegúrate de que al loguearse guardes el ID en $_SESSION['id_usuario'] o $_SESSION['id']
-        $id_usuario = isset($_SESSION['id_usuario']) ? $_SESSION['id_usuario'] : (isset($_SESSION['id']) ? $_SESSION['id'] : null);
-        
-        if (!$id_usuario) {
-            echo "<script>alert('Debes iniciar sesión para finalizar la compra.'); window.location.href='index.php?action=login';</script>";
-            exit();
-        }
-
-        // 3. TERCERO: Armamos el mensaje de WhatsApp mientras leemos el carrito
-        $telefono = "584127818865"; 
-        $mensaje = "¡Hola! *La Providencia* 🛒\n";
-        $mensaje .= "Deseo finalizar mi compra con los siguientes productos:\n\n";
-        
-        $totalGeneral = 0;
-        foreach ($_SESSION['carrito'] as $item) {
-            $nombre = isset($item['nombre']) ? $item['nombre'] : 'Producto';
-            $precio = isset($item['precio']) ? $item['precio'] : 0;
-            $cantidad = isset($item['cantidad']) ? $item['cantidad'] : 1;
-            
-            $subtotal = $precio * $cantidad;
-            $totalGeneral += $subtotal;
-
-            $mensaje .= "• *{$nombre}* (x{$cantidad}) - \${$precio}\n";
-        }
-
-        $mensaje .= "\n💰 *Total a pagar:* \${$totalGeneral}\n";
-        $mensaje .= "Forma de pago: A convenir\n";
-        $mensaje .= "¡Quedo atento para coordinar la entrega! ✨";
-
-        $mensajeURL = urlencode($mensaje);
-        $urlWhatsApp = "https://api.whatsapp.com/send?phone={$telefono}&text={$mensajeURL}";
-
-        /* ==========================================================================
-           CONEXIÓN REAL CON EL MODELO - AQUÍ SE GUARDA EN LA BASE DE DATOS
-           ========================================================================== */
-        // Llamamos al método de tu VentaModel pasando las variables reales
-        $resultado = $this->model->guardarVentaModel($id_usuario, $totalGeneral, $_SESSION['carrito']);
-
-        if ($resultado) {
-            // Quitamos el descuento de stock de aquí porque tu modelo YA LO HACE en procesarRetiro()
-            
-            // Una vez guardado con éxito en la base de datos, vaciamos el carrito
-            unset($_SESSION["carrito"]);
-            
-            // Lanzamos la alerta y redireccionamos a WhatsApp
-            echo "<script type='text/javascript'>
-                    alert('¡Pedido procesado con éxito! Registrado en el sistema. Conectando con WhatsApp...');
-                    window.location.href = '{$urlWhatsApp}';
-                  </script>";
-            exit(); 
-        } else {
-            // Por si ocurre un error inesperado en la transacción de la BD
-            echo "<script>alert('Hubo un problema al registrar tu pedido en la base de datos. Inténtalo de nuevo.'); window.location.href='index.php?action=ver_carrito';</script>";
-            exit();
-        }
+    if (session_status() == PHP_SESSION_NONE) {
+        session_start();
     }
+
+    if (!isset($_SESSION['carrito']) || empty($_SESSION['carrito'])) {
+        echo "<script>alert('El carrito está vacío.'); window.location.href='index.php?action=ver_catalogo';</script>";
+        exit();
+    }
+
+    // 1. CAPTURAR EL MÉTODO DE PAGO (Nuevo)
+    $metodo_pago_id = isset($_POST['metodo_pago']) ? $_POST['metodo_pago'] : null;
+    
+    if (!$metodo_pago_id) {
+        echo "<script>alert('Por favor, seleccione un método de pago.'); window.location.href='index.php?action=ver_carrito';</script>";
+        exit();
+    }
+
+    $id_usuario = isset($_SESSION['id_usuario']) ? $_SESSION['id_usuario'] : (isset($_SESSION['id']) ? $_SESSION['id'] : null);
+    
+    if (!$id_usuario) {
+        echo "<script>alert('Debes iniciar sesión.'); window.location.href='index.php?action=login';</script>";
+        exit();
+    }
+
+    $totalGeneral = 0;
+    foreach ($_SESSION['carrito'] as $item) {
+        $totalGeneral += ($item['precio'] * $item['cantidad']);
+    }
+
+    // 2. OBTENER NOMBRE DEL MÉTODO PARA EL MENSAJE (Opcional, para que quede bonito en WhatsApp)
+    $db = Database::connect();
+    $stmt = $db->prepare("SELECT nombre FROM metodos_pago WHERE id = ?");
+    $stmt->execute([$metodo_pago_id]);
+    $metodo = $stmt->fetch(PDO::FETCH_OBJ);
+    $nombreMetodo = $metodo ? $metodo->nombre : "No especificado";
+
+    // 3. MENSAJE DE WHATSAPP (Actualizado)
+    $telefono = "584127818865"; 
+    $mensaje = "¡Hola! *La Providencia* 🛒\n";
+    $mensaje .= "Deseo finalizar mi compra:\n\n";
+    
+    foreach ($_SESSION['carrito'] as $item) {
+        $mensaje .= "• *{$item['nombre']}* (x{$item['cantidad']}) - \${$item['precio']}\n";
+    }
+
+    $mensaje .= "\n💰 *Total:* \${$totalGeneral}\n";
+    $mensaje .= "💳 *Método de pago:* {$nombreMetodo}\n"; // Aquí se añade
+    $mensaje .= "¡Quedo atento! ✨";
+
+    $urlWhatsApp = "https://api.whatsapp.com/send?phone={$telefono}&text=" . urlencode($mensaje);
+
+    // 4. PASAR EL MÉTODO AL MODELO
+    // Nota: Tu método guardarVentaModel ahora debe aceptar este parámetro extra
+    $resultado = $this->model->guardarVentaModel($id_usuario, $totalGeneral, $_SESSION['carrito'], $metodo_pago_id);
+
+    if ($resultado) {
+        unset($_SESSION["carrito"]);
+        echo "<script>alert('¡Pedido procesado!'); window.location.href = '{$urlWhatsApp}';</script>";
+        exit();
+    } else {
+        echo "<script>alert('Error en la base de datos.'); window.location.href='index.php?action=ver_carrito';</script>";
+        exit();
+    }
+}
 
     // Listar pagos pendientes y pagados para el administrador
     public function pagosPendientes() {
-        // 1. Traemos los pendientes y los pagados por separado usando tu método existente
-        $pendientes = $this->model->obtenerPorEstado('pendiente');
-        $pagados = $this->model->obtenerPorEstado('pagado');
-        
-        // 2. Los unimos en un solo arreglo para que tu vista los recorra juntos
-        $ventas = array_merge($pendientes, $pagados);
-        
-        // 3. Cargamos la vista pasándole todos los datos
-        include "views/pagos_pendientes.php";
+    $db = Database::connect();
+    
+    // 1. Obtener la tasa (usando tu lógica de scraping del BCV)
+    $tasaCambio = $this->obtenerTasaBCV(); // Asegúrate de tener esta función en tu clase
+
+    // 2. Consulta SQL: traemos el nombre del método y el total
+    $sql = "SELECT v.*, u.nombre AS nombre_cliente, mp.nombre AS nombre_metodo
+            FROM ventas v 
+            JOIN usuarios u ON v.id_usuario = u.id 
+            LEFT JOIN metodos_pago mp ON v.id_metodo_pago = mp.id
+            WHERE v.estado IN ('pendiente', 'pagado') 
+            ORDER BY v.fecha DESC";
+            
+    $stmt = $db->query($sql);
+    $ventas = $stmt->fetchAll(PDO::FETCH_OBJ);
+
+    // 3. Calcular el total en Bs por cada venta antes de enviarlo a la vista
+    foreach ($ventas as $venta) {
+        // Si el método es Bs, multiplicamos, si es $, lo dejamos como prefieras
+        $venta->total_bs = $venta->total * $tasaCambio;
     }
+    
+    include "views/pagos_pendientes.php";
+}
+
+
+private function obtenerTasaBCV() {
+    $tasaCambio = 526.86940000; // Valor de respaldo
+    $urlBcv = "https://www.bcv.org.ve";
+    $opciones = ["http" => ["method" => "GET", "header" => "User-Agent: Mozilla/5.0", "timeout" => 4]];
+    $contexto = stream_context_create($opciones);
+    $html = @file_get_contents($urlBcv, false, $contexto);
+
+    if ($html !== false) {
+        libxml_use_internal_errors(true);
+        $doc = new DOMDocument();
+        $doc->loadHTML($html);
+        $xpath = new DOMXPath($doc);
+        $nodoDolar = $xpath->query('//div[@id="dolar"]//strong');
+        if ($nodoDolar->length > 0) {
+            $textoPrecio = str_replace([".", ","], ["", "."], trim($nodoDolar->item(0)->nodeValue));
+            if (is_numeric($textoPrecio)) $tasaCambio = (float)$textoPrecio;
+        }
+    }
+    return $tasaCambio;
+}
     // Listar retiros (solo los que ya fueron pagados)
    // Listar retiros (solo los que ya fueron pagados)
     // Listar retiros (los que ya fueron pagados y los ya entregados)
-    public function retiroPedidos() {
-        // 1. Traemos los pedidos pagados y los ya retirados por separado usando tu método
-        $pagados = $this->model->obtenerPorEstado('pagado');
-        $retirados = $this->model->obtenerPorEstado('retirado');
-        
-        // 2. Los unimos en un solo arreglo para que la vista los recorra juntos
-        $ventas = array_merge($pagados, $retirados);
-        
-        include "views/retiro_pedidos.php";
+   public function retiroPedidos() {
+    $db = Database::connect();
+    $tasaCambio = $this->obtenerTasaBCV(); // Usamos la misma función de scraping
+
+    // SQL con JOIN para traer el nombre del método
+    $sql = "SELECT v.*, u.nombre AS nombre_cliente, mp.nombre AS nombre_metodo
+            FROM ventas v 
+            JOIN usuarios u ON v.id_usuario = u.id 
+            LEFT JOIN metodos_pago mp ON v.id_metodo_pago = mp.id
+            WHERE v.estado IN ('pagado', 'entregado') 
+            ORDER BY v.fecha DESC";
+            
+    $stmt = $db->query($sql);
+    $ventas = $stmt->fetchAll(PDO::FETCH_OBJ);
+
+    // Calcular el total en Bs
+    foreach ($ventas as $venta) {
+        $venta->total_bs = $venta->total * $tasaCambio;
     }
+    
+    include "views/retiro_pedidos.php";
+}
 
     // Cambiar estado a pagado
     public function confirmarPago($id) {
@@ -234,5 +278,72 @@ include "views/carrito.php";
             exit();
         }
     }
+
+ public function obtenerVentasPorMetodo($id_metodo) {
+    $db = Database::connect();
+
+    // 1. REPLICAMOS LA LÓGICA DEL BCV PARA TENER LA TASA EXACTA
+    $tasaCambio = 526.86940000; // Valor por defecto
+    $urlBcv = "https://www.bcv.org.ve";
+    $opciones = ["http" => ["method" => "GET", "header" => "User-Agent: Mozilla/5.0", "timeout" => 4]];
+    $contexto = stream_context_create($opciones);
+    $html = @file_get_contents($urlBcv, false, $contexto);
+
+    if ($html !== false) {
+        libxml_use_internal_errors(true);
+        $doc = new DOMDocument();
+        $doc->loadHTML($html);
+        $xpath = new DOMXPath($doc);
+        $nodoDolar = $xpath->query('//div[@id="dolar"]//strong');
+        if ($nodoDolar->length > 0) {
+            $textoPrecio = str_replace([".", ","], ["", "."], trim($nodoDolar->item(0)->nodeValue));
+            if (is_numeric($textoPrecio)) $tasaCambio = (float)$textoPrecio;
+        }
+    }
+
+    // 2. CONSULTA SQL (Ahora usamos la $tasaCambio real)
+    $sql = "SELECT v.*, u.nombre AS nombre_cliente 
+            FROM ventas v 
+            JOIN usuarios u ON v.id_usuario = u.id 
+            WHERE v.id_metodo_pago = ? 
+            AND v.estado = 'pagado' 
+            ORDER BY v.fecha DESC";
+            
+    $stmt = $db->prepare($sql);
+    $stmt->execute([$id_metodo]);
+    $ventas = $stmt->fetchAll(PDO::FETCH_OBJ);
+    
+    $totalUSD = 0;
+    $totalBS = 0;
+
+    foreach ($ventas as $v) {
+        $totalUSD += $v->total;
+        $v->total_bs = $v->total * $tasaCambio; // <--- USAMOS LA TASA DINÁMICA
+        $totalBS += $v->total_bs;
+    }
+    
+    return [
+        'ventas' => $ventas, 
+        'totalUSD' => $totalUSD, 
+        'totalBS' => $totalBS
+    ];
+}
+
+public function manejarReporte($id_metodo) {
+    $datos = $this->obtenerVentasPorMetodo($id_metodo);
+    
+    // ESTAS VARIABLES SON LAS QUE DEBEN LLEGAR A LA VISTA
+    $ventas = $datos['ventas'];
+    $totalUSD = $datos['totalUSD'];
+    $totalBS = $datos['totalBS'];
+    // 3. Eliges la vista según el ID
+    switch($id_metodo) {
+        case 1: include "views/efectivobs.php"; break;
+        case 2: include "views/efectivo$.php"; break;
+        case 3: include  "views/trasferencia.php";break;
+        case 4: include "views/pago_movil.php";; break;
+        default: echo "Método no encontrado";
+    }
+}
 }
 ?>

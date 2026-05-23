@@ -68,17 +68,31 @@
             </p>
         </div>
 
-        <footer class="acciones-carrito">
-            <p class="p-volver">
-                <a href="index.php?action=ver_catalogo" class="enlace-seguir">← Seguir comprando</a>
-            </p>
-            <p class="p-finalizar">
-                <a href="index.php?action=finalizar_compra" class="boton-finalizar">
-                    🟢 Finalizar Compra por WhatsApp
-                </a>
-            </p>
-        </footer>
+       <footer class="acciones-carrito">
+    <p class="p-volver">
+        <a href="index.php?action=ver_catalogo" class="enlace-seguir">← Seguir comprando</a>
+    </p>
 
+    <form action="index.php?action=finalizar_compra" method="POST">
+    <label for="metodo_pago" style="display: block; margin-bottom: 5px; font-weight: bold; font-family: sans-serif;">
+        Método de pago:
+    </label>
+    
+    <select name="metodo_pago" id="metodo_pago" required style="margin-bottom: 20px; padding: 8px; width: 100%; border: 1px solid #cbd5e1; border-radius: 5px;">
+        <option value="">-- Seleccione una opción --</option>
+        <?php foreach ($metodos as $metodo): ?>
+            <option value="<?php echo $metodo->id; ?>">
+                <?php echo htmlspecialchars($metodo->nombre); ?>
+            </option>
+        <?php endforeach; ?>
+    </select>
+
+    <button type="submit" class="boton-finalizar" style="background: none; border: none; cursor: pointer; font: inherit; padding: 0;">
+        🟢 Finalizar Compra por WhatsApp
+    </button>
+</form>
+
+</footer>
     <?php else: ?>
         <aside class="carrito-vacio">
             <p class="texto-vacio">El carrito está vacío actualmente.</p>

@@ -39,6 +39,15 @@ $acciones_admin = [
     'metodos_pago' 
 ];
 
+// Línea 21 aprox:
+$acciones_admin = [
+    'dashboard', 
+    'admin', 
+    // ... otros ...
+    'metodos_pago',
+    'ver_reporte' // <--- Agrégalo aquí para que mantenga el estilo de tu panel
+];
+
 // --- PASO 1: Lógica de procesamiento (Acciones que redireccionan) ---
 if ($action == 'registrar_cliente') {
     $usuarioC->guardarCliente();
@@ -208,6 +217,18 @@ case 'generarPDF': // Alias de compatibilidad
     default:
         $usuarioC->mostrarInicio();
         break;
+
+        // ... dentro del switch ($action) ...
+
+    case 'ver_reporte':
+        // Capturamos el ID del método enviado por URL (ej: index.php?action=ver_reporte&metodo=1)
+        $id_metodo = isset($_GET['metodo']) ? intval($_GET['metodo']) : 0;
+        
+        // Llamamos a la función que creamos en VentasController
+        $ventaC->manejarReporte($id_metodo);
+        break;
+
+    // ... continúa con los otros cases ...
 }
 
 echo '</main>';
