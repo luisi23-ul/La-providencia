@@ -1,5 +1,5 @@
 /* ==========================================================================
-   CSS CORRECTO ADAPTATIVO: INICIO VS CÁPSULA HAMBURGUESA (public/css/header.css)
+   VERSION RESTAURADA Y FIJADA (public/css/header.css)
    ========================================================================== */
 
 .main-header {
@@ -9,13 +9,26 @@
     transform: translateX(-50%);
     width: 92%;
     max-width: 1400px;
-    background: #ffffff;
+    
+    /* --- EL EFECTO IMPACTO: Vidrio Esmerilado Premium --- */
+    background: rgba(255, 255, 255, 0.7); 
+    backdrop-filter: blur(18px) saturate(180%); 
+    -webkit-backdrop-filter: blur(18px) saturate(180%);
+    
+    /* Textura de ruido sutil para realismo de cristal */
+    background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="4" height="4" viewBox="0 0 4 4"%3E%3Cpath fill="%239C92AC" fill-opacity="0.03" d="M1 3h1v1H1V3zm2-2h1v1H2V1z"%3E%3C/path%3E%3C/svg%3E');
+    
+    /* Borde de luz ultra sutil y sombra profunda */
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.03);
+    
     border-radius: 100px; 
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
     z-index: 2000;
-    padding: 15px 45px;
+    padding: 14px 45px; 
     box-sizing: border-box;
-    transition: all 0.3s ease-in-out;
+    transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    display: flex;
+    align-items: center;
 }
 
 .nav-container {
@@ -25,8 +38,14 @@
     width: 100%;
 }
 
+.nav-brand {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
 .brand-logo {
-    height: 52px;
+    height: 48px; 
     width: auto;
     display: block;
     object-fit: contain;
@@ -42,76 +61,179 @@
     list-style: none;
 }
 
+/* LINKS DEL MENÚ PRINCIPAL */
 .nav-link {
     text-decoration: none;
-    color: #475569;
+    color: #1e293b; 
     font-size: 0.95rem;
     font-weight: 600;
-    transition: color 0.2s ease;
+    position: relative;
+    padding: 8px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: color 0.3s ease, transform 0.3s ease;
 }
 
-.nav-link:hover, .nav-link.active { color: #0052d4; }
-.nav-actions { display: flex; align-items: center; gap: 24px; }
+.nav-link i {
+    color: #64748b; 
+    font-size: 1rem;
+    transition: color 0.3s ease, transform 0.3s ease;
+}
 
-.action-link {
+.nav-link:hover { 
+    color: #0052d4; 
+    transform: translateY(-1px);
+}
+
+.nav-link:hover i {
+    color: #0052d4;
+    transform: scale(1.1);
+}
+
+/* Línea animada con un gradiente vibrante */
+.nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 2.5px;
+    background: linear-gradient(90deg, #0052d4, #6a11cb); 
+    border-radius: 50px;
+    transition: width 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+    box-shadow: 0 2px 4px rgba(0, 82, 212, 0.2);
+}
+
+.nav-link:hover::after, 
+.nav-link.active::after { 
+    width: 100%;
+}
+
+/* CONTENEDOR DE ACCIONES DE LA NAVBAR */
+.nav-actions { 
+    display: flex; 
+    align-items: center; 
+    gap: 24px; 
+}
+
+/* --- ENLACES SIMPLES (Iniciar Sesión) --- */
+.nav-actions .login-btn {
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #1e293b;
+    padding: 8px 12px;
+    border-radius: 50px;
+    transition: color 0.3s ease, background 0.3s ease;
+}
+
+.nav-actions .login-btn:hover { 
+    color: #0052d4;
+    background: rgba(0, 82, 212, 0.05); 
+}
+
+/* --- BOTÓN REGISTRARSE --- */
+.register-cta-btn {
     text-decoration: none;
     font-size: 0.95rem;
     font-weight: 700;
     display: inline-flex;
     align-items: center;
     gap: 8px;
-}
-
-.login-btn { color: #0f172a; }
-.login-btn:hover { color: #0052d4; }
-
-.register-btn {
-    background-color: #0052d4;
+    
+    background: linear-gradient(-45deg, #0052d4, #4364f7, #6a11cb, #00c6ff);
+    background-size: 400% 400%; 
+    animation: gradientMove 12s ease infinite; 
+    
     color: #ffffff;
-    padding: 12px 26px;
+    padding: 12px 30px; 
     border-radius: 50px;
-    box-shadow: 0 4px 12px rgba(0, 82, 212, 0.15);
+    box-shadow: 0 8px 24px rgba(0, 82, 212, 0.35), 0 4px 10px rgba(106, 17, 203, 0.2);
+    transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    position: relative;
+    overflow: hidden; 
 }
 
-.register-btn:hover { background-color: #0044b1; transform: translateY(-1px); }
+.register-cta-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: all 0.6s;
+}
 
-/* CARRITO EN HOME */
-.cart-btn {
+.register-cta-btn:hover { 
+    transform: translateY(-2px) scale(1.02); 
+    box-shadow: 0 12px 32px rgba(0, 82, 212, 0.5), 0 6px 14px rgba(106, 17, 203, 0.3);
+}
+
+.register-cta-btn:hover::before { left: 100%; }
+.register-cta-btn:active { transform: translateY(0) scale(1); }
+
+/* --- BOTÓN DEL CARRITO PREMIER --- */
+.cart-custom-btn {
     position: relative;
     text-decoration: none;
-    display: flex;
+    color: #1e293b;
+    font-size: 1.3rem; 
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
-    background-color: #f1f5f9;
+    padding: 8px;
+    
+    background: rgba(241, 245, 249, 0.6);
+    border: 1px solid rgba(226, 232, 240, 0.4);
     border-radius: 50%;
-    color: #0f172a;
+    width: 44px;
+    height: 44px;
+    transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
-.cart-badge {
-    position: absolute;
-    top: -3px;
-    right: -3px;
-    background-color: #0052d4;
+.cart-custom-btn:hover {
     color: #ffffff;
-    font-size: 0.7rem;
+    background: #ff3b30; 
+    border-color: #ff3b30;
+    transform: scale(1.1) rotate(-5deg); 
+    box-shadow: 0 6px 16px rgba(255, 59, 48, 0.3);
+}
+
+.cart-custom-badge {
+    position: absolute;
+    top: -3px;     
+    right: -3px;   
+    background-color: #ff3b30; 
+    color: #ffffff;
+    font-size: 0.75rem; 
     font-weight: 700;
-    min-width: 18px;
+    min-width: 18px; 
     height: 18px;
-    border-radius: 50%;
+    padding: 0 4px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid #ffffff;
+    border: 2px solid #ffffff; 
+    box-shadow: 0 2px 6px rgba(255, 59, 48, 0.4);
+    transition: border-color 0.3s ease;
+}
+
+.cart-custom-btn:hover .cart-custom-badge { border-color: #ff3b30; }
+
+@keyframes gradientMove {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
 }
 
 /* ==========================================================================
-   MODO MINI-HAMBURGUESA PURA (OTRAS VISTAS)
-   ========================================================================== */
-
-/* ==========================================================================
-   MODO MINI-HAMBURGUESA PURA (OTRAS VISTAS: LOGIN Y REGISTRO)
+   ¡RESTAURADO!: MODO MINI-HAMBURGUESA PURA (OTRAS VISTAS: LOGIN Y REGISTRO)
    ========================================================================== */
 .main-header:has(.menu-toggle) {
     width: auto; 
@@ -120,87 +242,78 @@
     transform: none; 
     padding: 15px; 
     border-radius: 0;
-    
-    /* EL TRUCO MÁGICO: Removemos el fondo blanco y las sombras para que pase tu azul satinado */
     background: transparent !important; 
     box-shadow: none !important; 
 }
 
 /* ==========================================================================
-   BOTÓN HAMBURGUESA LIMPIO Y MINIMALISTA (SIN LOGOS INTEGRADOS)
+   BOTÓN HAMBURGUESA COMPLETO 
    ========================================================================== */
 .menu-toggle {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    width: 28px; /* Un toque más amplio para mejor usabilidad táctil */
-    height: 18px;
-    background: transparent !important; /* Fuerza la eliminación de cualquier fondo previo */
+    width: 26px; 
+    height: 16px;
+    background: transparent !important; 
     border: none !important;
-    box-shadow: none !important; /* Limpia cualquier residuo de bordes circulares */
     cursor: pointer;
     padding: 0;
     position: relative;
-    z-index: 99999 !important; 
+    z-index: 9999 !important; 
     pointer-events: auto !important;
-    background: transparent !important; 
-    background-image: none !important;
 }
 
-.menu-toggle::before,
-.menu-toggle::after {
-    content: none !important;
-    display: none !important;
-}
-
-/* Las tres líneas de la hamburguesa en color blanco para contrastar con el fondo azul */
+/* Corregido el color para que se pinte en azul oscuro de tu marca y se vea */
 .menu-toggle span {
     width: 100%;
-    height: 3px;
-    background-color: #ffffff !important; 
+    height: 2.5px;
+    background-color: #0f172a !important; 
     border-radius: 3px;
-    transition: all 0.3s ease-in-out;
+    transition: all 0.25s ease-in-out;
 }
 
-/* ANIMACIÓN "X" (Cuando el menú responsive se abre, las líneas cambian a oscuro para verse sobre la cortina blanca) */
 .menu-toggle.active span:nth-child(1) { 
-    transform: translateY(7.5px) rotate(45deg); 
-    background-color: #0F172A !important; 
+    transform: translateY(6.5px) rotate(45deg); 
+    background-color: #0f172a !important; 
 }
 .menu-toggle.active span:nth-child(2) { 
-    opacity: 0; 
+    opacity: 0 !important; 
 }
 .menu-toggle.active span:nth-child(3) { 
-    transform: translateY(-7.5px) rotate(-45deg); 
-    background-color: #0F172A !important; 
+    transform: translateY(-7px) rotate(-45deg); 
+    background-color: #0f172a !important; 
 }
 
 /* ==========================================================================
-   CORTINA RESPONSIVA MINIMALISTA PREMIUM (SIN DIVS Y SIN DUPLICADOS)
+   CORTINA RESPONSIVA (Restaurada al diseño original premium)
    ========================================================================== */
 .nav-menu-responsive {
-    display: none;
+    display: none; 
     flex-direction: column;
     position: fixed;
     top: 0;
     right: 0;
-    width: 320px;
+    width: 300px;
     height: 100vh;
     background-color: #ffffff;
-    padding: 100px 32px 40px 32px;
+    /* Devolvemos el padding exacto para que el botón hamburguesa (X) 
+       tenga su espacio libre arriba a la derecha sin ser pisado */
+    padding: 100px 24px 40px 24px;
     box-shadow: -15px 0 50px rgba(15, 23, 42, 0.08);
-    z-index: 2050;
+    z-index: 9000; /* Un paso por debajo del z-index: 9999 del menu-toggle para que la X pase al frente */
     box-sizing: border-box;
-    border-radius: 0 !important;
 }
 
-/* Animación de entrada fluida */
+/* Activación limpia coordinada con tu animación original */
 .nav-menu-responsive.active {
-    display: flex !important;
+    display: flex !important; 
     animation: slideInMenu 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Cápsula de Acción Principal: Ver Carrito (Estilo Moderno e Iluminado) */
+/* ==========================================================================
+   ELEMENTOS INTERNOS DE LA CORTINA RESPONSIVA (Tus estilos fijos)
+   ========================================================================== */
 .cart-btn-responsive {
     display: flex;
     align-items: center;
@@ -210,9 +323,9 @@
     color: #ffffff;
     font-weight: 600;
     font-size: 1rem;
-    background: linear-gradient(135deg, #0052d4, #4364f7); /* Gradiente azul premium vibrante */
-    padding: 16px 24px;
-    border-radius: 30px; /* Cápsula perfecta */
+    background: linear-gradient(135deg, #0052d4, #4364f7); 
+    padding: 14px 24px;
+    border-radius: 30px; 
     width: 100%;
     box-sizing: border-box;
     box-shadow: 0 10px 20px rgba(67, 100, 247, 0.15);
@@ -220,20 +333,12 @@
     transition: all 0.3s ease;
 }
 
-/* Hover más luminoso con efecto de elevación sutil */
-.cart-btn-responsive:hover {
-    background: linear-gradient(135deg, #0044b1, #3152e7);
-    box-shadow: 0 12px 24px rgba(67, 100, 247, 0.28);
-    transform: translateY(-2px);
-}
-
 .cart-btn-responsive i {
     font-size: 1.1rem;
 }
 
-/* Estructura de Enlaces de Navegación */
-.responsive-nav {
-    width: 100%;
+.responsive-nav { 
+    width: 100%; 
 }
 
 .responsive-links-list {
@@ -242,14 +347,14 @@
     margin: 0;
     display: flex;
     flex-direction: column;
-    gap: 28px;
+    gap: 28px; /* Espaciado original de tus enlaces */
 }
 
 .nav-link-res {
     display: inline-block;
     text-decoration: none;
     color: #1e293b;
-    font-size: 1.35rem;
+    font-size: 1.35rem; /* Tamaño de letra original */
     font-weight: 500;
     letter-spacing: -0.01em;
     position: relative;
@@ -257,7 +362,6 @@
     transition: color 0.2s ease;
 }
 
-/* Línea indicadora sutil para Hover y Estado Activo */
 .nav-link-res::after {
     content: '';
     position: absolute;
@@ -265,22 +369,21 @@
     left: 0;
     width: 0;
     height: 3px;
-    background-color:  #0f172a;
+    background-color: #0f172a;
     border-radius: 2px;
     transition: width 0.25s ease;
 }
 
 .nav-link-res:hover {
-    color:  #0f172a;
+    color: #0f172a;
 }
 
 .nav-link-res:hover::after {
     width: 40px;
 }
 
-/* Si usas clases de control para marcar la página activa */
 .nav-link-res.active-res {
-    color:  #0f172a;
+    color: #0f172a;
     font-weight: 600;
 }
 
@@ -292,16 +395,10 @@
     display: none !important;
 }
 
-/* Keyframes optimizados */
 @keyframes slideInMenu {
-    from {
-        transform: translateX(100%);
-    }
-    to {
-        transform: translateX(0);
-    }
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
 }
-
 
 /* Media Query de Soporte Móvil */
 @media (max-width: 1024px) {

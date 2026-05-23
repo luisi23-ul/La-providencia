@@ -17,81 +17,75 @@
 </head>
 <body class="<?php echo ($action == 'nosotros') ? 'page-about' : ''; ?>">
 
-    <header class="main-header">
-        <nav class="nav-container">
+<header class="main-header">
+    <nav class="nav-container">
+    
+        <section class="nav-brand">
+            <a href="index.php?action=inicio">
+                <img src="public/img/logo-removebg.png" alt="La Providencia" class="brand-logo">
+            </a>
+        </section>
         
-            <section class="nav-brand">
-                <a href="index.php?action=inicio">
-                    <img src="public/img/logo-removebg.png" alt="La Providencia" class="brand-logo">
-                </a>
-            </section>
-            
+        <?php if ($action == 'inicio' || $action == ''): ?>
+            <ul class="nav-menu">
+                <li><a href="index.php" class="nav-link">Inicio</a></li>
+                <li><a href="index.php?action=ver_catalogo" class="nav-link active-catalog"><i class="fas fa-store icon-small"></i> Catálogo</a></li>
+                <li><a href="#products" class="nav-link">Categorías</a></li>
+                <li><a href="#nosotros" class="nav-link">Nosotros</a></li>
+                <li><a href="#contacto" class="nav-link">Contacto</a></li>
+            </ul>
+        <?php endif; ?>
+
+        <section class="nav-actions">
             <?php if ($action == 'inicio' || $action == ''): ?>
-                <ul class="nav-menu">
-                    <li><a href="index.php" class="nav-link">Inicio</a></li>
-                    <li><a href="#products" class="nav-link">Categorías</a></li>
-                    <li><a href="#nosotros" class="nav-link">Nosotros</a></li>
-                    <li><a href="#contacto" class="nav-link">Contacto</a></li>
-                </ul>
+                <a href="index.php?action=login_usuario" class="action-link login-btn" aria-label="Login Clientes">
+                    <i class="fas fa-user"></i>
+                    <span>Iniciar Sesión</span>
+                </a>
+
+                <a href="index.php?action=registro" class="register-cta-btn" aria-label="Registrarse">
+                    <i class="fas fa-user-plus"></i>
+                    <span>Registrarse</span>
+                </a>
+
+                <a href="index.php?action=carrito" class="cart-custom-btn" aria-label="Ver mi Carrito">
+                    <i class="fas fa-shopping-basket"></i>
+                    <span>0</span>
+                </a>
             <?php endif; ?>
-
-            <section class="nav-actions">
-                <?php if ($action == 'inicio' || $action == ''): ?>
-                    
-                    <a href="index.php?action=login_usuario" class="action-link login-btn" aria-label="Login Clientes">
-                        <i class="fas fa-user"></i>
-                        <span>Iniciar Sesión</span>
-                    </a>
-
-                    <a href="index.php?action=login" class="action-link admin-btn" aria-label="Panel Administrativo" style="color: #0052d4; font-weight: bold; text-decoration: none;">
-                        <i class="fas fa-user-shield"></i>
-                        <span>Admin</span>
-                    </a>
-
-                    <a href="index.php?action=registro" class="action-link register-btn" aria-label="Registrarse">
-                        <i class="fas fa-user-plus"></i>
-                        <span>Registrarse</span>
-                    </a>
-
-                    <a href="index.php?action=ver_catalogo" class="cart-btn" aria-label="Carrito">
-                        <i class="fas fa-shopping-basket cart-icon"></i>
-                        <span class="cart-badge">0</span>
-                    </a>
-                <?php endif; ?>
-
-                <?php if ($action !== 'inicio' && $action !== ''): ?>
-                    <button class="menu-toggle" aria-label="Abrir menú">
-                        <span></span>
-                        <span></span>
-                        <span></span>
-                    </button>
-                <?php endif; ?>
-            </section>
 
             <?php if ($action !== 'inicio' && $action !== ''): ?>
-                <aside class="nav-menu-responsive">
-                    
-                    <a href="index.php?action=ver_catalogo" class="cart-btn-responsive">
-                        <i class="fas fa-shopping-basket"></i>
-                        <span>Ver Carrito (0)</span>
-                    </a>
-
-                    <nav class="responsive-nav">
-                        <ul class="responsive-links-list">
-                            <li><a href="index.php?action=inicio" class="nav-link-res active-res">Inicio</a></li>
-                            <li><a href="index.php#products" class="nav-link-res">Categorías</a></li>
-                            <li><a href="index.php#nosotros" class="nav-link-res">Nosotros</a></li>
-                            <li><a href="index.php#contacto" class="nav-link-res">Contacto</a></li>
-                        </ul>
-                    </nav>
-
-                </aside>
+                <button class="menu-toggle" aria-label="Abrir menú">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
             <?php endif; ?>
+        </section>
 
-        </nav>
-    </header>
+    </nav>
 
-    <script src="js/navbar.js?v=<?php echo time(); ?>" defer></script>
+    <?php if ($action !== 'inicio' && $action !== ''): ?>
+        <aside class="nav-menu-responsive">
+            <a href="index.php?action=carrito" class="cart-btn-responsive">
+                <i class="fas fa-shopping-basket"></i>
+                <span>Ver Carrito (0)</span>
+            </a>
+            
+            <nav class="responsive-nav">
+                <ul class="responsive-links-list">
+                    <li><a href="index.php" class="nav-link-res">Inicio</a></li>
+                    <li><a href="index.php?action=ver_catalogo" class="nav-link-res active-res">Catálogo</a></li>
+                    <li><a href="index.php?action=login_usuario" class="nav-link-res">Iniciar Sesión</a></li>
+                    <li><a href="index.php?action=registro" class="nav-link-res">Registrarse</a></li>
+                </ul>
+            </nav>
+        </aside>
+    <?php endif; ?>
+
+</header>
+
+    <script src="public/js/navbar.js?v=<?php echo time(); ?>" defer></script>
    
 <?php
     // Evaluamos la bandera calculada desde el index

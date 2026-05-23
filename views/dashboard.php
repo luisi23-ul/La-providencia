@@ -52,13 +52,13 @@
         </a>
     </article>
 
-    <article class="bloque-opcion">
-        <span class="icon-admin"><i class="fas fa-box-open"></i></span>
-        <h3>Metodos de pago</h3>
-        <p>Gestiona las entregas y pedidos listos para retirar.</p>
-        <a href="index.php?action=retiro_pedidos" class="btn-admin-azul">
-            Ver Retiros <i class="fas fa-arrow-right"></i>
-        </a>
-    </article>
+  <article class="bloque-opcion">
+    <span class="icon-admin"><i class="fas fa-credit-card"></i></span>
+    <h3>Métodos de pago</h3>
+    <p>Gestiona las cuentas bancarias, datos de pago móvil y divisas en efectivo del sistema.</p>
+    <a href="index.php?action=metodos_pago" class="btn-admin-azul">
+        Ver Métodos <i class="fas fa-arrow-right"></i>
+    </a>
+</article>
     
 </nav>

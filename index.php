@@ -35,7 +35,8 @@ $acciones_admin = [
     'eliminar_producto',
     'seccion_graficos', 
     'grafico_barras', 
-    'grafico_tortas'  
+    'grafico_tortas',
+    'metodos_pago' 
 ];
 
 // --- PASO 1: Lógica de procesamiento (Acciones que redireccionan) ---
@@ -159,9 +160,7 @@ case 'grafico_tortas':
         break;
 
     // EL DEFAULT SIEMPRE RIGUROSAMENTE AL FINAL
-    default:
-        $usuarioC->mostrarInicio();
-        break;
+    
 
         case 'api_estadisticas':
     // Ajusta '$adminC' por el nombre de la variable de tu controlador de administración
@@ -184,9 +183,13 @@ case 'grafico_tortas':
             $ventaC->procesarRetiro($_GET['id']);
             break;
 
-          case 'detalle_venta':
+        case 'detalle_venta':
             $ventaC->verDetalle($_GET['id']);
             break;
+
+        case 'metodos_pago':
+        include "views/metodos_pago.php";
+     break;
 
            // ---- CONTROL DE REPORTES GENERALES ----
    // ---- CONTROL DE REPORTES GENERALES (CORREGIDO) ----
@@ -201,6 +204,10 @@ case 'generarPDF': // Alias de compatibilidad
     $reporteC = new ReporteController($db); 
     $reporteC->generarPDF();
     break;
+
+    default:
+        $usuarioC->mostrarInicio();
+        break;
 }
 
 echo '</main>';

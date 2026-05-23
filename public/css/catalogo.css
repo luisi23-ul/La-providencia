@@ -1,11 +1,16 @@
+/* ==========================================================================
+   DISEÑO DE CATÁLOGO ESTILO MERCADOLIBRE / NIKE (public/css/catalogo.css)
+   ========================================================================== */
 
-/* Estilo General del Catálogo */
+/* Contenedor General */
 .contenedor-catalogo {
-    background-color: #f1f5f9; /* Fondo gris muy claro como el video */
-    padding: 60px 20px;
-    font-family: 'Segoe UI', sans-serif;
+    background-color: #f5f5f5; /* El gris claro clásico de fondo de MercadoLibre */
+    padding: 140px 24px 80px 24px;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
 
+/* Encabezado Principal */
 .encabezado-catalogo {
     text-align: center;
     margin-bottom: 50px;
@@ -13,42 +18,55 @@
 
 .encabezado-catalogo h2 {
     font-size: 2.5rem;
-    color: #1e293b;
+    color: #333333;
+    font-weight: 600;
     margin-bottom: 10px;
+    letter-spacing: -0.02em;
 }
 
-/* Rejilla de Tarjetas */
+.encabezado-catalogo p {
+    font-size: 1rem;
+    color: #666666;
+    font-weight: 400;
+}
+
+/* Rejilla Maestra Adaptativa (Configurada para 4 columnas en pantallas grandes) */
 .grid-productos {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 25px;
-    max-width: 1200px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px; /* Espaciado compacto idéntico a las grandes tiendas */
+    max-width: 1300px;
     margin: 0 auto;
+    padding: 0;
 }
 
-/* La Tarjeta (Card) */
+/* --- LA TARJETA (Blanco Puro, Borde Suave, Estilo MercadoLibre) --- */
 .card-producto {
     background: #ffffff;
-    border-radius: 25px; /* Bordes muy redondeados como el video */
-    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+    border-radius: 12px; /* Esquinas curvas más sutiles y comerciales */
+    border: 1px solid #eeeeee;
     overflow: hidden;
-    transition: 0.3s;
-    border: 1px solid #e2e8f0;
     margin: 0;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 
 .card-producto:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 15px 35px rgba(74, 222, 128, 0.2);
+    transform: translateY(-4px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08); /* Sombra nítida de enfoque */
 }
 
+/* Contenedor de la Imagen */
 .imagen-container {
-    background: #f8fafc;
-    height: 220px;
+    background: #ffffff; /* Blanco puro absoluto */
+    height: 240px;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 20px;
+    margin: 0;
+    border-bottom: 1px solid #f5f5f5; /* Línea divisoria muy sutil */
 }
 
 .card-producto img {
@@ -57,84 +75,140 @@
     object-fit: contain;
 }
 
-/* Textos internos */
-.card-producto figcaption {
+/* --- CUERPO DE TEXTOS Y JERARQUÍAS --- */
+.cuerpo-producto {
     padding: 20px;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
 }
 
+/* Título de Producto Limpio */
 .card-producto h3 {
-    font-size: 1.2rem;
-    color: #0f172a;
-    margin-bottom: 5px;
+    font-size: 1.15rem;
+    color: #333333;
+    font-weight: 400; /* Texto más ligero y moderno */
+    margin: 0 0 6px 0;
+    line-height: 1.4;
+    text-transform: capitalize;
 }
 
+/* Identificador de Calidad */
 .calidad {
-    font-size: 0.85rem;
-    color: #64748b;
-    margin-bottom: 15px;
+    font-size: 0.75rem;
+    color: #0052d4; /* Tu azul de marca */
+    font-weight: 700;
+    margin: 0 0 12px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
 }
 
+/* Stock Disponibilidad */
 .stock {
-    font-size: 0.9rem;
-    color: #1e293b;
-    border-top: 1px solid #f1f5f9;
-    padding-top: 10px;
+    font-size: 0.85rem;
+    color: #999999;
+    margin: 0 0 16px 0;
 }
 
-/* Fila de Precio y Carrito */
-.info-compra {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 15px;
+.stock strong {
+    color: #333333;
+    font-weight: 600;
 }
 
+/* El Precio (Con un margen inferior más equilibrado) */
 .precio {
-    font-size: 1.4rem;
-    font-weight: bold;
+    font-size: 1.8rem;
+    font-weight: 500; /* Peso balanceado y limpio */
     color: #1e293b;
+    letter-spacing: -0.01em;
+    margin-bottom: 20px; /* Más espacio antes del botón */
+    margin-top: auto;
 }
 
-.icon-carito {
-    background: #1e293b;
-    color: white;
-    width: 40px;
-    height: 40px;
+/* --- FORMULARIO Y BOTONES --- */
+.formulario-pedido {
     display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    margin: 0;
+}
+
+/* Selector de Cantidad */
+.input-cantidad {
+    width: 50px;
+    height: 40px;
+    text-align: center;
+    border: 1px solid #dddddd;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    color: #333333;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.input-cantidad:focus {
+    border-color: #0052d4;
+}
+
+/* Botón Agregar al Carrito */
+.btn-agregar {
+    flex-grow: 1;
+    height: 40px;
+    background-color: #0052d4; /* Color de tu marca */
+    color: #ffffff;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 12px;
+    gap: 8px;
     cursor: pointer;
+    transition: background-color 0.2s ease;
 }
 
-.btn-agregar {
-    display: inline-block;
-    background-color: #27ae60;
-    color: white;
-    padding: 8px 12px;
-    border-radius: 5px;
-    text-decoration: none;
-    font-size: 0.9em;
-    margin-top: 5px;
+.btn-agregar:hover {
+    background-color: #003db3;
 }
 
+/* El Botón de Iniciar Sesión (Ancho completo y espaciado perfecto) */
 .btn-login-comprar {
-    display: block;
-    font-size: 0.8em;
-    color: #e74c3c;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%; /* Toma todo el ancho del contenedor de texto */
+    height: 44px; /* Un pelín más alto para mejorar el área de click (touch target) */
+    
+    background-color: #f1f5f9; 
+    color: #0052d4; 
     text-decoration: none;
-    margin-top: 5px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-radius: 8px; /* Bordes suaves a juego con la estética actual */
+    box-sizing: border-box;
+    outline: none !important;
+    transition: all 0.2s ease-in-out;
 }
 
-.tabla-carrito td {
-    padding: 18px 15px; /* Más espacio arriba y abajo */
-    border-bottom: 1px solid #ececec;
-    color: #2c3e50; /* Color elegante para que se vea bien */
+/* Hover de conversión */
+.btn-login-comprar:hover {
+    background-color: #0052d4;
+    color: #ffffff;
+    transform: translateY(-1px);
 }
 
-.tabla-carrito thead th {
-    background-color: #f4f7f6;
-    text-transform: uppercase;
-    font-size: 0.85em;
-    letter-spacing: 1px;
+/* ==========================================================================
+   RESPONSIVE (Ajustes de columnas en cascada)
+   ========================================================================== */
+@media (max-width: 1100px) {
+    .grid-productos { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 800px) {
+    .grid-productos { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 500px) {
+    .grid-productos { grid-template-columns: 1fr; }
 }

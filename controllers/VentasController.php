@@ -7,7 +7,7 @@ class VentaController {
 
     public function __construct($db) {
         $this->db = $db;
-        $this->model = new VentaModel();
+        $this->model = new VentaModel($this->db);
     }
 
     // Carga la tabla con los productos seleccionados
