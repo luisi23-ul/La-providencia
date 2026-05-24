@@ -75,7 +75,7 @@ public function guardarCliente() {
 
     echo "<script>
             alert('¡Bienvenido(a) a La Providencia, " . $nombreUsuario . "! Tu registro ha sido exitoso.');
-            window.location.href = 'index.php?action=ver_catalogo'; 
+            window.location.href = 'index.php?action=ver_carrito'; 
           </script>";
 } else {
     echo "<script>

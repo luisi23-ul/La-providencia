@@ -124,14 +124,64 @@ class VentaModel {
         return $stmt->fetchAll(PDO::FETCH_OBJ);
     }
 
-    public function obtenerPorMetodo($metodo) {
-    // El '?' es un placeholder seguro para evitar errores SQL
-    $sql = "SELECT * FROM ventas WHERE metodo_pago = ?";
+   public function obtenerPorMetodo($metodo) {
+    // Usamos JOIN para traer el nombre del usuario y el método, igual que en las otras consultas
+    $sql = "SELECT v.*, u.nombre 
+            FROM ventas v
+            JOIN usuarios u ON v.id_usuario = u.id
+            WHERE v.id_metodo_pago = (SELECT id FROM metodos_pago WHERE nombre = ?)
+            ORDER BY v.fecha DESC";
+            
     $stmt = $this->db->prepare($sql);
-    $stmt->bind_param("s", $metodo);
+    $stmt->execute([$metodo]);
+    return $stmt->fetchAll(PDO::FETCH_OBJ);
+}
+
+// Para traer solo los pendientes
+// En VentaModel.php
+// En models/VentaModel.php
+
+public function obtenerPendientes() {
+    // Usamos el alias 'nombre_cliente' para que sea consistente
+    $sql = "SELECT v.*, u.nombre AS nombre_cliente 
+            FROM ventas v 
+            JOIN usuarios u ON v.id_usuario = u.id 
+            WHERE v.estado = 'pendiente' 
+            ORDER BY v.fecha DESC";
+    return $this->db->query($sql)->fetchAll(PDO::FETCH_OBJ);
+}
+
+public function obtenerRetiros() {
+    // IMPORTANTE: Agregué el mismo alias 'AS nombre_cliente' aquí
+    $sql = "SELECT v.*, u.nombre AS nombre_cliente 
+            FROM ventas v 
+            JOIN usuarios u ON v.id_usuario = u.id 
+            WHERE v.estado = 'pagado' 
+            ORDER BY v.fecha DESC";
+    return $this->db->query($sql)->fetchAll(PDO::FETCH_OBJ);
+}
+
+public function confirmarEntrega($id_venta) {
+    // ASEGÚRATE DE QUE SEA UN UPDATE, NO UN DELETE
+    $sql = "UPDATE ventas SET estado = 'entregado' WHERE id = :id";
+    $stmt = $this->db->prepare($sql);
+    return $stmt->execute(['id' => $id_venta]);
+}
+// En models/VentaModel.php
+public function obtenerVentasPorEstado($estadosArray) {
+    // Convertimos el array a una cadena para el IN
+    $in = "'" . implode("','", $estadosArray) . "'";
+    
+    $sql = "SELECT v.*, u.nombre AS nombre_cliente, mp.nombre AS nombre_metodo
+            FROM ventas v 
+            JOIN usuarios u ON v.id_usuario = u.id 
+            LEFT JOIN metodos_pago mp ON v.id_metodo_pago = mp.id
+            WHERE v.estado IN ($in) 
+            ORDER BY v.fecha DESC";
+            
+    $stmt = $this->db->prepare($sql);
     $stmt->execute();
-    $resultado = $stmt->get_result();
-    return $resultado->fetch_all(MYSQLI_OBJ);
+    return $stmt->fetchAll(PDO::FETCH_OBJ);
 }
 }
 ?>

@@ -17,6 +17,8 @@ $usuarioC = new UsuarioController($db);
 $adminC = new AdminControllers(); 
 $ventaC = new VentaController($db);
 $reporteC = new ReporteController($db);
+session_start();
+
 
 // 4. Captura de la acción (por defecto 'inicio')
 $action = $_GET['action'] ?? 'inicio';
@@ -200,22 +202,25 @@ case 'grafico_tortas':
 
            // ---- CONTROL DE REPORTES GENERALES ----
    // ---- CONTROL DE REPORTES GENERALES (CORREGIDO) ----
-case 'exportar_excel':
-case 'generarExcel': // Alias para que coincida con el botón de la vista
-    $reporteC = new ReporteController($db); 
-    $reporteC->generarExcel();
-    break;
 
-case 'exportar_pdf':
-case 'generarPDF': 
-    $reporteC->generarPDF();
-    break;
+
 
     default:
         $usuarioC->mostrarInicio();
         break;
 
-        // ... dentro del switch ($action) ...
+    // --- MÓDULO DE REPORTES Y EXPORTACIÓN ---
+case 'exportar_excel':
+    // Limpiamos el tipo: eliminamos caracteres como '$' por si acaso
+    $tipo = isset($_GET['tipo']) ? trim(str_replace('$', '', $_GET['tipo'])) : 'inventario';
+    $reporteC->generarExcel($tipo); 
+    exit;
+
+case 'exportar_pdf':
+    // Hacemos lo mismo para el PDF
+    $tipo = isset($_GET['tipo']) ? trim(str_replace('$', '', $_GET['tipo'])) : 'inventario';
+    $reporteC->generarPDF($tipo);
+    exit;
 
     case 'ver_reporte':
         // Capturamos el ID del método enviado por URL (ej: index.php?action=ver_reporte&metodo=1)
@@ -226,14 +231,7 @@ case 'generarPDF':
         break;
 
         // --- MÓDULO DE REPORTES Y EXPORTACIÓN ---
-case 'exportar_excel':
-    // Esta línea limpia automáticamente CUALQUIER carácter raro que venga en el tipo
-    $tipo = isset($_GET['tipo']) ? trim(str_replace('$', '', $_GET['tipo'])) : 'inventario';
-    
-    $reporteC = new ReporteController($db);
-    $reporteC->generarReporte($tipo); 
-    exit;
-    // ... continúa con los otros cases ...
+
 }
 
 echo '</main>';

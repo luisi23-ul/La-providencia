@@ -63,7 +63,7 @@ class VentaController {
     $totalBolivares = $totalFinal * $tasaCambio;
 
     // 2. Incluimos tu vista pasando la variable $metodos para que la use el <select>
-    include "views/carrito.php";
+    include "views/Carrito.php";
 }
     // Añade el producto a la sesión y salta de una vez a la vista del carrito
     public function añadir() {
@@ -170,32 +170,17 @@ class VentaController {
 }
 
     // Listar pagos pendientes y pagados para el administrador
-    public function pagosPendientes() {
-    $db = Database::connect();
+  public function pagosPendientes() {
+    $ventas = $this->model->obtenerVentasPorEstado(['pendiente', 'pagado']);
     
-    // 1. Obtener la tasa (usando tu lógica de scraping del BCV)
-    $tasaCambio = $this->obtenerTasaBCV(); // Asegúrate de tener esta función en tu clase
-
-    // 2. Consulta SQL: traemos el nombre del método y el total
-    $sql = "SELECT v.*, u.nombre AS nombre_cliente, mp.nombre AS nombre_metodo
-            FROM ventas v 
-            JOIN usuarios u ON v.id_usuario = u.id 
-            LEFT JOIN metodos_pago mp ON v.id_metodo_pago = mp.id
-            WHERE v.estado IN ('pendiente', 'pagado') 
-            ORDER BY v.fecha DESC";
-            
-    $stmt = $db->query($sql);
-    $ventas = $stmt->fetchAll(PDO::FETCH_OBJ);
-
-    // 3. Calcular el total en Bs por cada venta antes de enviarlo a la vista
+    // Cálculo de tasa
+    $tasaCambio = $this->obtenerTasaBCV();
     foreach ($ventas as $venta) {
-        // Si el método es Bs, multiplicamos, si es $, lo dejamos como prefieras
         $venta->total_bs = $venta->total * $tasaCambio;
     }
     
     include "views/pagos_pendientes.php";
 }
-
 
 private function obtenerTasaBCV() {
     $tasaCambio = 526.86940000; // Valor de respaldo
@@ -221,21 +206,21 @@ private function obtenerTasaBCV() {
    // Listar retiros (solo los que ya fueron pagados)
     // Listar retiros (los que ya fueron pagados y los ya entregados)
    public function retiroPedidos() {
-    $db = Database::connect();
-    $tasaCambio = $this->obtenerTasaBCV(); // Usamos la misma función de scraping
-
-    // SQL con JOIN para traer el nombre del método
+    // ... tu código ...
     $sql = "SELECT v.*, u.nombre AS nombre_cliente, mp.nombre AS nombre_metodo
             FROM ventas v 
             JOIN usuarios u ON v.id_usuario = u.id 
             LEFT JOIN metodos_pago mp ON v.id_metodo_pago = mp.id
-            WHERE v.estado IN ('pagado', 'entregado') 
+            WHERE v.estado IN ('pagado', 'retirado', 'entregado') 
             ORDER BY v.fecha DESC";
+    // ... resto del código ...
+
             
-    $stmt = $db->query($sql);
+    $stmt = $this->db->query($sql);
     $ventas = $stmt->fetchAll(PDO::FETCH_OBJ);
 
     // Calcular el total en Bs
+   $tasaCambio = $this->obtenerTasaBCV();
     foreach ($ventas as $venta) {
         $venta->total_bs = $venta->total * $tasaCambio;
     }
@@ -343,6 +328,18 @@ public function manejarReporte($id_metodo) {
         case 3: include  "views/trasferencia.php";break;
         case 4: include "views/pago_movil.php";; break;
         default: echo "Método no encontrado";
+    }
+}
+
+public function confirmarEntrega() {
+    $id = $_POST['id_venta'] ?? null;
+    
+    if ($id) {
+        $modelo = new VentaModel($this->db);
+        if ($modelo->confirmarEntrega($id)) {
+            // Redirige de vuelta o muestra éxito sin haber borrado nada
+            header("Location: index.php?action=retiro_pedidos&status=success");
+        }
     }
 }
 

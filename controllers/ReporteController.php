@@ -26,31 +26,38 @@ class ReporteController {
     
     // Función interna para centralizar la búsqueda de datos según el tipo
     private function obtenerDatosReporte($tipo) {
-    // 1. Definir los tipos de pago válidos
-    $metodos_pago = ['efectivo', 'efectivobs', 'trasferencia', 'pago_movil'];
-
-    // 2. Si es inventario (mantenemos tu lógica anterior)
-    if ($tipo === 'inventario') {
-        require_once "models/ProductoModel.php";
-        $modelo = new ProductoModel($this->db);
-        return ['titulo' => 'REPORTE DE INVENTARIO', 'datos' => $modelo->listarProductos()];
+        if ($tipo === 'inventario') {
+            require_once "models/ProductoModel.php"; 
+            $modelo = new ProductoModel($this->db); 
+            return [
+                'titulo' => 'REPORTE GENERAL DE INVENTARIO - LA PROVIDENCIA',
+                'datos'  => $modelo->listarProductos()
+            ];
+        } elseif ($tipo === 'pendientes') {
+            require_once "models/VentaModel.php";
+            $modelo = new VentaModel($this->db);
+            return [
+                'titulo' => 'REPORTE DE VENTAS: PAGOS PENDIENTES',
+                'datos'  => $modelo->obtenerPorEstado('pendiente') 
+            ];
+        } elseif ($tipo === 'retiros') {
+            require_once "models/VentaModel.php";
+            $modelo = new VentaModel($this->db); 
+            return [
+                'titulo' => 'REPORTE DE LOGÍSTICA: PEDIDOS LISTOS PARA RETIRO',
+                'datos'  => $modelo->obtenerPorEstado('pagado')
+            ];
+        } elseif ($tipo === 'estadisticas') { 
+            require_once "models/ProductoModel.php";
+            $modelo = new ProductoModel($this->db);
+            return [
+                'titulo' => 'ANÁLISIS ESTADÍSTICO DE INVENTARIO - LA PROVIDENCIA',
+                'datos'  => $modelo->listarProductos()
+            ];
+        }
+        exit("Tipo de reporte no válido.");
     }
 
-    // 3. Si es uno de los métodos de pago
-    if (in_array($tipo, $metodos_pago)) {
-        require_once "models/VentaModel.php";
-        $modelo = new VentaModel($this->db);
-        
-        // Aquí llamamos al modelo pasando el tipo directamente
-        return [
-            'titulo' => 'REPORTE DE VENTAS: ' . strtoupper(str_replace('_', ' ', $tipo)),
-            'datos'  => $modelo->obtenerPorMetodo($tipo) // Asegúrate que tu modelo use esta variable
-        ];
-    }
-
-    // Si no es ninguno de los anteriores, lanzamos error
-    die("Error: El tipo de reporte '$tipo' no está configurado.");
-}
     // ==========================================
     // LOGICA PARA EXPORTAR A EXCEL
     // ==========================================
@@ -158,58 +165,61 @@ $sheet->addChart($chart);
         // -------------------------------------------------------------------------
         // CASO 2: Reportes Clásicos de Tablas (Inventario, Ventas, Retiros) en .xls
         // -------------------------------------------------------------------------
+       // -------------------------------------------------------------------------
+        // CASO 2: Reportes Clásicos de Tablas (Inventario, Ventas, Retiros)
+        // -------------------------------------------------------------------------
+       // -------------------------------------------------------------------------
+        // CASO 2: Reporte generado con PhpSpreadsheet (Sin errores de extensión)
+        // -------------------------------------------------------------------------
         if (ob_get_length()) ob_end_clean();
-        $nombreArchivo = "Reporte_" . $tipo . "_" . date('d_m_Y') . ".xls";
+        
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $tasa = 36.50; // Ajusta según tu variable real
 
-        header("Content-Type: application/vnd.ms-excel; charset=utf-8");
-        header("Content-Disposition: attachment; filename=$nombreArchivo");
-        header("Pragma: no-cache");
-        header("Expires: 0");
+        // 1. Título del Reporte
+        $sheet->setCellValue('A1', $reporte['titulo']);
+        $sheet->mergeCells('A1:F1');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
 
-        echo "<table border='1' style='font-family: Arial, sans-serif; border-collapse: collapse;'>";
-        echo "<tr><th colspan='5' style='background-color: #4b5563; color: white; font-size: 14pt; padding: 10px;'> " . $reporte['titulo'] . "</th></tr>";
-        echo "<tr><td colspan='5' style='text-align: center; font-size: 9pt; color: #555;'>Fecha de generación: " . date('d/m/Y H:i:s') . "</td></tr>";
-        echo "<tr><td colspan='5'></td></tr>"; 
-
+        // 2. Encabezados según el tipo
         if ($tipo === 'inventario') {
-            echo "<tr style='background-color: #cbd5e1; font-weight: bold;'>
-                    <th style='padding: 5px;'>Producto</th>
-                    <th style='padding: 5px;'>Precio</th>
-                    <th style='padding: 5px;'>Stock Disponible</th>
-                    <th style='padding: 5px;'>Descripción</th>
-                    <th style='padding: 5px;'>Categoría</th>
-                  </tr>";
-            foreach ($reporte['datos'] as $p) {
-                echo "<tr>
-                        <td style='padding: 5px;'>" . htmlspecialchars($p->nombre_producto) . "</td>
-                        <td style='padding: 5px; text-align: right;'>$" . number_format($p->precio, 2) . "</td>
-                        <td style='padding: 5px; text-align: center;'>{$p->stock} unidades</td>
-                        <td style='padding: 5px;'>" . htmlspecialchars($p->descripcion) . "</td>
-                        <td style='padding: 5px; text-align: center;'>{$p->id_categoria}</td>
-                      </tr>";
-            }
+            $headers = ['Producto', 'Precio', 'Stock', 'Descripción', 'Categoría'];
         } else {
-            echo "<tr style='background-color: #cbd5e1; font-weight: bold;'>
-                    <th style='padding: 5px;'>ID Orden</th>
-                    <th style='padding: 5px;'>Cliente</th>
-                    <th style='padding: 5px;'>Fecha de Registro</th>
-                    <th style='padding: 5px;'>Monto Total</th>
-                    <th style='padding: 5px;'>Estado Actual</th>
-                  </tr>";
-            foreach ($reporte['datos'] as $v) {
-                echo "<tr>
-                        <td style='padding: 5px; text-align: center;'>#{$v->id}</td>
-                        <td style='padding: 5px;'>" . htmlspecialchars($v->nombre) . "</td>
-                        <td style='padding: 5px; text-align: center;'>{$v->fecha}</td>
-                        <td style='padding: 5px; text-align: right;'>$" . number_format($v->total, 2) . "</td>
-                        <td style='padding: 5px; text-align: center; font-weight: bold;'>" . strtoupper($v->estado) . "</td>
-                      </tr>";
-            }
+            $headers = ['ID Orden', 'Cliente', 'Fecha', 'Total (USD)', 'Total (Bs)', 'Estado'];
         }
-        echo "</table>";
-        exit();
-    }
+        
+        $sheet->fromArray($headers, NULL, 'A3');
+        $sheet->getStyle('A3:F3')->getFont()->setBold(true);
 
+        // 3. Llenar Datos
+        $fila = 4;
+        foreach ($reporte['datos'] as $d) {
+            if ($tipo === 'inventario') {
+                $sheet->fromArray([$d->nombre_producto, $d->precio, $d->stock, $d->descripcion, $d->id_categoria], NULL, 'A' . $fila);
+            } else {
+                $sheet->fromArray([
+                    $d->id, 
+                    $d->nombre, 
+                    $d->fecha, 
+                    $d->total, 
+                    ($d->total * $tasa), 
+                    strtoupper($d->estado)
+                ], NULL, 'A' . $fila);
+            }
+            $fila++;
+        }
+
+        // 4. Salida del archivo
+        $nombreArchivo = "Reporte_" . $tipo . "_" . date('d_m_Y') . ".xlsx";
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $nombreArchivo . '"');
+        header('Cache-Control: max-age=0');
+
+        $writer = new Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit();
+         }
     // ==========================================
     // LOGICA PARA IMPRIMIR / EXPORTAR A PDF (REQUERIDO)
     // ==========================================
@@ -227,6 +237,7 @@ $sheet->addChart($chart);
                 <meta charset="UTF-8">
                 <title><?php echo $reporte['titulo']; ?></title>
                 <style>
+                    
                     body { font-family: Arial, sans-serif; margin: 30px; color: #333; }
                     .print-header { text-align: center; margin-bottom: 25px; border-bottom: 3px solid #4b5563; padding-bottom: 10px; }
                     .print-header h1 { margin: 0; font-size: 22pt; color: #1e293b; }
@@ -263,56 +274,66 @@ $sheet->addChart($chart);
         // AQUÍ RECOMIENDO DEJAR TU CÓDIGO CLÁSICO DE FPDF/TCPDF PARA LAS TABLAS SIMPLES
         // ASÍ EL PROFESOR VERÁ QUE USAS LAS LIBRERÍAS EXIGIDAS EN EL TRABAJO ESCRITO
         // =========================================================================
+        // =========================================================================
+        // REPORTE ESTÁNDAR (INVENTARIO Y VENTAS) - IGUAL A VISTA ADMINISTRATIVA
+        // =========================================================================
         $reporte = $this->obtenerDatosReporte($tipo);
         if (ob_get_length()) ob_end_clean();
-        
-        // (Aquí puedes llamar a tu require_once de FPDF o TCPDF para renderizar el PDF de Inventario/Ventas nativo)
-        // Por ahora, dejamos tu HTML limpio para asegurar que las tablas comunes sigan abriendo sin errores:
         ?>
         <!DOCTYPE html>
         <html lang="es">
         <head>
             <meta charset="UTF-8">
-            <title><?php echo $reporte['titulo']; ?></title>
             <style>
-                body { font-family: Arial, sans-serif; color: #333; margin: 30px; }
-                .print-header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #4b5563; padding-bottom: 10px; }
-                .print-header h1 { margin: 5px 0; font-size: 20pt; color: #1e293b; }
-                .print-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 10pt; }
-                .print-table th { background-color: #0f172a; color: white; padding: 10px; text-align: left; }
-                .print-table td { padding: 10px; border-bottom: 1px solid #cbd5e1; }
+                body { font-family: sans-serif; margin: 20px; }
+                .print-header { text-align: center; margin-bottom: 20px; }
+                table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                th { background-color: #334155; color: white; padding: 10px; text-align: left; }
+                td { padding: 8px; border-bottom: 1px solid #ddd; }
+                tr:nth-child(even) { background-color: #f8fafc; }
             </style>
         </head>
         <body>
-            <header class="print-header">
+            <div class="print-header">
                 <h1>LA PROVIDENCIA</h1>
                 <h3><?php echo $reporte['titulo']; ?></h3>
-            </header>
-            <table class="print-table">
-                <thead>
-                    <tr>
-                        <th>ID / Concepto</th>
-                        <th>Detalle General</th>
-                        <th>Estado / Registro</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($reporte['datos'] as $d): ?>
-                    <tr>
-                        <td>#<?php echo $d->id ?? $d->nombre_producto; ?></td>
-                        <td><?php echo $d->nombre ?? $d->descripcion ?? 'N/A'; ?></td>
-                        <td><?php echo $d->estado ?? $d->stock . ' unidades'; ?></td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+            </div>
+          <table class="print-table">
+    <thead>
+        <tr>
+            <?php if ($tipo === 'inventario'): ?>
+                <th>Producto</th><th>Precio</th><th>Stock</th><th>Categoría</th>
+            <?php else: ?>
+                <th>ID</th><th>Cliente</th><th>Fecha</th><th>Total (USD)</th><th>Total (Bs)</th><th>Estado</th>
+            <?php endif; ?>
+        </tr>
+    </thead>
+    <tbody>
+        <?php foreach ($reporte['datos'] as $d): ?>
+        <tr>
+            <?php if ($tipo === 'inventario'): ?>
+                <td><?php echo htmlspecialchars($d->nombre_producto); ?></td>
+                <td>$<?php echo number_format($d->precio, 2); ?></td>
+                <td><?php echo $d->stock; ?> unidades</td>
+                <td><?php echo $d->id_categoria; ?></td>
+            <?php else: ?>
+                <td>#<?php echo $d->id; ?></td>
+                <td><?php echo htmlspecialchars($d->nombre); ?></td>
+                <td><?php echo $d->fecha; ?></td>
+                <td>$<?php echo number_format($d->total, 2); ?></td>
+                
+                <td>Bs. <?php echo number_format($d->total * 36.50, 2); ?></td>
+                
+                <td><strong><?php echo strtoupper($d->estado); ?></strong></td>
+            <?php endif; ?>
+        </tr>
+        <?php endforeach; ?>
+    </tbody>
+</table>
             <script> window.onload = function() { window.print(); } </script>
         </body>
         </html>
         <?php
         exit();
     }
-
-  
-    
-}
+       }
