@@ -26,38 +26,31 @@ class ReporteController {
     
     // Función interna para centralizar la búsqueda de datos según el tipo
     private function obtenerDatosReporte($tipo) {
-        if ($tipo === 'inventario') {
-            require_once "models/ProductoModel.php"; 
-            $modelo = new ProductoModel($this->db); 
-            return [
-                'titulo' => 'REPORTE GENERAL DE INVENTARIO - LA PROVIDENCIA',
-                'datos'  => $modelo->listarProductos()
-            ];
-        } elseif ($tipo === 'pendientes') {
-            require_once "models/VentaModel.php";
-            $modelo = new VentaModel($this->db);
-            return [
-                'titulo' => 'REPORTE DE VENTAS: PAGOS PENDIENTES',
-                'datos'  => $modelo->obtenerPorEstado('pendiente') 
-            ];
-        } elseif ($tipo === 'retiros') {
-            require_once "models/VentaModel.php";
-            $modelo = new VentaModel($this->db); 
-            return [
-                'titulo' => 'REPORTE DE LOGÍSTICA: PEDIDOS LISTOS PARA RETIRO',
-                'datos'  => $modelo->obtenerPorEstado('pagado')
-            ];
-        } elseif ($tipo === 'estadisticas') { 
-            require_once "models/ProductoModel.php";
-            $modelo = new ProductoModel($this->db);
-            return [
-                'titulo' => 'ANÁLISIS ESTADÍSTICO DE INVENTARIO - LA PROVIDENCIA',
-                'datos'  => $modelo->listarProductos()
-            ];
-        }
-        exit("Tipo de reporte no válido.");
+    // 1. Definir los tipos de pago válidos
+    $metodos_pago = ['efectivo', 'efectivobs', 'trasferencia', 'pago_movil'];
+
+    // 2. Si es inventario (mantenemos tu lógica anterior)
+    if ($tipo === 'inventario') {
+        require_once "models/ProductoModel.php";
+        $modelo = new ProductoModel($this->db);
+        return ['titulo' => 'REPORTE DE INVENTARIO', 'datos' => $modelo->listarProductos()];
     }
 
+    // 3. Si es uno de los métodos de pago
+    if (in_array($tipo, $metodos_pago)) {
+        require_once "models/VentaModel.php";
+        $modelo = new VentaModel($this->db);
+        
+        // Aquí llamamos al modelo pasando el tipo directamente
+        return [
+            'titulo' => 'REPORTE DE VENTAS: ' . strtoupper(str_replace('_', ' ', $tipo)),
+            'datos'  => $modelo->obtenerPorMetodo($tipo) // Asegúrate que tu modelo use esta variable
+        ];
+    }
+
+    // Si no es ninguno de los anteriores, lanzamos error
+    die("Error: El tipo de reporte '$tipo' no está configurado.");
+}
     // ==========================================
     // LOGICA PARA EXPORTAR A EXCEL
     // ==========================================
@@ -319,4 +312,7 @@ $sheet->addChart($chart);
         <?php
         exit();
     }
+
+  
+    
 }

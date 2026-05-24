@@ -1,8 +1,6 @@
 <?php
 // 1. Configuración inicial y Errores
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-session_start();
+
 
 // 2. Importación de Requerimientos
 require_once 'config/db.php';
@@ -209,8 +207,7 @@ case 'generarExcel': // Alias para que coincida con el botón de la vista
     break;
 
 case 'exportar_pdf':
-case 'generarPDF': // Alias de compatibilidad
-    $reporteC = new ReporteController($db); 
+case 'generarPDF': 
     $reporteC->generarPDF();
     break;
 
@@ -228,6 +225,14 @@ case 'generarPDF': // Alias de compatibilidad
         $ventaC->manejarReporte($id_metodo);
         break;
 
+        // --- MÓDULO DE REPORTES Y EXPORTACIÓN ---
+case 'exportar_excel':
+    // Esta línea limpia automáticamente CUALQUIER carácter raro que venga en el tipo
+    $tipo = isset($_GET['tipo']) ? trim(str_replace('$', '', $_GET['tipo'])) : 'inventario';
+    
+    $reporteC = new ReporteController($db);
+    $reporteC->generarReporte($tipo); 
+    exit;
     // ... continúa con los otros cases ...
 }
 

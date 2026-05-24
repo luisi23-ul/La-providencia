@@ -123,5 +123,15 @@ class VentaModel {
         $stmt->execute([$id]);
         return $stmt->fetchAll(PDO::FETCH_OBJ);
     }
+
+    public function obtenerPorMetodo($metodo) {
+    // El '?' es un placeholder seguro para evitar errores SQL
+    $sql = "SELECT * FROM ventas WHERE metodo_pago = ?";
+    $stmt = $this->db->prepare($sql);
+    $stmt->bind_param("s", $metodo);
+    $stmt->execute();
+    $resultado = $stmt->get_result();
+    return $resultado->fetch_all(MYSQLI_OBJ);
+}
 }
 ?>

@@ -1,6 +1,19 @@
 <section class="contenedor-reporte">
     <link rel="stylesheet" href="public/css/pagos.css?v=<?php echo time(); ?>">
-    <h2>Reporte: Efectivo dolares</h2>
+    
+    <header class="reporte-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2>Reporte: <?php echo htmlspecialchars($nombreMetodo ?? 'Método'); ?></h2>
+        
+        <div class="acciones-exportar">
+        <a href="index.php?action=exportar_excel&tipo=efectivo$" class="btn">
+    Descargar Reporte Efectivo
+</a>
+
+<a href="index.php?action=exportar_excel&tipo=inventario" class="btn">
+    Descargar Inventario
+</a>
+        </div>
+    </header>
     
     <article class="tarjeta-total">
         <p>Total Recaudado en Dólares: <strong>$<?php echo number_format($totalUSD ?? 0, 2); ?></strong></p>

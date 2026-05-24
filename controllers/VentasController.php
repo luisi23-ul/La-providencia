@@ -345,5 +345,7 @@ public function manejarReporte($id_metodo) {
         default: echo "Método no encontrado";
     }
 }
+
+
 }
 ?>
