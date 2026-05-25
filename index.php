@@ -1,28 +1,66 @@
 <?php
-// 1. Configuración inicial y Errores
-
-
-// 2. Importación de Requerimientos
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+session_start(); // Mueve esto arriba del todo
 require_once 'config/db.php';
 require_once 'controllers/UsuarioController.php';
 require_once 'controllers/AdminControllers.php'; 
 require_once 'controllers/VentasController.php';
 require_once 'models/VentaModel.php';
 require_once 'controllers/ReporteController.php';
+require_once 'controllers/MasterController.php';
 require_once __DIR__ . '/vendor/autoload.php';
 
-// 3. Inicialización de la Base de Datos y Controladores
 $db = Database::connect(); 
+
+
 $usuarioC = new UsuarioController($db); 
 $adminC = new AdminControllers(); 
 $ventaC = new VentaController($db);
 $reporteC = new ReporteController($db);
-session_start();
+$masterC = new MasterController($db);
 
-
-// 4. Captura de la acción (por defecto 'inicio')
 $action = $_GET['action'] ?? 'inicio';
 
+
+
+// --- PASO 1: Acciones que no requieren Header ---
+if ($action == 'registrar_cliente') { $usuarioC->guardarCliente(); exit(); }
+if ($action == 'valider_login_registro') { $usuarioC->ingresar(); exit(); }
+if ($action == 'validar_login') { $usuarioC->validarLogin(); exit(); }
+
+// --- PASO 2: Carga de la Interfaz ---
+include 'views/layout/header.php'; 
+echo '<main id="app">'; 
+
+// --- BLOQUE DE SEGURIDAD MASTER ---
+$acciones_master = ['gestionar_admins', 'dashboard_master', 'nuevo_admin', 'guardar_nuevo_admin', 'editar_admin', 'actualizar_admin', 'eliminar_admin', 'configuracion_sistema', 'actualizar_configuracion'];
+
+if (in_array($action, $acciones_master)) {
+    if (isset($_SESSION['rol']) && ($_SESSION['rol'] == 1 || $_SESSION['rol'] == 2)) {
+        switch ($action) {
+            case 'dashboard_master': $masterC->mostrarDashboard_master(); break;
+            case 'gestionar_admins': $masterC->gestionarAdmins(); break;
+            case 'nuevo_admin': include "views/nuevo_admin.php"; break;
+            case 'guardar_nuevo_admin': $masterC->crearAdmin(); break;
+            case 'editar_admin': $masterC->editarAdmin(); break;
+            case 'actualizar_admin': $masterC->actualizarAdmin(); break;
+            case 'eliminar_admin': $masterC->eliminarAdmin($_GET['id']); break;
+            case 'configuracion_sistema': $masterC->vistaConfiguracion(); break;
+            case 'actualizar_configuracion': 
+    $masterC->actualizarConfiguracion(); 
+    break;
+        }
+        echo '</main></main>'; // Cerrar etiquetas
+        exit();
+    } else {
+        header("Location: index.php?action=login");
+        exit();
+    }
+}
+// 4. Captura de la acción (por defecto 'inicio')
+$action = $_GET['action'] ?? 'inicio';
 // >>> REGLA DE ORO SENIOR: Definimos el array de admin ANTES de cargar el Header <<<
 $acciones_admin = [
     'dashboard', 
@@ -39,6 +77,7 @@ $acciones_admin = [
     'metodos_pago' 
 ];
 
+
 // Línea 21 aprox:
 $acciones_admin = [
     'dashboard', 
@@ -47,6 +86,10 @@ $acciones_admin = [
     'metodos_pago',
     'ver_reporte' // <--- Agrégalo aquí para que mantenga el estilo de tu panel
 ];
+
+
+
+
 
 // --- PASO 1: Lógica de procesamiento (Acciones que redireccionan) ---
 if ($action == 'registrar_cliente') {
@@ -228,6 +271,42 @@ case 'exportar_pdf':
         
         // Llamamos a la función que creamos en VentasController
         $ventaC->manejarReporte($id_metodo);
+        break;
+
+        // ==========================================
+    // MÓDULO MASTER (GESTIÓN DE ADMINS Y CONFIG)
+    // ==========================================
+    case 'gestionar_admins':
+        $masterC->gestionarAdmins();
+        break;
+
+    case 'nuevo_admin':
+        include "views/nuevo_admin.php";
+        break;
+
+    case 'guardar_nuevo_admin':
+        $masterC->crearAdmin();
+        break;
+
+    case 'editar_admin':
+        // Necesitas un método en tu MasterController que busque al usuario
+        $masterC->editarAdmin(); 
+        break;
+
+    case 'actualizar_admin':
+        $masterC->actualizarAdmin();
+        break;
+
+    case 'eliminar_admin':
+        $masterC->eliminarAdmin($_GET['id']);
+        break;
+
+    case 'configuracion_sistema':
+        $masterC->editarConfiguracion();
+        break;
+
+    case 'actualizar_configuracion':
+        $masterC->actualizarSistema();
         break;
 
         // --- MÓDULO DE REPORTES Y EXPORTACIÓN ---

@@ -31,4 +31,6 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         console.warn("No se encontró el botón hamburguesa (.menu-toggle) en esta pantalla.");
     }
+
+    
 });

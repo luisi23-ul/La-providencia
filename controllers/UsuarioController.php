@@ -1,10 +1,13 @@
 <?php
 class UsuarioController {
+    private $db;
     private $modelo;
 
     public function __construct($db) {
+        $this->db = $db;
         require_once 'models/UsuarioModels.php';
-        $this->modelo = new UsuarioModels($db);
+        // AQUÍ ESTABA EL ERROR: Necesitas pasarle $db al modelo
+       $this->modelo = new UsuarioModels();
     }
 
     public function mostrarLogin() {
@@ -18,34 +21,46 @@ class UsuarioController {
      public function mostrarDashboard() {
         include 'views/dashboard.php';
     }
+
+    
+     public function mostrarDashboard_master() {
+        include 'views/dashboard_master.php';
+    }
+    
     
 
-    public function validarLogin() {
-        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            $email = isset($_POST['email']) ? $_POST['email'] : '';
-            $pass = isset($_POST['password']) ? $_POST['password'] : '';
+   public function validarLogin() {
+    if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+        $email = $_POST['email'] ?? '';
+        $pass = $_POST['password'] ?? '';
 
-            if ($email === 'luisa@gmail.com' && $pass === 'Dios1234') {
-                if (session_status() == PHP_SESSION_NONE) {
-                    session_start();
-                }
+        $datos = array("correo" => $email);
+        $objModelo = new UsuarioModels();
+        $usuario = $objModelo->buscarUsuarioModel($datos);
 
-                $_SESSION['admin_auth'] = 'Luisana Admin';
-                
-                
-                header("Location: index.php?action=dashboard");
-                exit();
-                
-                
-            } else {
-                echo "<script>
-                    alert('Acceso Denegado: Credenciales de administrador incorrectas.');
-                    window.location.href = 'index.php?action=login';
-                </script>";
-            }
+        
+
+        // Verificamos si existe el usuario y si la clave coincide con el hash
+        if ($usuario && password_verify($pass, $usuario["clave"])) {
+            
+            if (session_status() == PHP_SESSION_NONE) session_start();
+           // En UsuarioController.php, dentro de validarLogin(), después de obtener el $usuario
+    $_SESSION["id_usuario"] = $usuario["id"];
+    $_SESSION["rol"] = $usuario["id_rol"];
+    $_SESSION["nombre"] = $usuario["nombre"];
+   $_SESSION["permisos"] = explode(',', $usuario["permisos"]); // Convierte "a,b" a ["a", "b"]
+                // Redirección centralizada
+           if ($_SESSION['rol'] == 1) {
+    header("Location: index.php?action=dashboard_master");
+} elseif ($_SESSION['rol'] == 2) {
+    header("Location: index.php?action=dashboard"); // O la acción que corresponda a tu dashboard de admin
+}
+            exit();
+        } else {
+            echo "<script>alert('Correo o contraseña incorrectos.'); window.location.href='index.php?action=login';</script>";
         }
     }
-
+}
     // Dentro de UsuarioController.php
 
 public function mostrarRegistro() {

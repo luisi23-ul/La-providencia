@@ -2,7 +2,7 @@
 class Database {
     public static function connect() {
         $host = "localhost";
-        $db_name = "la_providencia"; // Tu base de datos
+        $db_name = "la_providencia";
         $user = "root";
         $pass = "";
 
