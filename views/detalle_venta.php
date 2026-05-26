@@ -1,7 +1,7 @@
 <link rel="stylesheet" href="public/css/dashboard.css?v=<?php echo time(); ?>">
 
 <section class="panel-administracion">
-    <?php include 'sidebar.php'; ?>
+ 
 
     <main class="main-dashboard-content">
         <section class="panel-modulo-contenedor">

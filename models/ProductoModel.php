@@ -137,7 +137,7 @@ public function obtenerEstadisticasGenerales() {
     // Asegúrate de pegar esto DENTRO de la clase ProductoModel en models/ProductoModel.php
     public function listarProductos() {
         try {
-            // Usamos la propiedad de conexión que tenga tu modelo (usualmente $this->db)
+            // Usamos la propiedad de conexión que tenga tu modelo (usualmente $this->d
             $sql = "SELECT id, nombre_producto, precio, stock, descripcion, id_categoria FROM productos";
             $stmt = $this->db->prepare($sql);
             $stmt->execute();

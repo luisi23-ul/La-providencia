@@ -13,7 +13,11 @@ class MasterController {
       $this->modeloConfig = new ConfiguracionModel($db);
     }
 
-    // 1. GESTIÓN DE ADMINISTRADORES (CRUD)
+    public function mostrarDashboard_master() {
+    include 'views/dashboard_master.php';
+}
+
+    //  administradores CRUD
    public function gestionarAdmins() {
     // Permitir rol 1 (Master) Y rol 2 (Admin)
     if ($_SESSION['rol'] != 1 && $_SESSION['rol'] != 2) {
@@ -24,7 +28,7 @@ class MasterController {
     include 'views/gestionar_admins.php';
 }
 
-   // En MasterController.php
+   // crea nuevos adm
 public function crearAdmin() {
     // 1. Depuración: Ver qué recibe el controlador
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -32,7 +36,7 @@ public function crearAdmin() {
             die("ERROR: El formulario no envió el campo 'nombre'. Verifica los 'name' de tus inputs.");
         }
 
-        // 2. Verificar modelo
+        // Verifica modelo
         if (!$this->modelo) {
             die("ERROR: El modelo es NULL en el controlador.");
         }
@@ -47,40 +51,14 @@ public function crearAdmin() {
             "permisos" => $permisos
         ];
 
-        // 3. Ejecución
+        //  Ejecucuta
         $this->modelo->registrarUsuarioModel($datos);
         header("Location: index.php?action=gestionar_admins");
         exit();
     }
 }
-
-   public function eliminarAdmin() {
-    // Verificar que el ID viene en la URL
-    if (isset($_GET['id'])) {
-        $id = $_GET['id'];
-        $this->modelo->eliminarAdminModel($id);
-    }
-    
-    // Redirigir de vuelta al listado
-    header("Location: index.php?action=gestionar_admins");
-    exit();
-}
-    // 2. CONFIGURACIÓN DEL SISTEMA (DISEÑO Y TEXTOS)
-    public function editarConfiguracion() {
-        if ($_SESSION['rol'] != 1) die("Acceso denegado");
-        
-        // Obtener datos actuales
-        $config = $this->db->query("SELECT * FROM sistema WHERE id = 1")->fetch(PDO::FETCH_OBJ);
-        include 'views/configuracion_sistema.php';
-    }
-
-   
-    
-
-    public function editarAdmin() {
-    // Depuración: ver qué valor tiene el rol
-    // var_dump($_SESSION['rol']); die(); 
-
+  //editamos los administradores
+  public function editarAdmin() {
     if (!isset($_SESSION['rol']) || $_SESSION['rol'] != 1) {
         die("Acceso denegado. Tu rol actual es: " . ($_SESSION['rol'] ?? 'No definido'));
     }
@@ -95,9 +73,18 @@ public function crearAdmin() {
     include 'views/editar_admin.php'; 
 }
 
-public function mostrarDashboard_master() {
-    include 'views/dashboard_master.php';
+   public function eliminarAdmin() {
+    // Verificar que el ID viene en la URL
+    if (isset($_GET['id'])) {
+        $id = $_GET['id'];
+        $this->modelo->eliminarAdminModel($id);
+    }
+    
+    // Redirigir de vuelta al listado
+    header("Location: index.php?action=gestionar_admins");
+    exit();
 }
+   
  public function actualizarAdmin() {
     // 1. Recibir datos del formulario
     $id = $_POST['id'];
@@ -134,7 +121,16 @@ public function vistaConfiguracion() {
         die("Error: No se encontró el archivo en $ruta");
     }
 }
-// Agrégalo dentro de la clase MasterController
+
+ // editamos aqui la pagina
+    public function editarConfiguracion() {
+        if ($_SESSION['rol'] != 1) die("Acceso denegado");
+        
+        // Obtener datos actuales
+        $config = $this->db->query("SELECT * FROM sistema WHERE id = 1")->fetch(PDO::FETCH_OBJ);
+        include 'views/configuracion_sistema.php';
+    }
+// Actualizar los cambios de la pagin
 public function actualizarConfiguracion() {
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $datos = [
@@ -143,13 +139,12 @@ public function actualizarConfiguracion() {
             'color_primario'   => $_POST['color_primario'],
             'color_secundario' => $_POST['color_secundario'],
             'footer_texto'     => $_POST['footer_texto'],
-            'telefono'         => $_POST['telefono'],      // Nuevo
-            'email_contacto'   => $_POST['email_contacto'],// Nuevo
-            'direccion'        => $_POST['direccion'],     // Nuevo
-            'mapa_url'         => $_POST['mapa_url'],      // Nuevo
+            'telefono'         => $_POST['telefono'],      
+            'email_contacto'   => $_POST['email_contacto'],
+            'direccion'        => $_POST['direccion'],     
+            'mapa_url'         => $_POST['mapa_url'],      
             'logo'             => ''
         ];
-        // ... (resto de tu lógica de logo)
         $this->modeloConfig->actualizarConfiguracionModel($datos);
         header("Location: index.php?action=configuracion_sistema");
     }

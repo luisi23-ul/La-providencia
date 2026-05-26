@@ -54,7 +54,7 @@
             <i class="fas fa-store"></i> Tienda
         </a>
 
-        <a href="index.php?action=logout" class="menu-item logout-item">
+        <a href="index.php?action=inicio" class="menu-item logout-item">
             <i class="fas fa-power-off"></i> Cerrar Sesión
         </a>
 

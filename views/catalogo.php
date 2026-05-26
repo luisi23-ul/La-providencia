@@ -34,9 +34,7 @@
                             <input type="hidden" name="id" value="<?php echo $p->id; ?>">
                             <input type="hidden" name="nombre" value="<?php echo htmlspecialchars($p->nombre_producto, ENT_QUOTES, 'UTF-8'); ?>">
                             <input type="hidden" name="precio" value="<?php echo $p->precio; ?>">
-                            
                             <input type="number" name="cantidad" value="1" min="1" max="<?php echo $p->stock; ?>" class="input-cantidad" aria-label="Cantidad">
-                            //cg
                             <button type="submit" class="btn-agregar" aria-label="Agregar al carrito">
                                 <i class="fas fa-shopping-cart"></i>
                                 <span>Agregar</span>

@@ -6,7 +6,6 @@ class UsuarioController {
     public function __construct($db) {
         $this->db = $db;
         require_once 'models/UsuarioModels.php';
-        // AQUÍ ESTABA EL ERROR: Necesitas pasarle $db al modelo
        $this->modelo = new UsuarioModels();
     }
 
@@ -37,31 +36,28 @@ class UsuarioController {
         $datos = array("correo" => $email);
         $objModelo = new UsuarioModels();
         $usuario = $objModelo->buscarUsuarioModel($datos);
-
-        
-
         // Verificamos si existe el usuario y si la clave coincide con el hash
         if ($usuario && password_verify($pass, $usuario["clave"])) {
             
             if (session_status() == PHP_SESSION_NONE) session_start();
            // En UsuarioController.php, dentro de validarLogin(), después de obtener el $usuario
-    $_SESSION["id_usuario"] = $usuario["id"];
-    $_SESSION["rol"] = $usuario["id_rol"];
-    $_SESSION["nombre"] = $usuario["nombre"];
-   $_SESSION["permisos"] = explode(',', $usuario["permisos"]); // Convierte "a,b" a ["a", "b"]
-                // Redirección centralizada
-           if ($_SESSION['rol'] == 1) {
-    header("Location: index.php?action=dashboard_master");
-} elseif ($_SESSION['rol'] == 2) {
-    header("Location: index.php?action=dashboard"); // O la acción que corresponda a tu dashboard de admin
-}
+            $_SESSION["id_usuario"] = $usuario["id"];
+            $_SESSION["rol"] = $usuario["id_rol"];
+            $_SESSION["nombre"] = $usuario["nombre"];
+            $_SESSION["permisos"] = explode(',', $usuario["permisos"]);
+                // Redirección 
+                if ($_SESSION['rol'] == 1) {
+            header("Location: index.php?action=dashboard_master");
+        } elseif ($_SESSION['rol'] == 2) {
+            header("Location: index.php?action=dashboard"); 
+        }
             exit();
         } else {
             echo "<script>alert('Correo o contraseña incorrectos.'); window.location.href='index.php?action=login';</script>";
         }
     }
 }
-    // Dentro de UsuarioController.php
+
 
 public function mostrarRegistro() {
     include 'views/registro.php';
@@ -70,7 +66,7 @@ public function mostrarRegistro() {
 public function guardarCliente() {
     if (isset($_POST["nombre"])) {
         
-        // Esta es la línea mágica para la seguridad:
+        // guardar clave encriptada
         $encriptar = password_hash($_POST["clave"], PASSWORD_DEFAULT);
 
         $datos = array(
@@ -78,7 +74,7 @@ public function guardarCliente() {
             "apellido" => $_POST["apellido"],
             "telefono" => $_POST["telefono"],
             "correo"   => $_POST["correo"],
-            "clave"    => $encriptar, // <-- Aquí guardamos la clave ya protegida
+            "clave"    => $encriptar, 
             "id_rol"   => 3 
         );
 
@@ -133,14 +129,12 @@ public function mostrarLogin_registro() {
             }
         }
     }
-// Carga la vista de detalles pasándole la información de la base de datos
+// Carga  detalles pasándole la información de la base de datos
     public function verDetalle($id) {
         if (isset($id) && !empty($id)) {
             // Consultamos al modelo usando los métodos que acabamos de crear
             $venta = $this->model->obtenerVenta($id);
             $detalles = $this->model->obtenerDetalles($id);
-            
-            // Incluimos la vista limpia dentro de la carpeta views
             include "views/detalle_venta.php";
         } else {
             echo "<script>alert('ID de venta no válido.'); window.location.href='index.php?action=pagos_pendientes';</script>";

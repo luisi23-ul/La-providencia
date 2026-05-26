@@ -10,9 +10,8 @@ class VentaController {
         $this->model = new VentaModel($this->db);
     }
 
-    // Carga la tabla con los productos seleccionados
+    // Carga la tabla con los productos seleccionados y manejamos la api de dolar
     public function mostrarCarrito() {
-    // --- MANTENEMOS TU LÓGICA DE LA API DEL BCV SIN TOCAR NADA ---
     $urlBcv = "https://www.bcv.org.ve";
     $tasaCambio = 526.86940000; 
 
@@ -45,9 +44,8 @@ class VentaController {
             }
         }
     }
-    // --------------------------------------------------------
 
-    // 1. AGREGADO: Consulta para obtener los métodos de pago de tu BD
+    // Consulta para obtener los métodos de pago de tu BD
     $db = Database::connect();
     $query = $db->query("SELECT * FROM metodos_pago");
     $metodos = $query->fetchAll(PDO::FETCH_OBJ);
@@ -61,8 +59,6 @@ class VentaController {
     }
 
     $totalBolivares = $totalFinal * $tasaCambio;
-
-    // 2. Incluimos tu vista pasando la variable $metodos para que la use el <select>
     include "views/Carrito.php";
 }
     // Añade el producto a la sesión y salta de una vez a la vista del carrito
@@ -75,7 +71,7 @@ class VentaController {
                 $_SESSION["carrito"] = array();
             }
 
-            // Guardamos o actualizamos el producto con los datos limpios de la URL
+            // Guard o actualizamos el producto con los datos limpios de la URL
             $_SESSION["carrito"][$id] = array(
                 "id_producto" => $id,
                 "nombre" => $_GET["nombre"],
@@ -83,8 +79,6 @@ class VentaController {
                 "cantidad" => $cant
             );
         }
-        
-        // ¡LA ORDEN DIRECTA! Después de agregar, salta directo a mostrar el carrito
         echo "<script>window.location.href = 'index.php?action=ver_carrito';</script>";
         exit();
     }
@@ -102,7 +96,6 @@ class VentaController {
     }
 
     // Procesa el guardado en la base de datos
-    // Procesa el guardado en la base de datos
     public function finalizarCompra() {
     if (session_status() == PHP_SESSION_NONE) {
         session_start();
@@ -113,7 +106,7 @@ class VentaController {
         exit();
     }
 
-    // 1. CAPTURAR EL MÉTODO DE PAGO (Nuevo)
+    // cap el metodo de pagoNuevo
     $metodo_pago_id = isset($_POST['metodo_pago']) ? $_POST['metodo_pago'] : null;
     
     if (!$metodo_pago_id) {
@@ -133,14 +126,14 @@ class VentaController {
         $totalGeneral += ($item['precio'] * $item['cantidad']);
     }
 
-    // 2. OBTENER NOMBRE DEL MÉTODO PARA EL MENSAJE (Opcional, para que quede bonito en WhatsApp)
+    // metodo de mensaje en wsp
     $db = Database::connect();
     $stmt = $db->prepare("SELECT nombre FROM metodos_pago WHERE id = ?");
     $stmt->execute([$metodo_pago_id]);
     $metodo = $stmt->fetch(PDO::FETCH_OBJ);
     $nombreMetodo = $metodo ? $metodo->nombre : "No especificado";
 
-    // 3. MENSAJE DE WHATSAPP (Actualizado)
+    // donde llegara el mensaje
     $telefono = "584127818865"; 
     $mensaje = "¡Hola! *La Providencia* 🛒\n";
     $mensaje .= "Deseo finalizar mi compra:\n\n";
@@ -150,13 +143,12 @@ class VentaController {
     }
 
     $mensaje .= "\n💰 *Total:* \${$totalGeneral}\n";
-    $mensaje .= "💳 *Método de pago:* {$nombreMetodo}\n"; // Aquí se añade
+    $mensaje .= "💳 *Método de pago:* {$nombreMetodo}\n"; 
     $mensaje .= "¡Quedo atento! ✨";
 
     $urlWhatsApp = "https://api.whatsapp.com/send?phone={$telefono}&text=" . urlencode($mensaje);
 
-    // 4. PASAR EL MÉTODO AL MODELO
-    // Nota: Tu método guardarVentaModel ahora debe aceptar este parámetro extra
+    // pasamos el met al modelo
     $resultado = $this->model->guardarVentaModel($id_usuario, $totalGeneral, $_SESSION['carrito'], $metodo_pago_id);
 
     if ($resultado) {
@@ -183,7 +175,7 @@ class VentaController {
 }
 
 private function obtenerTasaBCV() {
-    $tasaCambio = 526.86940000; // Valor de respaldo
+    $tasaCambio = 526.86940000; 
     $urlBcv = "https://www.bcv.org.ve";
     $opciones = ["http" => ["method" => "GET", "header" => "User-Agent: Mozilla/5.0", "timeout" => 4]];
     $contexto = stream_context_create($opciones);
@@ -203,8 +195,6 @@ private function obtenerTasaBCV() {
     return $tasaCambio;
 }
     // Listar retiros (solo los que ya fueron pagados)
-   // Listar retiros (solo los que ya fueron pagados)
-    // Listar retiros (los que ya fueron pagados y los ya entregados)
    public function retiroPedidos() {
     // ... tu código ...
     $sql = "SELECT v.*, u.nombre AS nombre_cliente, mp.nombre AS nombre_metodo
@@ -213,9 +203,6 @@ private function obtenerTasaBCV() {
             LEFT JOIN metodos_pago mp ON v.id_metodo_pago = mp.id
             WHERE v.estado IN ('pagado', 'retirado', 'entregado') 
             ORDER BY v.fecha DESC";
-    // ... resto del código ...
-
-            
     $stmt = $this->db->query($sql);
     $ventas = $stmt->fetchAll(PDO::FETCH_OBJ);
 
@@ -236,17 +223,14 @@ private function obtenerTasaBCV() {
     }
 
     // Cambiar a retirado y descontar stock
-   // Cambiar a retirado y descontar stock
     public function procesarRetiro($id) {
         if (isset($id) && !empty($id)) {
-            // 1. El modelo actualiza el estado a 'retirado' en la base de datos
+            // el modelo actualiza el estado a 'retirado' en la base de datos
             $this->model->actualizarEstado($id, 'retirado');
             
-            // 2. El modelo busca los productos de la venta y resta el stock de forma segura
+            //  el modelo busca los productos de la venta y resta el stock 
             $this->model->descontarStockDeVenta($id);
         }
-        
-        // Redireccionamos limpiamente de vuelta a la vista de retiros
         header("Location: index.php?action=retiro_pedidos");
         exit();
     }
@@ -255,8 +239,7 @@ private function obtenerTasaBCV() {
             // Consultamos al modelo usando los métodos que acabamos de crear
             $venta = $this->model->obtenerVenta($id);
             $detalles = $this->model->obtenerDetalles($id);
-            
-            // Incluimos la vista limpia dentro de la carpeta views
+
             include "views/detalle_venta.php";
         } else {
             echo "<script>alert('ID de venta no válido.'); window.location.href='index.php?action=pagos_pendientes';</script>";
@@ -267,7 +250,7 @@ private function obtenerTasaBCV() {
  public function obtenerVentasPorMetodo($id_metodo) {
     $db = Database::connect();
 
-    // 1. REPLICAMOS LA LÓGICA DEL BCV PARA TENER LA TASA EXACTA
+    // la misma log de dolar bcv
     $tasaCambio = 526.86940000; // Valor por defecto
     $urlBcv = "https://www.bcv.org.ve";
     $opciones = ["http" => ["method" => "GET", "header" => "User-Agent: Mozilla/5.0", "timeout" => 4]];
@@ -286,7 +269,7 @@ private function obtenerTasaBCV() {
         }
     }
 
-    // 2. CONSULTA SQL (Ahora usamos la $tasaCambio real)
+    // base d datos
     $sql = "SELECT v.*, u.nombre AS nombre_cliente 
             FROM ventas v 
             JOIN usuarios u ON v.id_usuario = u.id 
@@ -303,7 +286,7 @@ private function obtenerTasaBCV() {
 
     foreach ($ventas as $v) {
         $totalUSD += $v->total;
-        $v->total_bs = $v->total * $tasaCambio; // <--- USAMOS LA TASA DINÁMICA
+        $v->total_bs = $v->total * $tasaCambio; 
         $totalBS += $v->total_bs;
     }
     
@@ -313,15 +296,13 @@ private function obtenerTasaBCV() {
         'totalBS' => $totalBS
     ];
 }
-
+// aca manejamos los repormetes dependiendo que metodo fue
 public function manejarReporte($id_metodo) {
     $datos = $this->obtenerVentasPorMetodo($id_metodo);
-    
-    // ESTAS VARIABLES SON LAS QUE DEBEN LLEGAR A LA VISTA
     $ventas = $datos['ventas'];
     $totalUSD = $datos['totalUSD'];
     $totalBS = $datos['totalBS'];
-    // 3. Eliges la vista según el ID
+    // aca se muestra dependiendo el metodo
     switch($id_metodo) {
         case 1: include "views/efectivobs.php"; break;
         case 2: include "views/efectivo$.php"; break;
@@ -330,6 +311,7 @@ public function manejarReporte($id_metodo) {
         default: echo "Método no encontrado";
     }
 }
+
 
 public function confirmarEntrega() {
     $id = $_POST['id_venta'] ?? null;

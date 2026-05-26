@@ -1,4 +1,5 @@
 <?php
+ob_start();
 session_start(); 
 require_once 'config/db.php';
 require_once 'controllers/UsuarioController.php';
@@ -22,28 +23,15 @@ $action = $_GET['action'] ?? 'inicio';
 
 
 
-// Acciones que no requieren Header
+// --- PASO 1: Acciones que no requieren Header ---
 if ($action == 'registrar_cliente') { $usuarioC->guardarCliente(); exit(); }
 if ($action == 'valider_login_registro') { $usuarioC->ingresar(); exit(); }
 if ($action == 'validar_login') { $usuarioC->validarLogin(); exit(); }
 
-//  Carga de la Interfaz 
+// --- PASO 2: Carga de la Interfaz ---
 include 'views/layout/header.php'; 
 echo '<main id="app">'; 
 
-<<<<<<< HEAD
-// MASTER 
-$acciones_master = [
-    'gestionar_admins', 
-    'dashboard_master',
-    'nuevo_admin',
-    'guardar_nuevo_admin', 
-    'editar_admin', 
-    'actualizar_admin',
-    'eliminar_admin',
-    'configuracion_sistema',
-    'actualizar_configuracion'];
-=======
 // --- BLOQUE DE SEGURIDAD MASTER ---
 $acciones_master = [
     'gestionar_admins', 
@@ -55,7 +43,6 @@ $acciones_master = [
        'eliminar_admin',
         'configuracion_sistema',
          'actualizar_configuracion'];
->>>>>>> 3265dcc284fa3c7c8d474a9516adf0d5b235c255
 
 if (in_array($action, $acciones_master)) {
     if (isset($_SESSION['rol']) && ($_SESSION['rol'] == 1 || $_SESSION['rol'] == 2)) {
@@ -88,18 +75,14 @@ if (in_array($action, $acciones_master)) {
             $masterC->actualizarConfiguracion(); 
             break;
                 }
-<<<<<<< HEAD
-        echo '</main></main>'; 
-=======
         echo '</main></main>'; // Cerrar etiquetas
->>>>>>> 3265dcc284fa3c7c8d474a9516adf0d5b235c255
         exit();
     } else {
         header("Location: index.php?action=login");
         exit();
     }
 }
-// acción por defecto inicio
+// 4. Captura de la acción (por defecto 'inicio')
 $action = $_GET['action'] ?? 'inicio';
 $acciones_admin = [
     'dashboard', 
@@ -159,6 +142,7 @@ switch ($action) {
         $usuarioC->mostrarRegistro(); 
         break;
 
+    // Rutas de Administración / Catálogo
     case 'ver_catalogo':
         $adminC->catalogo();
         break;
@@ -269,9 +253,9 @@ case 'grafico_tortas':
         $usuarioC->mostrarInicio();
         break;
 
-    // REPORTES Y EXPORTACIÓN
+    // --- MÓDULO DE REPORTES Y EXPORTACIÓN ---
 case 'exportar_excel':
-    // Limpiamos  eliminamos caracteres como  por si acaso
+    // Limpiamos el tipo: eliminamos caracteres como '$' por si acaso
     $tipo = isset($_GET['tipo']) ? trim(str_replace('$', '', $_GET['tipo'])) : 'inventario';
     $reporteC->generarExcel($tipo); 
     exit;
@@ -295,6 +279,6 @@ echo '</main>';
 if (isset($action) && in_array($action, $acciones_admin)) {
     echo '</section>';
 }
-
-
+ob_end_flush(); // Envía todo al terminar
 ?>
+

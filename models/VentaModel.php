@@ -112,7 +112,6 @@ class VentaModel {
     }
 
     // 2. Obtener todos los productos asociados a esa venta (Tabla de productos)
-    // 2. Obtener todos los productos asociados a esa venta (Tabla de productos)
     public function obtenerDetalles($id) {
         // Cambiamos p.nombre por p.nombre_producto para que coincida con tu tabla de productos
         $sql = "SELECT dv.*, p.nombre_producto AS producto_nombre 

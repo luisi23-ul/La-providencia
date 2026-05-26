@@ -3,13 +3,12 @@ class AdminControllers {
     private $productoModelo;
 
     public function __construct() {
-        // Instancia el modelo para usar despues
+        // Instancia el modeloo
         require_once 'models/ProductoModel.php';
         $this->productoModelo = new ProductoModel();
     }
 
     public function mostrarDashboard() {
-        // Busca exactamente el archivo views/dashboard.php
         include "views/dashboard.php"; 
     }
 
@@ -17,9 +16,8 @@ class AdminControllers {
         include 'views/formulario_producto.php';
     }
 
-    //carga la tabla con todos los producto
+    // la tabla con todos los producto
     public function mostrarListado() {
-        // Le pedimos al modelo todos los productos para la tabla
         $listaProductos = $this->productoModelo->obtenerTodos();
         include 'views/listado_productos.php';
     }
@@ -74,7 +72,7 @@ public function editar() {
     $p = $this->productoModelo->obtenerPorId($id);
     require_once 'views/editar_producto.php';
 }
-
+// actualiza elk producto
 public function actualizar() {
     if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $id = $_POST['id'];
@@ -83,21 +81,19 @@ public function actualizar() {
         $p = $this->productoModelo->obtenerPorId($id);
         $nombreImagen = $p->imagen; 
 
-        // nueva imagen si el usuario seleccionó una
+        // nueva imagen si se coloca una
         if (isset($_FILES['imagen']) && $_FILES['imagen']['error'] == 0) {
-            // Generamos un nombre único para evitar que archivos con el mismo nombre se borren
-           // Línea 86 (Ajustada para limpiar espacios)
         $nombreLimpio = str_replace(' ', '_', $_FILES['imagen']['name']); 
         $nombreImagen = time() . "_" . $nombreLimpio;
             
            
         $rutaDestino = $_SERVER['DOCUMENT_ROOT'] . "/La-providencia/public/uploads/" . $nombreImagen;
             
-            // Movemos el archivo desde la carpeta temporal de PHP a la carpeta del proyecto
+            // Movemos el archivo desde la carpeta temporal de PHP a la carpeta de proyect
             move_uploaded_file($_FILES['imagen']['tmp_name'], $rutaDestino);
         }
 
-        // Prepara el arreglo de datos con los nombres que se coneta con el modelo
+        // Prepara el arreglo de datos con los nombres que se coneta con e modelo
         $datos = [
             'id'     => $id,
             'nombre' => $_POST['nombre'],
@@ -120,8 +116,8 @@ public function actualizar() {
     require_once 'models/ProductoModel.php';
     $productoModelo = new ProductoModel();
 
-    // Traemos de la base de datos el array estructurado con el inventario crítico y ventas
-    // Asegurándonos de que 'inventario' contenga los 5 con MENOS stock
+    // Traemos de la base de datos el array el inventario crítico y ventas
+    //  de que contenga los 5 con MENOS stock
     $datosEstadisticas = $productoModelo->obtenerEstadisticasGenerales();
 
     require_once 'views/grafico_barras.php';
@@ -130,8 +126,6 @@ public function actualizar() {
 public function grafico_torta() {
     require_once 'models/ProductoModel.php';
     $productoModelo = new ProductoModel();
-
-    // Llamamos a la misma estructura para que el JSON reciba exactamente el mismo array
     $datosEstadisticas = $productoModelo->obtenerEstadisticasGenerales();
 
     require_once 'views/grafico_tortas.php';
