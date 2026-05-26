@@ -1,33 +1,57 @@
-<section class="detalle-venta-container">
-    <header class="detalle-header">
-        <h2>Detalle de la Venta #<?php echo $venta->id; ?></h2>
-        <a href="javascript:history.back()" class="btn-volver">← Volver</a>
-    </header>
+<link rel="stylesheet" href="public/css/dashboard.css?v=<?php echo time(); ?>">
 
-    <aside class="info-cliente-banner">
-        <article class="info-item">
-            <span class="label">Cliente</span>
-            <span class="valor"><?php echo htmlspecialchars($venta->nombre); ?></span>
-        </article>
-        <article class="info-item">
-            <span class="label">Fecha</span>
-            <span class="valor"><?php echo htmlspecialchars($venta->fecha); ?></span>
-        </article>
-        <article class="info-item">
-            <span class="label">Estado</span>
-            <span class="badge-estado <?php echo ($venta->estado == 'pendiente') ? 'pendiente' : 'listo'; ?>">
-                <?php echo htmlspecialchars($venta->estado); ?>
-            </span>
-        </article>
-    </aside>
+<section class="panel-administracion">
+    <?php include 'sidebar.php'; ?>
 
-    <main class="tabla-detalle-wrapper">
-        <table class="tabla-detalle">
+    <main class="main-dashboard-content">
+        <section class="panel-modulo-contenedor">
+            
+            <header class="pagos-header">
+                <h2>Detalle de la Venta #<?php echo $venta->id; ?></h2>
+                <a href="javascript:history.back()" class="btn-exportar-pdf" style="text-decoration:none;">← Volver</a>
+            </header>
+
+     <aside class="info-cliente-banner">
+    <article class="info-item">
+        <span class="label">Cliente</span>
+        <span class="valor"><?php echo htmlspecialchars($venta->nombre); ?></span>
+    </article>
+    
+    <article class="info-item">
+        <span class="label">Fecha y Hora</span>
+        <span class="fecha-dia"><?php echo date('d/m/Y', strtotime($venta->fecha)); ?></span>
+        <span class="fecha-hora"><?php echo date('h:i A', strtotime($venta->fecha)); ?></span>
+    </article>
+    
+    <article class="info-item">
+        <span class="label">Estado</span>
+        <span class="badge-estado <?php echo ($venta->estado == 'pendiente') ? 'pendiente' : 'listo'; ?>">
+            <?php echo htmlspecialchars($venta->estado); ?>
+        </span>
+    </article>
+</aside>
+
+            <table class="tabla-modulo-admin">
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Cantidad</th>
+                        <th>Precio Unit.</th>
+                        <th>Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="4" style="text-align: center; color: #64748b;">Tabla pendiente de datos...</td>
+                    </tr>
+                </tbody>
             </table>
-        
-        <footer class="total-box">
-            <span>Total del Pedido</span>
-            <span class="total-valor">$<?php echo number_format($venta->total, 2); ?></span>
-        </footer>
+            
+          <footer class="total-box-premium">
+    <span class="total-label">Total del Pedido</span>
+    <span class="total-valor-premium">$<?php echo number_format($venta->total, 2); ?></span>
+</footer>
+
+        </section>
     </main>
 </section>

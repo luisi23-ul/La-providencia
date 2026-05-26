@@ -290,6 +290,11 @@
     color: #ffffff;
 }
 
+.btn-admin-azul i {
+    font-size: 1rem !important; /* Tamaño uniforme para todos los iconos */
+    min-width: 16px; /* Evita que el icono se comprima */
+}
+
 .btn-admin-azul:hover {
     background-color: var(--azul-identidad-hover);
     box-shadow: 0 4px 12px rgba(0, 82, 212, 0.25);
@@ -681,8 +686,285 @@
     padding-bottom: 20px;
     border-bottom: 1px solid #e2e8f0;
 }
+
 /* ==========================================================================
-   6. RESPONSIVIDAD PARA PANTALLAS CHICAS
+   6. DETALLE DE VENTA (ESTILOS COMPLEMENTARIOS PARA ALINEACIÓN)
+   ========================================================================== */
+
+/* Asegura que el banner sea un contenedor flexible que distribuya el espacio */
+.info-cliente-banner {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    background: #f8fafc !important;
+    padding: 25px 40px !important;
+    border-radius: 16px !important;
+    margin-bottom: 30px !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+/* Centra cada bloque (Cliente, Fecha, Estado) individualmente */
+.info-item {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important; /* Centrado horizontal */
+    text-align: center !important;
+    flex: 1 !important; /* Distribuye el ancho equitativamente */
+}
+
+
+
+/* Asegura que el icono tenga espacio a la derecha del texto */
+.btn-admin-azul i {
+    margin-left: 8px; /* Separación entre el texto y el icono */
+    font-size: 1.1rem; /* Asegura que el icono no sea más grande que el texto */
+    vertical-align: middle; /* Alineación vertical */
+}
+
+/* Si usas display: flex en el botón, el icono se acomodará mejor */
+.btn-admin-azul {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
+
+
+
+
+/* Corrección del banner superior para centrar etiquetas y valores */
+.info-cliente-banner {
+    display: flex;
+    justify-content: space-between; /* Distribuye equitativamente */
+    align-items: center;
+    background: #f8fafc;
+    padding: 20px 40px !important;
+    border-radius: 16px;
+    margin-bottom: 30px;
+    border: 1px solid #e2e8f0;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Centra horizontalmente el texto dentro del item */
+    text-align: center;
+    flex: 1; /* Hace que cada columna ocupe el mismo espacio */
+}
+
+.info-item .label {
+    font-size: 0.75rem;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.info-item .valor {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+/* Asegurar que el badge también quede centrado */
+.badge-estado {
+    display: inline-flex !important;
+    justify-content: center;
+    min-width: 100px;
+}
+
+.total-box-premium {
+    margin-top: 30px; 
+    text-align: right; 
+    padding-top: 20px; 
+    border-top: 2px solid var(--lineas-divisorias);
+}
+
+.total-label {
+    font-weight: 600; 
+    color: var(--texto-secundario); 
+    margin-right: 15px;
+}
+
+.total-valor-premium {
+    font-size: 1.5rem; 
+    font-weight: 800; 
+    color: var(--texto-principal);
+}
+
+
+
+/* ==========================================================================
+   7. DETALLE DE VENTA - UX/UI MEJORADO
+   ========================================================================== */
+
+/* Banner de Info: Más espaciado y etiquetas con más contraste */
+.info-cliente-banner {
+    display: flex !important;
+    justify-content: space-around !important; /* Distribución uniforme */
+    align-items: center !important;
+    background: #ffffff !important; 
+    padding: 25px 40px !important;
+    border-radius: 16px !important;
+    margin-bottom: 30px !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.info-item {
+  display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important; /* Centrado horizontal total */
+    justify-content: center !important;
+    text-align: center !important;
+    width: 100% !important;
+}
+
+/* Forzamos que los spans se comporten como bloques centrados */
+.info-item .fecha-dia, 
+.info-item .fecha-hora {
+    display: block !important;
+    width: 100% !important;
+    text-align: center !important;
+    line-height: 1.2 !important; /* Ajusta la cercanía entre fecha y hora */
+}
+
+/* Un poco más de aire entre la fecha y la hora */
+.info-item .fecha-dia { margin-bottom: 2px !important; }
+
+
+
+/* Etiquetas más oscuras para legibilidad */
+.info-item .label {
+    font-size: 0.70rem !important;
+    color: #475569 !important; /* Más oscuro que antes */
+    text-transform: uppercase !important;
+    letter-spacing: 0.12em !important;
+    font-weight: 800 !important;
+    margin-bottom: 8px !important;
+}
+
+/* Valores más grandes y legibles */
+.info-item .valor {
+    font-size: 1.1rem !important;
+    font-weight: 800 !important;
+    color: #0f172a !important; /* Negro grafito */
+}
+
+/* Footer: Total más notorio */
+.total-box-premium {
+    margin-top: 30px !important;
+    text-align: right !important;
+    padding: 20px 0 !important;
+    border-top: 2px solid #e2e8f0 !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+    align-items: center !important;
+    gap: 15px;
+}
+
+.total-label {
+    font-weight: 700 !important;
+    color: var(--texto-secundario) !important;
+    font-size: 1.1rem !important;
+}
+
+.total-valor-premium {
+    font-size: 2rem !important; /* Tamaño más grande para impacto */
+    font-weight: 900 !important;
+    color: var(--azul-identidad) !important; /* Color azul marca */
+}
+
+.badge-estado {
+    padding: 6px 16px !important;
+    border-radius: 50px !important;
+    font-size: 0.75rem !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-width: 120px !important;
+    border: 1px solid transparent !important;
+}
+
+/* Estado: RETIRADO / LISTO (Éxito) */
+.badge-estado:not(.pendiente) {
+    background-color: #dcfce7 !important;
+    color: #166534 !important;
+    border-color: #bbf7d0 !important;
+}
+
+/* Estado: PENDIENTE (Atención) */
+.badge-estado.pendiente {
+    background-color: #ffedd5 !important;
+    color: #9a3412 !important;
+    border-color: #fdba74 !important;
+}
+
+/* ==========================================================================
+   8. MÓDULO DE REPORTES Y PAGOS (Integración de pagos.css)
+   ========================================================================== */
+
+/* Contenedor principal de reportes - usamos tu clase .panel-modulo-contenedor */
+.contenedor-reporte {
+    background: #ffffff !important;
+    padding: 35px !important;
+    border-radius: 20px !important;
+    border: 1px solid var(--lineas-divisorias) !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+/* 1. Cabecera de la tabla (th) - Menos gris, más limpia */
+.tabla-ventas th {
+    background: #f8fafc !important; /* Un gris casi blanco, más limpio */
+    color: #475569 !important;      /* Gris pizarra para mayor legibilidad */
+    border-bottom: 2px solid #e2e8f0 !important;
+    padding: 18px 15px !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    font-size: 0.75rem !important;
+    letter-spacing: 0.05em !important;
+}
+
+/* 2. Filas de datos - Más aire */
+.tabla-ventas td {
+    padding: 20px 15px !important; /* Más espacio vertical para que no se vea apretado */
+    color: #1e293b !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+}
+
+/* 3. Tarjeta de totales - Ajuste de tipografía */
+.tarjeta-total {
+    background: var(--bg-dark-unificado) !important;
+    padding: 25px !important;
+    border-radius: 12px !important;
+    margin-bottom: 30px !important;
+    display: flex !important;
+    justify-content: center !important;
+    gap: 40px !important;
+    /* Quitamos el borde si no lo necesitas, para que se vea más moderno */
+}
+
+/* Texto de la tarjeta de totales */
+.tarjeta-total p {
+    color: #94a3b8 !important; /* Etiquetas en gris claro */
+    font-size: 0.85rem !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+}
+
+.tarjeta-total strong {
+    color: #ffffff !important; /* Valor en blanco puro para máximo contraste */
+    font-size: 1.25rem !important;
+    margin-left: 8px !important;
+}
+
+/* ==========================================================================
+   7. RESPONSIVIDAD PARA PANTALLAS CHICAS
    ========================================================================== */
 @media (max-width: 900px) {
     .panel-administracion {

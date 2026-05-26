@@ -1,3 +1,6 @@
+
+
+
 <header class="dashboard-header">
     <link rel="stylesheet" href="public/css/dashboard.css?v=<?php echo time(); ?>">
     <h2>Panel de Control Master</h2>
