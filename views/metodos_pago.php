@@ -1,13 +1,13 @@
 <link rel="stylesheet" href="public/css/dashboard.css?v=<?php echo time(); ?>">
 
-<main class="main-dashboard-content">
+
     
     <header class="dashboard-header">
         <h2>⚙️ Gestión de Métodos de Pago</h2>
         <p class="bienvenida-sub">Configuración visual de canales de recepción de ingresos para <span>La Providencia</span></p>
     </header>
 
-    <section class="row-opciones">
+    <nav class="row-opciones">
         
         <article class="bloque-opcion">
             <span class="icon-admin"><i class="fas fa-dollar-sign"></i></span>
@@ -39,5 +39,4 @@
             <a href="index.php?action=ver_reporte&metodo=4" class="btn-admin-azul">Ver Cuentas <i class="fas fa-list"></i></a>
         </article>
 
-    </section>
-</main>
+    </nav>

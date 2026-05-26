@@ -1,7 +1,24 @@
 /* ==========================================================================
-   DASHBOARD MAESTRO - LA PROVIDENCIA (GESTIÓN & CONTROL DIGITAL)
-   Estilos globales unificados y optimizados para el panel administrativo
+   VARIABLES GLOBALES (SISTEMA DE DISEÑO LA PROVIDENCIA)
    ========================================================================== */
+:root {
+    /* Paleta de Identidad Visual */
+    --bg-dark-unificado: #0f172a;  /* Azul oscuro premium de sidebar y th */
+    --azul-identidad: #0052d4;     /* Azul vivo de botones activos y acentos */
+    --azul-identidad-hover: #0044b1;
+    --bg-global: #f8fafc;          /* Fondo claro del sistema */
+    --lineas-divisorias: #e2e8f0;  /* Bordes de celdas horizontales */
+    --lineas-sutiles: #f1f5f9;      /* Separador vertical de columnas */
+    
+    /* Estados de las Tablas */
+    --tabla-zebra: #f8fafc;
+    --tabla-hover: #f1f5f9;
+
+    /* Jerarquía Tipográfica */
+    --texto-principal: #0f172a;    /* Negro grafito sólido (Títulos y USD) */
+    --texto-secundario: #475569;   /* Gris pizarra corporativo (Bs y subtítulos) */
+    --texto-mutado: #64748b;       /* Gris de control (Horas, texto verificado) */
+}
 
 /* ==========================================================================
    1. ESTRUCTURA GENERAL (LAYOUT) DE SISTEMA PREMIUM
@@ -9,15 +26,13 @@
 .panel-administracion {
     min-height: 100vh;
     width: 100%;
-    
-    /* Dividimos la pantalla en dos columnas reales: Sidebar y Contenido */
     display: flex; 
     flex-direction: row;
     align-items: stretch;
     
     /* Fondo premium con textura de punticos */
-    background-color: #f8fafc;
-    background-image: radial-gradient(#e2e8f0 1.5px, transparent 1.5px);
+    background-color: var(--bg-global);
+    background-image: radial-gradient(var(--lineas-divisorias) 1.5px, transparent 1.5px);
     background-size: 24px 24px;
     
     font-family: 'Poppins', sans-serif;
@@ -31,15 +46,13 @@
    ========================================================================== */
 .sidebar-admin {
     width: 260px;
-    min-width: 260px; /* Le prohíbe rigidamente a la barra encogerse */
-    background-color: #0f172a; 
+    min-width: 260px; /* Le prohíbe rígidamente a la barra encogerse */
+    background-color: var(--bg-dark-unificado); 
     color: #ffffff;
     display: flex;
     flex-direction: column;
     padding: 40px 18px; 
     box-sizing: border-box;
-    
-    /* Quitamos el 'fixed' para que actúe como una columna física en el suelo */
     position: relative; 
     min-height: 100vh;
     z-index: 100;
@@ -100,112 +113,125 @@
 
 .menu-item.active {
     color: #ffffff;
-    background-color: #0052d4; 
+    background-color: var(--azul-identidad); 
     box-shadow: 0 4px 12px rgba(0, 82, 212, 0.3);
 }
 
-.return-store {
-    margin-top: auto;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    padding-top: 20px;
-    color: #38bdf8;
+/* Modificaciones específicas del menú lateral */
+.sidebar-menu .return-store {
+    border: none !important;
+    background: none !important;
+    margin: 0 !important;
+    padding: 12px 16px !important;
+    color: #38bdf8 !important;
+}
+
+.sidebar-menu .logout-item {
+    position: relative;
+    margin-top: 40px;
+    color: #f87171 !important;
+    padding: 12px 16px !important;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.sidebar-menu .logout-item::before {
+    content: "";
+    position: absolute;
+    top: -20px;
+    left: 16px;
+    right: 16px;
+    height: 1px;
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-menu .logout-item:hover {
+    background-color: rgba(248, 113, 113, 0.08) !important;
+    color: #fca5a5 !important;
+    border-radius: 10px;
 }
 
 /* ==========================================================================
-   3. AREA DE CONTENIDO PRINCIPAL (DERECHA CENTRADA) - REFINADO UX
+   3. ÁREA DE CONTENIDO PRINCIPAL (DERECHA)
    ========================================================================== */
 .main-dashboard-content {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
-    align-items: left; 
+    align-items: flex-start; 
     justify-content: flex-start;
-    margin-left: 0; 
-    padding: 60px 40px; /* Más aire arriba y a los lados para que respire */
+    padding: 60px 40px;
     box-sizing: border-box;
-
 }
 
-/* Cabecera Premium Estilo SaaS */
 .dashboard-header {
     width: 100%;
-    max-width: 100%; /* Alineado exacto con el ancho del Grid */
     margin-bottom: 45px;
-    border-bottom: 1px solid #e2e8f0; /* Línea más sutil */
+    border-bottom: 1px solid var(--lineas-divisorias);
     padding-bottom: 20px;
-    text-align: left; /* Consistencia de lectura occidental */
 }
 
 .dashboard-header h2 {
-    color: #0f172a;
-    font-size: 1.85rem; /* Un pelo más compacto y elegante */
+    color: var(--texto-principal);
+    font-size: 1.85rem;
     font-weight: 800;
     letter-spacing: -0.5px;
     margin: 0 0 6px 0;
 }
 
 .dashboard-header .bienvenida-sub {
-    color: #64748b;
+    color: var(--texto-mutado);
     font-size: 0.95rem;
     margin: 0;
 }
 
 .dashboard-header .bienvenida-sub span {
-    color: #0052d4;
+    color: var(--azul-identidad);
     font-weight: 600;
-    background-color: #eff6ff; /* Pequeño realce de fondo para el estado */
+    background-color: #eff6ff;
     padding: 2px 8px;
     border-radius: 6px;
 }
 
 /* ==========================================================================
-   4. GRID Y TARJETAS MODULARES CON BALANCE DE AIRE (UX/UI SENIOR)
+   4. GRID Y TARJETAS MODULARES PANEL PRINCIPAL
    ========================================================================== */
 .row-opciones {
     width: 100%;
-    max-width: 100%; /* Alineado con el encabezado */
     display: grid;
-    
-    /* >>> FUERZA LAS 3 COLUMNAS EN UNA SOLA FILA HORIZONTAL <<< */
-    /* En vez de auto-fit que las tumba, definimos 3 columnas de tamaños idénticos */
     grid-template-columns: repeat(auto-fit, minmax(280px, 320px));
-    
-    /* >>> ALINEACIÓN STRICTA A LA IZQUIERDA <<< */
     justify-content: flex-start; 
-    
-    gap: 24px; /* Ajustamos el espacio entre ellas para que quepan holgadamente */
-    margin-left: 30px; /* Eliminamos el auto de los lados para que se pegue a la izquierda */
+    gap: 24px;
     box-sizing: border-box;
 }
 
 .bloque-opcion {
     background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-top: 4px solid #0f172a; 
+    border: 1px solid var(--lineas-divisorias);
+    border-top: 4px solid var(--bg-dark-unificado); 
     border-radius: 20px; 
-    padding: 30px; /* Un pelo más compacto para mejorar el flujo interno */
+    padding: 30px;
     box-sizing: border-box;
-    
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    
-    /* Altura balanceada y uniforme para las tres */
     min-height: 350px; 
     height: 100%;
-    
-    box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.02), 0 2px 4px -2px rgba(15, 23, 42, 0.02);
+    box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.02);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Micro-interacción Premium al pasar el mouse */
 .bloque-opcion:hover {
     transform: translateY(-6px);
     border-color: #cbd5e1;
-    box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.08);
+    box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.08);
 }
 
-/* Rediseño de la burbuja del ícono para UI moderna */
 .icon-admin {
     width: 48px;
     height: 48px;
@@ -214,21 +240,17 @@
     align-items: center;  
     justify-content: center; 
     margin-bottom: 22px;
-    
-    /* Le metemos un tono azul sutil de fondo en vez de gris muerto */
     background-color: #f0f6ff; 
-    box-sizing: border-box;
     transition: all 0.25s ease;
 }
 
 .icon-admin i {
     font-size: 1.35rem;
-    color: #0052d4; /* El ícono ahora es azul vivo, salta a la vista */
+    color: var(--azul-identidad);
 }
 
-/* Al hacer hover a la tarjeta, el ícono reacciona de forma premium */
 .bloque-opcion:hover .icon-admin {
-    background-color: #0052d4;
+    background-color: var(--azul-identidad);
 }
 .bloque-opcion:hover .icon-admin i {
     color: #ffffff;
@@ -243,61 +265,440 @@
 }
 
 .bloque-opcion p {
-    color: #64748b;
+    color: var(--texto-mutado);
     font-size: 0.92rem;
     line-height: 1.5;
     margin: 0 0 25px 0;
-    text-align: left;
 }
 
-/* ==========================================================================
-   5. BOTONES INDUSTRIALES CON EFECTO SATINADO REFLEX
-   ========================================================================== */
 .btn-admin-azul {
     width: 100%;
     padding: 13px;
-    border-radius: 12px; /* Redondeado en armonía con la tarjeta */
-    font-size: 0.88rem; /* Un pelo más compacto para que se vea estilizado */
+    border-radius: 12px;
+    font-size: 0.88rem;
     font-weight: 700;
     text-decoration: none;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    box-sizing: border-box;
     transition: all 0.2s ease;
     text-transform: uppercase;
     letter-spacing: 0.8px;
     margin-top: auto; 
-    
-    background-color: #0052d4;
+    background-color: var(--azul-identidad);
     color: #ffffff;
 }
 
 .btn-admin-azul:hover {
-    background-color: #0044b1;
+    background-color: var(--azul-identidad-hover);
     box-shadow: 0 4px 12px rgba(0, 82, 212, 0.25);
-    gap: 12px; /* La flecha se desplaza dinámicamente */
+    gap: 12px;
 }
 
-
-/* Estado inicial: El menú está oculto fuera de la pantalla o invisible */
 .nav-menu-responsive {
-    display: none; /* O puedes usar transform: translateX(-100%) para un efecto cortina */
+    display: none; 
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: #0f172a; /* Mismo color de tu sidebar */
+    background: var(--bg-dark-unificado); 
     z-index: 1000;
 }
 
-/* Cuando el JS le pone la clase 'active', el menú se muestra */
 .nav-menu-responsive.active {
-    display: block; /* O transform: translateX(0) */
+    display: block; 
 }
 
-      
+/* ==========================================================================
+   5. MÓDULOS DE TABLAS PREMIUM (PAGOS Y RETIROS)
+   ========================================================================== */
+.panel-modulo-contenedor {
+    padding: 35px;
+    background: #ffffff;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.015);
+    margin: 24px 0;
+    width: 100%; 
+    box-sizing: border-box;
+    border: 1px solid #f1f5f9;
+}
 
+/* 🏆 Header Premium sin contenedores extra */
+.pagos-header {
+    display: flex;
+    align-items: center;    /* Centra verticalmente todo */
+    padding-bottom: 24px;
+    margin-bottom: 30px;
+    border-bottom: 1px solid var(--lineas-divisorias);
+    gap: 12px;              /* Espacio entre los botones */
+}
+
+/* El truco del margen automático */
+.pagos-header h2 {
+    font-size: 1.75rem;
+    color: var(--texto-principal);
+    font-weight: 800;
+    margin: 0;
+    margin-right: auto;     /* 🎯 ¡ESTO EMPUJA LOS BOTONES A LA DERECHA! */
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* La barrita decorativa del título */
+.pagos-header h2::before {
+    content: "";
+    width: 6px;
+    height: 28px;
+    background-color: var(--azul-identidad);
+    border-radius: 4px;
+}
+
+.btn-exportar-pdf, 
+.btn-exportar-excel {
+    /* 🎯 Aumentamos el tamaño para que se sientan más "profesionales" */
+    padding: 12px 24px !important;  
+    font-size: 0.95rem !important;
+    font-weight: 600 !important;
+    border-radius: 12px !important; /* Un poco más redondeado para modernidad */
     
+    /* Mantenemos el estilo minimalista */
+    background-color: #f1f5f9 !important; 
+    color: #475569 !important;
+    border: 1px solid #e2e8f0 !important;
+    transition: all 0.3s ease !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    text-decoration: none !important; /* 🎯 ESTO QUITA LA LÍNEA DE ABAJO */
+    outline: none !important;
+}
+
+/* Hover más marcado */
+.btn-exportar-pdf:hover,
+.btn-exportar-excel:hover {
+    background-color: #e2e8f0 !important;
+    color: #1e293b !important;
+    transform: translateY(-1px); /* Un pequeño salto elegante */
+}
+
+.btn-exportar-pdf i, 
+.btn-exportar-excel i {
+    font-size: 1.1rem !important; /* Icono un poco más grande para equilibrar */
+}
+
+/* Maquetación de la Tabla Base */
+.tabla-modulo-admin {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.92rem;
+}
+
+/* Formato de Fecha y Hora Premium en Celda */
+.fecha-dia {
+    display: block;
+    font-weight: 600;
+    color: #1e293b; 
+}
+
+.fecha-hora {
+    display: block;
+    font-size: 0.78rem;
+    color: var(--texto-mutado); 
+    margin-top: 2px;
+}
+
+/* Resaltado opcional para la celda de cliente */
+.cliente-nombre strong {
+    color: var(--texto-principal);
+    font-size: 0.95rem;
+}
+
+/* Encabezado Premium Oscuro - Clonado Exacto de la Identidad Visual */
+.tabla-modulo-admin th {
+    background-color: var(--bg-dark-unificado) !important; /* Azul oscuro idéntico al sidebar */
+    color: #ffffff !important;            
+    font-weight: 700 !important;            
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.06em;
+    padding: 18px 20px !important;       /* Relleno horizontal fijo para control de riel */
+    border-bottom: 3px solid var(--azul-identidad) !important; /* Línea base azul vivo */
+    text-align: center !important;       /* Títulos centrados estéticamente */
+    white-space: nowrap !important;
+    position: relative;
+}
+
+/* Líneas divisorias y estructura limpia para las celdas */
+.tabla-modulo-admin td {
+    padding: 16px 20px !important;        /* Forzamos el mismo espacio horizontal que las cabeceras th */
+    vertical-align: middle;
+    background-color: #ffffff !important; 
+    border-bottom: 1px solid var(--lineas-divisorias);  
+    text-align: left !important;          /* Datos estrictamente a la izquierda abajo */
+    white-space: nowrap !important;       /* Prohíbe que los datos se corten o compriman */
+    position: relative;                   /* Clave para posicionar la píldora flotante */
+}
+
+/* Separadores Modernos Flotantes (Estilo Minimalista de Redes Sociales) */
+
+.tabla-modulo-admin th:not(:last-child)::after {
+    content: "";
+    display: block;
+    position: absolute;
+    right: 0;
+    top: 30%;
+    height: 40%;
+    width: 2px;
+    background-color: #ffffff;
+    border-radius: 10px;
+    z-index: 10;
+}
+
+/* ⚡ Separadores Modernos Flotantes para las CELDAS (td) */
+.tabla-modulo-admin td:not(:last-child)::after {
+    content: "";
+    display: block;
+    position: absolute;
+    right: 0;
+    top: 25%;
+    height: 50%;
+    width: 2px;
+    background-color: var(--lineas-divisorias); /* Gris sutil para las celdas blancas */
+    border-radius: 10px;
+    opacity: 0.7;                         
+    z-index: 10;
+}
+
+/* 👤 Límite de ancho para el nombre del cliente */
+.tabla-modulo-admin td:nth-child(1) {
+    max-width: 200px;         /* Ajusta este valor según prefieras */
+    overflow: hidden;         /* Oculta lo que sobrepase */
+    text-overflow: ellipsis;  /* Agrega los puntos suspensivos (...) */
+    white-space: nowrap;      /* Mantiene todo en una sola línea */
+}
+
+/* Quitamos la última línea vertical de la derecha */
+.tabla-modulo-admin td:last-child, 
+.tabla-modulo-admin th:last-child {
+    border-right: none !important;
+}
+
+/* Efecto Zebra aplicado a las celdas */
+.tabla-modulo-admin tbody tr:nth-child(even) td {
+    background-color: var(--tabla-zebra) !important;
+}
+
+/* Efecto Hover para resaltar la fila activa */
+.tabla-modulo-admin tbody tr:hover td {
+    background-color: var(--tabla-hover) !important;
+    transition: background-color 0.15s ease;
+}
+
+/* Contraste Tipográfico Real para el Dinero */
+.tabla-modulo-admin td.monto-usd {
+    color: var(--texto-principal) !important;        
+    font-weight: 700 !important;       
+    font-size: 0.95rem !important;
+}
+
+.tabla-modulo-admin td.monto-bs {
+    color: var(--texto-secundario) !important;        
+    font-weight: 600 !important;
+    font-size: 0.9rem !important;
+}
+
+/* Columna 8: Detalle (Mantiene el control elástico de la tabla) */
+.tabla-modulo-admin td:nth-child(8) {
+    width: 1% !important; /* Fuerza a la última columna a ser compacta y empuja el resto a la izquierda */
+}
+
+/* Estilos base para los botones independientes dentro de las celdas */
+.tabla-modulo-admin td .btn-tabla-success,
+.tabla-modulo-admin td .btn-tabla-info {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 14px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    border-radius: 6px;
+    text-decoration: none;
+}
+
+/* Texto de verificación cuando el pedido ya está entregado */
+.texto-verificado {
+    color: var(--texto-mutado);
+    font-weight: 600;
+    font-size: 0.88rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.texto-verificado i {
+    color: var(--azul-identidad) !important;
+}
+
+/* ==========================================================================
+   🎨 BADGES DE MÉTODOS Y ESTADOS (SOLUCIÓN CLASES DINÁMICAS)
+   ========================================================================== */
+/* 🏷️ Etiquetas de Método de Pago (Estilo Minimalista Premium) */
+/* 🏷️ Método de pago: Estilo Monocromo Minimalista */
+.metodo-badge {
+    padding: 6px 14px !important;
+    border-radius: 20px !important;
+    font-size: 0.75rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-width: 130px !important;
+    
+    /* Look elegante: Gris pizarra suave */
+    background-color: #f1f5f9 !important; /* Gris muy claro */
+    color: #475569 !important;            /* Gris pizarra */
+    border: 1px solid #e2e8f0 !important; /* Borde apenas visible */
+}
+
+/* Opcional: Si quieres que el texto destaque un poco más, le subimos la intensidad */
+.metodo-badge:hover {
+    background-color: #e2e8f0 !important;
+    color: #1e293b !important;
+}
+
+.metodo-na { 
+    background-color: #f1f5f9 !important; 
+    color: var(--texto-mutado) !important; 
+}
+
+/* 🏷️ Estados de Venta - Estilo Unificado */
+.badge-listo, 
+.badge-pendiente, 
+.badge-pagado, 
+.badge-entregado {
+    padding: 6px 14px !important;
+    border-radius: 20px !important;
+    font-size: 0.75rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-width: 130px !important; /* Mismo ancho que los métodos para simetría */
+    border: 1px solid transparent !important;
+}
+
+/* Colores con bordes sutiles para elevar el diseño */
+.badge-listo { background-color: #d1fae5 !important; color: #065f46 !important; border-color: #a7f3d0 !important; }
+.badge-pendiente { background-color: #ffedd5 !important; color: #ea580c !important; border-color: #fdba74 !important; }
+.badge-pagado { background-color: #d1fae5 !important; color: #065f46 !important; border-color: #a7f3d0 !important; }
+.badge-entregado { background-color: #e2e8f0 !important; color: #64748b !important; border-color: #cbd5e1 !important; }
+
+/* ==========================================================================
+   🚀 ACCIONES DE TABLA (BOTONES DE NIVEL SAAS COMMERCIAL - OPTIMIZADOS)
+   ========================================================================== */
+/* 🚀 Acción de "Entregar Pedido" - Estilo SaaS Profesional */
+.btn-tabla-success {
+    background-color: #f0fdf4 !important; /* Verde pastel muy suave */
+    color: #166534 !important;            /* Verde bosque para el texto */
+    border: 1px solid #bbf7d0 !important; /* Borde sutil */
+    box-shadow: none !important;          /* Sin sombras pesadas */
+    font-weight: 600 !important;
+    padding: 8px 16px !important;
+    border-radius: 8px !important;
+    transition: all 0.3s ease !important;
+}
+
+.btn-tabla-success:hover {
+    background-color: #166534 !important; /* Ahora el fondo se vuelve verde oscuro al pasar el mouse */
+    color: #ffffff !important;            /* El texto se vuelve blanco */
+    transform: translateY(-1px);
+}
+
+/* ⚪ Botón "Ver Detalle" (Tu clase: .btn-tabla-info) */
+.btn-tabla-info {
+    padding: 8px 16px !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    font-size: 0.8rem !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    min-width: 130px !important; /* Ancho uniforme */
+    background-color: #ffffff !important;
+    color: #475569 !important;
+    border: 1px solid #e2e8f0 !important;
+    transition: all 0.2s ease !important;
+    text-decoration: none !important; /* Asegura que no tenga subrayado */
+}
+
+/* Efecto Hover para que cobre vida */
+.btn-tabla-info:hover {
+    background-color: #eff6ff !important; /* Azul muy clarito de fondo */
+    border-color: #bfdbfe !important;      /* Borde azul suave */
+    color: #2563eb !important;             /* Azul eléctrico para el texto */
+}
+
+/* El icono del ojo cambia de color al hacer hover */
+.btn-tabla-info:hover i {
+    color: #2563eb !important;             
+}
+
+/* Estado de tabla vacía */
+.tabla-vacia { 
+    text-align: center; 
+    color: var(--texto-mutado); 
+    padding: 30px !important; 
+}
+
+/* Contenedor específico para la vista de Detalle de Venta */
+.detalle-venta-container {
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 35px;
+    margin: 24px 0;
+    width: 100%;
+    border: 1px solid #f1f5f9;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.015);
+    box-sizing: border-box;
+}
+
+/* Ajuste para el encabezado dentro de la tarjeta de detalle */
+.detalle-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e2e8f0;
+}
+/* ==========================================================================
+   6. RESPONSIVIDAD PARA PANTALLAS CHICAS
+   ========================================================================== */
+@media (max-width: 900px) {
+    .panel-administracion {
+        flex-direction: column;
+    }
+    .sidebar-admin {
+        width: 100%;
+        min-width: 100%;
+        height: auto;
+        min-height: auto;
+        padding: 20px;
+    }
+    .main-dashboard-content {
+        padding: 40px 20px;
+    }
+    .panel-modulo-contenedor {
+        overflow-x: auto;
+    }
+}
