@@ -32,21 +32,31 @@
             <i class="fas fa-chart-pie"></i> Estadísticas
         </a>
         <?php endif; ?>
-
-        <?php if (in_array('pagos', $permisos) || $rol == 1): ?>
-        <a href="index.php?action=ver_pagos_pendientes" class="menu-item">
-            <i class="fas fa-receipt"></i> Pagos Pendientes
-        </a>
+<?php if (in_array('pagos', $permisos) || $rol == 1): ?>
+            <a href="index.php?action=pagos_pendientes" class="menu-item <?php echo (($_GET['action'] ?? '') == 'pagos_pendientes') ? 'active' : ''; ?>">
+                <i class="fas fa-receipt"></i> Pagos Pendientes
+            </a>
         <?php endif; ?>
-        
+
         <?php if (in_array('retiros', $permisos) || $rol == 1): ?>
-        <a href="index.php?action=ver_retiros" class="menu-item">
-            <i class="fas fa-box-open"></i> Retiro de Pedidos
-        </a>
+            <a href="index.php?action=retiro_pedidos" class="menu-item <?php echo (($_GET['action'] ?? '') == 'retiro_pedidos') ? 'active' : ''; ?>">
+                <i class="fas fa-box-open"></i> Retiro de Pedidos
+            </a>
+        <?php endif; ?>
+
+        <?php if (in_array('metodos_pago', $permisos) || $rol == 1): ?>
+            <a href="index.php?action=metodos_pago" class="menu-item <?php echo (($_GET['action'] ?? '') == 'metodos_pago') ? 'active' : ''; ?>">
+                <i class="fas fa-credit-card"></i> Métodos de pago
+            </a>
         <?php endif; ?>
 
         <a href="index.php?action=inicio" class="menu-item return-store">
             <i class="fas fa-store"></i> Tienda
         </a>
+
+        <a href="index.php?action=logout" class="menu-item logout-item">
+            <i class="fas fa-power-off"></i> Cerrar Sesión
+        </a>
+
     </nav>
 </aside>

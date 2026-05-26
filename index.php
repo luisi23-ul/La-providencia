@@ -31,6 +31,7 @@ if ($action == 'validar_login') { $usuarioC->validarLogin(); exit(); }
 include 'views/layout/header.php'; 
 echo '<main id="app">'; 
 
+<<<<<<< HEAD
 // MASTER 
 $acciones_master = [
     'gestionar_admins', 
@@ -42,6 +43,19 @@ $acciones_master = [
     'eliminar_admin',
     'configuracion_sistema',
     'actualizar_configuracion'];
+=======
+// --- BLOQUE DE SEGURIDAD MASTER ---
+$acciones_master = [
+    'gestionar_admins', 
+    'dashboard_master',
+     'nuevo_admin',
+      'guardar_nuevo_admin', 
+      'editar_admin', 
+      'actualizar_admin',
+       'eliminar_admin',
+        'configuracion_sistema',
+         'actualizar_configuracion'];
+>>>>>>> 3265dcc284fa3c7c8d474a9516adf0d5b235c255
 
 if (in_array($action, $acciones_master)) {
     if (isset($_SESSION['rol']) && ($_SESSION['rol'] == 1 || $_SESSION['rol'] == 2)) {
@@ -74,7 +88,11 @@ if (in_array($action, $acciones_master)) {
             $masterC->actualizarConfiguracion(); 
             break;
                 }
+<<<<<<< HEAD
         echo '</main></main>'; 
+=======
+        echo '</main></main>'; // Cerrar etiquetas
+>>>>>>> 3265dcc284fa3c7c8d474a9516adf0d5b235c255
         exit();
     } else {
         header("Location: index.php?action=login");
