@@ -42,6 +42,8 @@ $acciones_master = [
       'actualizar_admin',
        'eliminar_admin',
         'configuracion_sistema',
+        'listado_administradores',
+        'toggle_admin',
          'actualizar_configuracion'];
 
 if (in_array($action, $acciones_master)) {
@@ -68,6 +70,18 @@ if (in_array($action, $acciones_master)) {
             case 'eliminar_admin': 
                 $masterC->eliminarAdmin($_GET['id']);
                  break;
+
+         case 'listado_administradores':
+    // Pasamos la variable $db que ya tienes definida en tu index
+    $masterC = new MasterController($db);
+    $masterC->listarAdministradores();
+    break;
+
+case 'toggle_admin':
+    $masterC = new MasterController($db);
+    $masterC->toggleEstado();
+    break;
+                            
             case 'configuracion_sistema': 
                 $masterC->vistaConfiguracion(); 
                 break;

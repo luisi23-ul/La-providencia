@@ -182,5 +182,6 @@ public function obtenerVentasPorEstado($estadosArray) {
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_OBJ);
 }
+
 }
 ?>
