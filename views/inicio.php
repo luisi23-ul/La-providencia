@@ -1,9 +1,29 @@
+<?php
+// Conexión y consulta
+require_once 'config/db.php';
+$db = Database::connect();
+$config = $db->query("SELECT * FROM sistema1 WHERE id = 1")->fetch(PDO::FETCH_OBJ);
+?>
+
+<style>
+:root {
+    --primary-blue: <?php echo $config->color_primario; ?>;
+    --dark-surface: <?php echo $config->color_secundario; ?>;
+    --footer-bg:    <?php echo $config->color_terciario; ?>;
+    --text-muted:   <?php echo $config->color_cuaternario; ?>;
+}
+</style>
+
+
 <section id="inicio" class="hero-section">
     <article class="contenedor-hero">
         <header class="text-hero">
-        <h2 class="titulo-hero">
-                <span class="palabra">Calidad,</span> 
-                <span class="palabra">resistencia,</span> 
+       <h2 class="titulo-hero">
+    <?php echo htmlspecialchars($config->titulo_hero); ?>
+</h2>
+<p class="subtitulo-hero">
+    <?php echo htmlspecialchars($config->subtitulo_hero); ?>
+</p>
                 <span class="palabra resaltado">confianza.</span>
         </h2>
 
@@ -170,7 +190,7 @@
                 </figure>
                 <header>
                     <h4>Teléfono</h4>
-                    <p>+58 412-1234567</p>
+                   <p><?php echo htmlspecialchars($config->telefono); ?></p>
                 </header>
             </article>
 

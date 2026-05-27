@@ -120,46 +120,10 @@ public function crearAdmin() {
 
 
 
-// En el método que carga la vista de configuración:
-public function vistaConfiguracion() {
-    $config = $this->modeloConfig->obtenerConfiguracion();
-    
-    // Asegúrate de que esta ruta existe físicamente
-    $ruta = 'views/configuracion_sistema.php';
-    if (file_exists($ruta)) {
-        include $ruta;
-    } else {
-        die("Error: No se encontró el archivo en $ruta");
-    }
-}
 
- // editamos aqui la pagina
-    public function editarConfiguracion() {
-        if ($_SESSION['rol'] != 1) die("Acceso denegado");
-        
-        // Obtener datos actuales
-        $config = $this->db->query("SELECT * FROM sistema WHERE id = 1")->fetch(PDO::FETCH_OBJ);
-        include 'views/configuracion_sistema.php';
-    }
 // Actualizar los cambios de la pagin
-public function actualizarConfiguracion() {
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        $datos = [
-            'nombre_empresa'   => $_POST['nombre_empresa'],
-            'titulo_principal' => $_POST['titulo_principal'],
-            'color_primario'   => $_POST['color_primario'],
-            'color_secundario' => $_POST['color_secundario'],
-            'footer_texto'     => $_POST['footer_texto'],
-            'telefono'         => $_POST['telefono'],      
-            'email_contacto'   => $_POST['email_contacto'],
-            'direccion'        => $_POST['direccion'],     
-            'mapa_url'         => $_POST['mapa_url'],      
-            'logo'             => ''
-        ];
-        $this->modeloConfig->actualizarConfiguracionModel($datos);
-        header("Location: index.php?action=configuracion_sistema");
-    }
-}
+// Modifica la función actualizarConfiguracion así:
+
 
 public function listarAdministradores() {
         // 1. Verificación de seguridad: Inicializar el modelo si es null
@@ -175,17 +139,34 @@ public function listarAdministradores() {
         // 3. Incluir la vista
         include "views/listado_administradores.php";
     }
-// Nueva función para el toggle
-public function toggleEstado() {
-    $id = $_GET['id'] ?? null;
-    $estado = $_GET['estado'] ?? null;
+
+
+// En el método que carga la vista de configuración:
+public function vistaConfiguracion() {
+    $config = $this->modeloConfig->obtener();
     
-    if ($id !== null && $estado !== null) {
-        // Asegúrate de usar $this->modelo (sin la 'l' extra)
-        $this->modelo->actualizarEstadoUsuario($id, $estado);
+    $ruta = 'views/configuracion_sistema.php';
+    if (file_exists($ruta)) {
+        include $ruta;
+    } else {
+        die("Error: No se encontró el archivo en $ruta");
     }
-    
-    header("Location: index.php?action=gestionar_admins"); // Asegúrate que esta acción existe en tu index
-    exit();
+}
+
+ public function editarConfiguracion() {
+    require_once 'models/ConfiguracionModel.php';
+    $modelo = new ConfiguracionModel($this->db);
+    $config = $modelo->obtener();
+    require_once 'views/configuracion_sistema.php';
+}
+
+public function actualizarConfiguracion() {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        require_once 'models/ConfiguracionModel.php';
+        $modelo = new ConfiguracionModel($this->db);
+        $modelo->actualizar($_POST);
+       header("Location: index.php?action=configuracion_sistema&status=ok");
+        exit(); // Es buena práctica añadir exit() después de un header
+    }
 }
 }

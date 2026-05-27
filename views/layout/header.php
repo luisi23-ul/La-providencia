@@ -1,9 +1,23 @@
+<?php
+// Asegúrate de incluir la conexión
+require_once 'config/db.php'; 
+$db = Database::connect();
+
+// Obtenemos la configuración de la base de datos
+$stmt = $db->query("SELECT * FROM sistema WHERE id = 1");
+$config = $stmt->fetch(PDO::FETCH_OBJ);
+
+// Si no hay datos, definimos valores por defecto para que no falle
+if (!$config) {
+    $config = (object) ['nombre_empresa' => 'La Providencia', 'color_primario' => '#2c3e50'];
+}
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>La Providencia</title>
+   <title><?php echo htmlspecialchars($config->titulo_principal); ?></title>
 
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">

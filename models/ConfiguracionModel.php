@@ -6,31 +6,37 @@ class ConfiguracionModel {
         $this->db = $db;
     }
 
-    public function obtenerConfiguracion() {
-        // Cambiado de "configuracion" a "sistema"
-        $sql = "SELECT * FROM sistema WHERE id = 1";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute();
-        return $stmt->fetch(PDO::FETCH_OBJ);
+    public function obtener() {
+        return $this->db->query("SELECT * FROM sistema1 WHERE id = 1")->fetch(PDO::FETCH_OBJ);
     }
 
-    // Agrégalo dentro de la clase ConfiguracionModel
-public function actualizarConfiguracionModel($datos) {
-    $sql = "UPDATE sistema SET 
-            nombre_empresa = ?, titulo_principal = ?, 
-            color_primario = ?, color_secundario = ?, 
-            footer_texto = ?, logo = ?,
-            telefono = ?, email_contacto = ?, 
-            direccion = ?, mapa_url = ? 
+   public function actualizar($d) {
+    // Usaremos un UPDATE directo con bindValue para asegurar el tipo de dato
+    $sql = "UPDATE sistema1 SET 
+            titulo_hero = :th, 
+            subtitulo_hero = :sh, 
+            direccion = :dir, 
+            telefono = :tel, 
+            footer_texto = :ft, 
+            color_primario = :cp, 
+            color_secundario = :cs, 
+            color_terciario = :ct, 
+            color_cuaternario = :cq 
             WHERE id = 1";
-            
+
     $stmt = $this->db->prepare($sql);
-    $stmt->execute([
-        $datos['nombre_empresa'], $datos['titulo_principal'], 
-        $datos['color_primario'], $datos['color_secundario'], 
-        $datos['footer_texto'], $datos['logo'],
-        $datos['telefono'], $datos['email_contacto'], 
-        $datos['direccion'], $datos['mapa_url']
-    ]);
+    
+    // Asignamos valores individualmente forzando el tipo string
+    $stmt->bindValue(':th', $d['titulo_hero'], PDO::PARAM_STR);
+    $stmt->bindValue(':sh', $d['subtitulo_hero'], PDO::PARAM_STR);
+    $stmt->bindValue(':dir', $d['direccion'], PDO::PARAM_STR);
+    $stmt->bindValue(':tel', $d['telefono'], PDO::PARAM_STR);
+    $stmt->bindValue(':ft', $d['footer_texto'], PDO::PARAM_STR);
+    $stmt->bindValue(':cp', $d['color_primario'], PDO::PARAM_STR);
+    $stmt->bindValue(':cs', $d['color_secundario'], PDO::PARAM_STR);
+    $stmt->bindValue(':ct', $d['color_terciario'], PDO::PARAM_STR);
+    $stmt->bindValue(':cq', $d['color_cuaternario'], PDO::PARAM_STR);
+
+    return $stmt->execute();
 }
 }

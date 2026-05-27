@@ -75,19 +75,15 @@ if (in_array($action, $acciones_master)) {
     // Pasamos la variable $db que ya tienes definida en tu index
     $masterC = new MasterController($db);
     $masterC->listarAdministradores();
-    break;
-
-case 'toggle_admin':
-    $masterC = new MasterController($db);
-    $masterC->toggleEstado();
-    break;
-                            
+    break;        
             case 'configuracion_sistema': 
                 $masterC->vistaConfiguracion(); 
                 break;
-                    case 'actualizar_configuracion': 
-            $masterC->actualizarConfiguracion(); 
-            break;
+                    // Cambia la línea de tu switch en index.php a esto:
+// En tu index.php, simplifica el switch así:
+case 'actualizar_configuracion':
+    $masterC->actualizarConfiguracion(); // Usa la instancia que ya creaste arriba
+    break;
                 }
         echo '</main></main>'; // Cerrar etiquetas
         exit();

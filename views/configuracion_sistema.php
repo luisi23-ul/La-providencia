@@ -1,80 +1,74 @@
-
-<article class="card-formulario">
-    <link rel="stylesheet" href="public/css/dashboard.css?v=<?php echo time(); ?>">
-    <link rel="stylesheet" href="public/css/formulario_producto.css?v=<?php echo time(); ?>">
+<style>
+    .admin-form { max-width: 800px; margin: 20px auto; padding: 30px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; font-family: sans-serif; }
+    h2 { color: #1e293b; font-size: 1.25rem; margin-bottom: 20px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; }
+    fieldset { border: none; margin: 0 0 30px 0; padding: 0; }
+    label { display: block; margin: 15px 0 5px; font-weight: 600; color: #475569; font-size: 0.9rem; }
+    input[type="text"], textarea { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; box-sizing: border-box; background: #f8fafc; }
+    ul { list-style: none; padding: 0; }
+    li { display: flex; align-items: center; gap: 20px; margin-bottom: 15px; }
+    input[type="color"] { border: none; width: 40px; height: 40px; cursor: pointer; border-radius: 4px; }
     
-    <header class="formulario-header">
-        <h2>Configuración Global</h2>
-        <p class="subtitle">Personaliza la identidad, contactos y ubicación del sistema.</p>
-    </header>
-    
-    <form id="formConfig" action="index.php?action=actualizar_configuracion" method="POST" enctype="multipart/form-data">
-        
-        <section class="fila-dual">
-            <fieldset class="grupo-control">
-                <label>Nombre de la Empresa</label>
-                <input type="text" name="nombre_empresa" class="providencia-field" value="<?php echo $config->nombre_empresa; ?>" required>
-            </fieldset>
-            <fieldset class="grupo-control">
-                <label>Título Principal</label>
-                <input type="text" name="titulo_principal" class="providencia-field" value="<?php echo $config->titulo_principal; ?>" required>
-            </fieldset>
-        </section>
+    /* ESTILO DEL BOTÓN INTEGRADO */
+    .btn-submit {
+        background-color: #0052d4;
+        color: white;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        width: 100%;
+        margin-top: 20px;
+        font-size: 1rem;
+        transition: background 0.3s;
+    }
+    .btn-submit:hover { background-color: #003a96; }
+</style>
 
-        <section class="fila-dual">
-            <fieldset class="grupo-control">
-                <label>Teléfono de Contacto</label>
-                <input type="text" name="telefono" class="providencia-field" value="<?php echo $config->telefono ?? ''; ?>">
-            </fieldset>
-            <fieldset class="grupo-control">
-                <label>Correo Electrónico</label>
-                <input type="email" name="email_contacto" class="providencia-field" value="<?php echo $config->email_contacto ?? ''; ?>">
-            </fieldset>
-        </section>
-
-        <fieldset class="grupo-control">
-            <label>Dirección Física</label>
-            <textarea name="direccion" class="providencia-field" rows="2"><?php echo $config->direccion ?? ''; ?></textarea>
-        </fieldset>
-
-        <fieldset class="grupo-control">
-            <label>Enlace de Google Maps</label>
-            <input type="url" name="mapa_url" class="providencia-field" value="<?php echo $config->mapa_url ?? ''; ?>">
-        </fieldset>
-
-        <section class="fila-dual">
-            <fieldset class="grupo-control">
-                <label>Color Primario</label>
-                <input type="color" name="color_primario" class="providencia-field" value="<?php echo $config->color_primario; ?>">
-            </fieldset>
-            <fieldset class="grupo-control">
-                <label>Color Secundario</label>
-                <input type="color" name="color_secundario" class="providencia-field" value="<?php echo $config->color_secundario; ?>">
-            </fieldset>
-        </section>
-
-        <fieldset class="grupo-control">
-            <label>Texto del Footer</label>
-            <textarea name="footer_texto" class="providencia-field" rows="2"><?php echo $config->footer_texto; ?></textarea>
-        </fieldset>
-
-        <fieldset class="grupo-control">
-            <label>Logo del Sistema</label>
-            <span class="custom-file-upload">
-                <i class="fas fa-image"></i> Cambiar Logo
-                <input type="file" name="logo" class="input-file-providencia" accept="image/*">
-            </span>
-        </fieldset>
-
-        <footer class="formulario-acciones">
-            <button type="submit" class="btn-providencia-save" style="border:none; cursor:pointer; width: 100%; text-align: center;">
-                GUARDAR CAMBIOS
-            </button>
+<form action="index.php?action=actualizar_configuracion" method="POST" class="admin-form">
+    <section>
+        <h2>Configuración General</h2>
+        <fieldset>
+            <label>Título Hero</label>
+            <input type="text" name="titulo_hero" value="<?php echo htmlspecialchars($config->titulo_hero); ?>">
             
-            <a href="index.php?action=dashboard_master" class="btn-providencia-link btn-secondary-satin">
-                <i class="fas fa-home"></i> VOLVER AL PANEL
-            </a>
-        </footer>
+            <label>Subtítulo Hero</label>
+            <textarea name="subtitulo_hero"><?php echo htmlspecialchars($config->subtitulo_hero); ?></textarea>
+            
+            <label>Dirección</label>
+            <input type="text" name="direccion" value="<?php echo htmlspecialchars($config->direccion); ?>">
+            
+            <label>Teléfono</label>
+            <input type="text" name="telefono" value="<?php echo htmlspecialchars($config->telefono); ?>">
 
-    </form>
-</article>
+            
+            
+            <label>Texto Footer</label>
+            <textarea name="footer_texto"><?php echo htmlspecialchars($config->footer_texto); ?></textarea>
+        </fieldset>
+    </section>
+
+    <section>
+        <h2>Paleta de Colores</h2>
+        <ul>
+            <li>
+                <input type="color" name="color_primario" value="<?php echo $config->color_primario; ?>">
+                <label>Primario (Azul Marca)</label>
+            </li>
+            <li>
+                <input type="color" name="color_secundario" value="<?php echo $config->color_secundario; ?>">
+                <label>Secundario (Oscuro)</label>
+            </li>
+            <li>
+                <input type="color" name="color_terciario" value="<?php echo $config->color_terciario; ?>">
+                <label>Terciario (Footer)</label>
+            </li>
+            <li>
+                <input type="color" name="color_cuaternario" value="<?php echo $config->color_cuaternario; ?>">
+                <label>Cuaternario (Texto Muted)</label>
+            </li>
+        </ul>
+    </section>
+
+    <button type="submit" class="btn-submit">Guardar Cambios</button>
+</form>
