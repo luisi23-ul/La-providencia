@@ -3,7 +3,7 @@
    ========================================================================== */
 
 .main-header {
-    position: fixed;
+    position:fixed;
     top: 20px;
     left: 50%;
     transform: translateX(-50%);
@@ -29,6 +29,7 @@
     transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
     display: flex;
     align-items: center;
+    
 }
 
 .nav-container {
@@ -36,6 +37,8 @@
     justify-content: space-between;
     align-items: center;
     width: 100%;
+    
+    
 }
 
 .nav-brand {
@@ -260,7 +263,7 @@
     cursor: pointer;
     padding: 0;
     position: relative;
-    z-index: 9999 !important; 
+    z-index: 10000 !important; 
     pointer-events: auto !important;
 }
 
@@ -288,29 +291,33 @@
 /* ==========================================================================
    CORTINA RESPONSIVA (Restaurada al diseño original premium)
    ========================================================================== */
+/* 1. Estado inicial del menú (oculto fuera de la pantalla) */
+/* Corregimos el estado inicial */
 .nav-menu-responsive {
     display: none; 
-    flex-direction: column;
     position: fixed;
     top: 0;
-    right: 0;
+    right: -300px;
     width: 300px;
     height: 100vh;
-    background-color: #ffffff;
-    /* Devolvemos el padding exacto para que el botón hamburguesa (X) 
-       tenga su espacio libre arriba a la derecha sin ser pisado */
-    padding: 100px 24px 40px 24px;
-    box-shadow: -15px 0 50px rgba(15, 23, 42, 0.08);
-    z-index: 9000; /* Un paso por debajo del z-index: 9999 del menu-toggle para que la X pase al frente */
-    box-sizing: border-box;
+    background: #ffffff;
+    z-index: 9999;
+    transition: right 0.4s ease;
+    background: #ff0000 !important;
 }
 
-/* Activación limpia coordinada con tu animación original */
+/* Solo se activa y se muestra cuando JS añade la clase 'active' */
 .nav-menu-responsive.active {
-    display: flex !important; 
-    animation: slideInMenu 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex !important;
+    right: 0 !important;
+    flex-direction: column;
+    visibility: visible;
 }
 
+/* 3. Asegurar que el botón hamburguesa se transforme (opcional) */
+.menu-toggle.active span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.menu-toggle.active span:nth-child(2) { opacity: 0; }
+.menu-toggle.active span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 /* ==========================================================================
    ELEMENTOS INTERNOS DE LA CORTINA RESPONSIVA (Tus estilos fijos)
    ========================================================================== */
@@ -416,13 +423,147 @@ body:has(.panel-administracion) #app {
     padding-top: 0 !important;
     margin-top: 0 !important;
 }
+/* Botón base del carrito */
+.nav-carrito {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 45px;
+    height: 45px;
+    background: #f1f5f9;
+    border-radius: 50%;
+    color: #64748b;
+    transition: all 0.3s ease;
+    text-decoration: none;
+}
+
+/* Estado cuando tiene productos (Verde profesional) */
+.nav-carrito.con-productos {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+/* El contador que aparece arriba a la derecha */
+.contador-carrito {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #0052d4; /* Azul La Providencia */
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 10px;
+    display: none; /* Oculto por defecto */
+}
+
+/* Solo mostramos el contador si la clase 'con-productos' está activa */
+.con-productos .contador-carrito {
+    display: block;
+}
+
+/* Hover suave para ambos estados */
+.nav-carrito:hover {
+    background: #e2e8f0;
+    transform: scale(1.05);
+}
+
+.nav-carrito.con-productos:hover {
+    background: #16a34a;
+    color: white;
+}
+
+/* Estilo para los inputs del registro */
+input[type="text"], input[type="password"], input[type="email"] {
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px; /* Bordes redondeados */
+    box-sizing: border-box;
+}
+
+button[type="submit"] {
+    background-color: #0052d4;
+    color: white;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 50px; /* Botón redondeado */
+    cursor: pointer;
+    font-weight: 600;
+}
+
+/* --- ESTILO PERSONALIZADO PARA SWEETALERT2 --- */
+
+/* 1. Fuente y bordes para que coincida con tu web */
+.swal2-popup.swal2-modal {
+    font-family: 'Poppins', sans-serif !important;
+    border-radius: 20px !important; /* Bordes suaves como tus botones */
+    padding: 2rem !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* 2. Botón de aceptar (coincide con tu botón de Registro) */
+.swal2-styled.swal2-confirm {
+    background-color: #0052d4 !important; /* Tu color azul corporativo */
+    border-radius: 50px !important;       /* Muy redondeado */
+    padding: 12px 30px !important;
+    font-weight: 600 !important;
+    box-shadow: 0 4px 6px rgba(0, 82, 212, 0.2) !important;
+    transition: all 0.3s ease !important;
+}
+
+.swal2-styled.swal2-confirm:hover {
+    background-color: #0046b8 !important; /* Un azul un poco más oscuro al pasar el mouse */
+    transform: translateY(-2px);
+}
+
+/* 3. Ajuste de iconos para que se vean modernos */
+.swal2-icon {
+    border-color: transparent !important;
+}
+
+/* 4. Título de la alerta */
+.swal2-title {
+    color: #1e293b !important;
+    font-size: 1.5rem !important;
+    margin-bottom: 0.5rem !important;
+}
 
 @keyframes slideInMenu {
     from { transform: translateX(100%); }
     to { transform: translateX(0); }
 }
+/* Espacio para todas las páginas excepto la de inicio */
+.main-interno {
+    padding-top: 0px; /* Ajusta este valor según la altura de tu header */
+}
 
-/* Media Query de Soporte Móvil */
+/* En la página de inicio, el padding es 0 para que el Hero suba correctamente */
+.main-inicio {
+    padding-top: 0px; 
+}
+
+/* 1. Asegurar que el botón hamburguesa sea visible en móviles */
 @media (max-width: 1024px) {
-    .nav-menu { display: none !important; }
+    .menu-toggle {
+        display: flex !important; /* Fuerza la visibilidad del botón */
+    }
+    
+    /* Si tienes oculto el bloque de acciones en móvil, esto lo soluciona */
+    .nav-actions {
+        display: flex !important;
+        gap: 15px; /* Ajusta el espacio entre botones en móvil */
+    }
+}
+
+/* 2. Asegurar que el menú responsive sea el que tiene el z-index correcto */
+.nav-menu-responsive {
+    z-index: 9999 !important;
+}
+
+/* 3. Asegurar que el botón hamburguesa se quede por encima de todo */
+.menu-toggle {
+    z-index: 10000 !important;
 }

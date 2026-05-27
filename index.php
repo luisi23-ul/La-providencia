@@ -32,6 +32,11 @@ if ($action == 'validar_login') { $usuarioC->validarLogin(); exit(); }
 include 'views/layout/header.php'; 
 echo '<main id="app">'; 
 
+$es_inicio = ($action == 'inicio' || $action == '');
+$clase_main = $es_inicio ? 'main-inicio' : 'main-interno';
+
+echo '<main id="app" class="' . $clase_main . '">';
+
 // --- BLOQUE DE SEGURIDAD MASTER ---
 $acciones_master = [
     'gestionar_admins', 

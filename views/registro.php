@@ -1,5 +1,6 @@
 <section class="auth-page-container">
     <link rel="stylesheet" href="public/css/components/forms.css?v=<?php echo time(); ?>">
+     <link rel="stylesheet" href="public/css/components/header.css?v=<?php echo time(); ?>">
 
     <header class="auth-banner">
         <h2>Crea tu cuenta en La Providencia</h2>
@@ -52,3 +53,8 @@
         </article>
     </main>
 </section>
+
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script src="/La-providencia/public/js/scripts.js"></script>s

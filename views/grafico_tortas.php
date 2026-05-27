@@ -55,22 +55,14 @@ $jsonBackend = isset($datosEstadisticas) ? json_encode($datosEstadisticas) : "nu
         </section>
 
         <section class="panel-modulo-contenedor">
-            <h3>Editar Cantidades</h3>
+            
             <table class="tabla-modulo-admin">
                 <thead>
-                    <tr>
-                        <th>Producto</th>
-                        <th>Stock</th>
-                    </tr>
+                    
                 </thead>
                 <tbody>
                     <?php foreach ($listaProductos as $index => $producto): ?>
-                    <tr>
-                        <td class="nombre-producto"><?php echo $producto['nombre']; ?></td>
-                        <td>
-                            <input type="number" class="input-stock" value="<?php echo (int)$producto['stock']; ?>" oninput="actualizarGrafico()">
-                        </td>
-                    </tr>
+                  
                     <?php endforeach; ?>
                 </tbody>
             </table>

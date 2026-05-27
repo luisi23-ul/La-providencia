@@ -25,37 +25,52 @@
             </a>
         </section>
         
-        <?php if ($action == 'inicio' || $action == ''): ?>
-            <ul class="nav-menu">
-                <li><a href="index.php" class="nav-link">Inicio</a></li>
-                <li><a href="index.php?action=ver_catalogo" class="nav-link active-catalog"><i class="fas fa-store icon-small"></i> Catálogo</a></li>
-                <li><a href="#products" class="nav-link">Categorías</a></li>
-                <li><a href="#nosotros" class="nav-link">Nosotros</a></li>
-                <li><a href="#contacto" class="nav-link">Contacto</a></li>
-            </ul>
-        <?php endif; ?>
+        <ul class="nav-menu">
+            <li><a href="index.php?action=inicio" class="nav-link">Inicio</a></li>
+            <li><a href="index.php?action=ver_catalogo" class="nav-link">Catálogo</a></li>
+            <li><a href="index.php?action=inicio#nosotros" class="nav-link">Nosotros</a></li>
+            <li><a href="index.php?action=inicio#contacto" class="nav-link">Contacto</a></li>
+        </ul>
 
         <section class="nav-actions">
-            <?php if ($action == 'inicio' || $action == ''): ?>
-                <a href="index.php?action=login_usuario" class="action-link login-btn"><i class="fas fa-user"></i> <span>Iniciar Sesión</span></a>
-                <a href="index.php?action=registro" class="register-cta-btn"><i class="fas fa-user-plus"></i> <span>Registrarse</span></a>
-                <a href="index.php?action=carrito" class="cart-custom-btn"><span>0</span></a>
-            <?php endif; ?>
-
             <?php 
-            $acciones_admin = ['dashboard', 'listado_productos', 'formulario_producto', 'editar', 'metodos_pago', 'retiro_pedidos', 'detalle_venta', 'admin', 'seccion_graficos'];
-            if ($action !== 'inicio' && $action !== '' && !in_array($action, $acciones_admin)): ?>
-                <button class="menu-toggle" aria-label="Abrir menú">
-                    <span></span><span></span><span></span>
-                </button>
-            <?php endif; ?>
+            // Lógica del Carrito MANTENIDA
+            $cantidadTotal = 0;
+            if (isset($_SESSION["carrito"])) {
+                foreach ($_SESSION["carrito"] as $item) {
+                    $cantidadTotal += $item["cantidad"];
+                }
+            }
+            $claseCarrito = ($cantidadTotal > 0) ? 'con-productos' : '';
+            ?>
+
+            <a href="index.php?action=ver_carrito" class="nav-carrito <?php echo $claseCarrito; ?>">
+                <i class="fas fa-shopping-cart"></i>
+                <span class="contador-carrito"><?php echo $cantidadTotal; ?></span>
+            </a>
+
+            <a href="index.php?action=login_usuario" class="action-link login-btn"><i class="fas fa-user"></i> Sesión</a>
+            <a href="index.php?action=registro" class="register-cta-btn"><i class="fas fa-user-plus"></i> Registro</a>
         </section>
     </nav>
-
-    <?php if ($action !== 'inicio' && $action !== '' && !in_array($action, $acciones_admin)): ?>
-        <aside class="nav-menu-responsive">
-            </aside>
-    <?php endif; ?>
 </header>
 
-<script src="public/js/navbar.js?v=<?php echo time(); ?>" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    function mostrarAlerta(icono, titulo, mensaje, redireccion = null) {
+        Swal.fire({
+            icon: icono, // 'success', 'error', 'warning', 'info'
+            title: titulo,
+            text: mensaje,
+            confirmButtonColor: '#0052d4',
+            confirmButtonText: 'Aceptar'
+        }).then((result) => {
+            if (redireccion) {
+                window.location.href = redireccion;
+            }
+        });
+    }
+</script>
+
+ 
+

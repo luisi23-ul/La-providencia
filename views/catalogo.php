@@ -1,14 +1,36 @@
 <link rel="stylesheet" href="public/css/catalogo.css?v=<?php echo time(); ?>">
 
-<section class="contenedor-catalogo">
-    <header class="encabezado-catalogo">
-        <h2>Nuestros Productos</h2>
-        <p>Soluciones de alto nivel diseñadas para tu hogar.</p>
-    </header>
+<header class="hero-catalogo">
+    <nav class="hero-top-bar">
+        <span><i class="fas fa-truck"></i> Envío rápido</span>
+        <span><i class="fas fa-shield-alt"></i> Calidad Providencia</span>
+        <span><i class="fas fa-credit-card"></i> Pagos seguros</span>
+    </nav>
+
+    <section class="hero-content">
+        <div class="hero-text">
+            <h1>Nuestros Productos</h1>
+            <p>La excelencia en soluciones para el hogar, ahora a un clic de distancia.</p>
+        </div>
+
+        <form id="form-busqueda" action="index.php" method="GET" class="hero-search-bar">
+            <input type="hidden" name="action" value="ver_catalogo">
+            <input type="text" name="busqueda" id="input-busqueda" placeholder="¿Qué estás buscando para tu hogar?">
+            <button type="button" onclick="document.getElementById('form-busqueda').submit();">
+                <i class="fas fa-search"></i>
+                <span>Buscar</span>
+            </button>
+        </form>
+    </section>
+</header>
+
+<main class="contenedor-catalogo">
+
+    
 
     <article class="grid-productos">
         <?php foreach ($listaProductos as $p): ?>
-            <figure class="card-producto">
+            <figure class="card-producto producto-item">
                 <picture class="imagen-container">
                     <?php if (!empty($p->imagen) && file_exists("public/uploads/" . $p->imagen)): ?>
                         <img src="public/uploads/<?php echo $p->imagen; ?>" alt="<?php echo htmlspecialchars($p->nombre_producto, ENT_QUOTES, 'UTF-8'); ?>">
@@ -41,6 +63,7 @@
                             </button>
                         </form>
                     <?php else: ?>
+                            
                         <a href="index.php?action=login_usuario" class="btn-login-comprar">
                             <i class="fas fa-sign-in-alt"></i> Inicia sesión para comprar
                         </a>
@@ -50,3 +73,5 @@
         <?php endforeach; ?>
     </article>
 </section>
+</main>
+<script src="public/js/scripts.js?v=<?php echo time(); ?>" defer></script>

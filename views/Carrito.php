@@ -1,14 +1,18 @@
+
+<link class="estilo-carrito" rel="stylesheet" href="public/css/Carrito.css?v=<?php echo time(); ?>">
 <?php
 // views/carrito.php
 ?>
+
 <section class="contenedor-carrito">
     <header>
         <h2 class="titulo-carrito">Tu Pedido en La Providencia</h2>
     </header>
-    <link class="estilo-carrito" rel="stylesheet" href="public/css/Carrito.css?v=<?php echo time(); ?>">
+    
 
     <?php if (isset($_SESSION["carrito"]) && !empty($_SESSION["carrito"])): ?>
-        <table class="tabla-carrito">
+       
+       <div class="tabla-wrapper"> <table class="tabla-carrito">
             <thead>
                 <tr class="fila-cabecera">
                     <th class="celda-cabecera">Producto</th>
@@ -35,15 +39,15 @@
                         </td>
                         
                         <td class="celda-producto">
-                            <span style="display: block; font-weight: 600;">$<?php echo number_format($item["precio"], 2); ?></span>
-                            <span style="display: block; font-size: 0.82rem; color: #64748b;">Bs. <?php echo number_format($precioBsUnitario, 2, ',', '.'); ?></span>
+                            <span>$<?php echo number_format($item["precio"], 2); ?></span>
+                            <span>Bs. <?php echo number_format($precioBsUnitario, 2, ',', '.'); ?></span>
                         </td>
                         
                         <td class="celda-producto"><?php echo $item["cantidad"]; ?></td>
                         
                         <td class="celda-producto">
-                            <span style="display: block; font-weight: 600;">$<?php echo number_format($subtotal, 2); ?></span>
-                            <span style="display: block; font-size: 0.82rem; color: #0284c7; font-weight: 600;">Bs. <?php echo number_format($subtotalBs, 2, ',', '.'); ?></span>
+                            <span>$<?php echo number_format($subtotal, 2); ?></span>
+                            <span>Bs. <?php echo number_format($subtotalBs, 2, ',', '.'); ?></span>
                         </td>
                         
                         <td class="celda-producto">
@@ -53,46 +57,43 @@
                 <?php endforeach; ?>
             </tbody>
         </table>
-
-        <p class="tasa-bcv" style="text-align: right; font-size: 0.9rem; color: #64748b; margin-top: 20px; font-family: sans-serif; margin-bottom: 5px;">
+        </div>      
+<div class="contenedor-inferior">
+        <div class="resumen-total">
+        <p class="tasa-bcv">
             Tasa Oficial BCV: <strong>Bs. <?php echo number_format($tasaCambio, 2, ',', '.'); ?> / USD</strong>
         </p>
 
-        <div style="text-align: right; margin-top: 10px; margin-bottom: 25px; font-family: sans-serif;">
-            <p style="font-size: 1.2rem; color: #1e293b; font-weight: 700; margin: 0; padding: 5px 0;">
-                Total en Dólares: <span style="color: #1e293b; font-size: 1.35rem;">$<?php echo number_format($totalFinal, 2); ?></span>
+            <p>
+                Total en Dólares: <span>$<?php echo number_format($totalFinal, 2); ?></span>
             </p>
             
-            <p style="font-size: 1.4rem; color: #0284c7; font-weight: 800; margin: 0; padding: 5px 0;">
+            <p>
                 Total en Bs: <span>Bs. <?php echo number_format($totalBolivares, 2, ',', '.'); ?></span>
             </p>
         </div>
 
-       <footer class="acciones-carrito">
-    <p class="p-volver">
-        <a href="index.php?action=ver_catalogo" class="enlace-seguir">← Seguir comprando</a>
-    </p>
-
-    <form action="index.php?action=finalizar_compra" method="POST">
-    <label for="metodo_pago" style="display: block; margin-bottom: 5px; font-weight: bold; font-family: sans-serif;">
-        Método de pago:
-    </label>
+    <div class="acciones-carrito">
     
-    <select name="metodo_pago" id="metodo_pago" required style="margin-bottom: 20px; padding: 8px; width: 100%; border: 1px solid #cbd5e1; border-radius: 5px;">
-        <option value="">-- Seleccione una opción --</option>
-        <?php foreach ($metodos as $metodo): ?>
-            <option value="<?php echo $metodo->id; ?>">
-                <?php echo htmlspecialchars($metodo->nombre); ?>
-            </option>
-        <?php endforeach; ?>
-    </select>
 
-    <button type="submit" class="boton-finalizar" style="background: none; border: none; cursor: pointer; font: inherit; padding: 0;">
-        🟢 Finalizar Compra por WhatsApp
-    </button>
-</form>
-
-</footer>
+    <div class="caja-derecha">
+        <form action="index.php?action=finalizar_compra" method="POST" class="formulario-pago">
+            <label for="metodo_pago" class="label-pago">Método de pago:</label>
+            <div class="selector-container">
+                <select name="metodo_pago" id="metodo_pago" required>
+                    <option value="">-- Seleccione una opción --</option>
+                    <?php foreach ($metodos as $metodo): ?>
+                        <option value="<?php echo $metodo->id; ?>"><?php echo htmlspecialchars($metodo->nombre); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <button type="submit" class="boton-finalizar">
+                Finalizar Compra por WhatsApp
+            </button>
+        </form>
+    </div>
+                    </div>
+</div>
     <?php else: ?>
         <aside class="carrito-vacio">
             <p class="texto-vacio">El carrito está vacío actualmente.</p>

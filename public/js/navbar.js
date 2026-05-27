@@ -1,19 +1,26 @@
-// public/js/navbar.js
-document.addEventListener('DOMContentLoaded', () => {
-    // Si estamos en el panel, nos aseguramos de que el menú no haga nada
-    if (document.querySelector('.panel-administracion')) {
-        return; 
-    }
+(function() {
+    // Si ya existe la bandera 'yaCorri', no volvemos a correr
+    if (window.yaCorri) return;
+    window.yaCorri = true;
 
-    const menuToggle = document.querySelector('.menu-toggle');
-    if (!menuToggle) return;
+    console.log("Navbar JS inicializado de forma segura.");
 
-    menuToggle.addEventListener('click', (e) => {
-        e.preventDefault();
-        const navMenuResponsive = document.querySelector('.nav-menu-responsive');
-        if (navMenuResponsive) {
-            menuToggle.classList.toggle('active');
-            navMenuResponsive.classList.toggle('active');
+    document.addEventListener('DOMContentLoaded', () => {
+        const boton = document.querySelector('.menu-toggle');
+        const menu = document.querySelector('.nav-menu-responsive');
+
+        if (!boton) {
+            console.warn("No encontré el botón .menu-toggle");
+            return;
         }
+
+        boton.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation(); // Evita que otros scripts reciban el clic
+            
+            console.log("¡Clic procesado!");
+            menu.classList.toggle('active');
+            boton.classList.toggle('active');
+        });
     });
-});
+})();
