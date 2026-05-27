@@ -31,7 +31,7 @@
         <span class="icon-admin"><i class="fas fa-boxes"></i></span>
         <h3>listado administradores</h3>
         <p>Supervisa el inventario general del sistema.</p>
-        <a href="index.php?action=listado_master" class="btn-admin-azul">
+        <a href="index.php?action=listado_administradores" class="btn-admin-azul">
             Ir al Listado <i class="fas fa-arrow-right"></i>
         </a>
     </article>

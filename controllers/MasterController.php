@@ -18,13 +18,22 @@ class MasterController {
 }
 
     //  administradores CRUD
-   public function gestionarAdmins() {
-    // Permitir rol 1 (Master) Y rol 2 (Admin)
+  public function gestionarAdmins() {
+    // 1. Verificación de seguridad: Inicializar el modelo si es null (Fix para el error)
+    if ($this->modelo === null) {
+        require_once 'models/UsuarioModels.php';
+        $this->modelo = new UsuarioModels();
+    }
+
+    // 2. Control de acceso
     if ($_SESSION['rol'] != 1 && $_SESSION['rol'] != 2) {
         die("Acceso denegado: No tienes permisos para gestionar administradores.");
     }
     
+    // 3. Llamar a la función del modelo
     $admins = $this->modelo->obtenerUsuariosPorRol(2);
+    
+    // 4. Cargar la vista
     include 'views/gestionar_admins.php';
 }
 
@@ -109,6 +118,8 @@ public function crearAdmin() {
     exit();
 }
 
+
+
 // En el método que carga la vista de configuración:
 public function vistaConfiguracion() {
     $config = $this->modeloConfig->obtenerConfiguracion();
@@ -150,4 +161,31 @@ public function actualizarConfiguracion() {
     }
 }
 
+public function listarAdministradores() {
+        // 1. Verificación de seguridad: Inicializar el modelo si es null
+        if (!isset($this->modelo) || $this->modelo === null) {
+            require_once 'models/UsuarioModels.php';
+            $this->modelo = new UsuarioModels();
+        }
+
+        // 2. Llamar a la función que SÍ tienes definida y funciona
+        // Usamos la que ya comprobaste que trae los de rol 2
+        $admins = $this->modelo->obtenerUsuariosPorRol(2); 
+        
+        // 3. Incluir la vista
+        include "views/listado_administradores.php";
+    }
+// Nueva función para el toggle
+public function toggleEstado() {
+    $id = $_GET['id'] ?? null;
+    $estado = $_GET['estado'] ?? null;
+    
+    if ($id !== null && $estado !== null) {
+        // Asegúrate de usar $this->modelo (sin la 'l' extra)
+        $this->modelo->actualizarEstadoUsuario($id, $estado);
+    }
+    
+    header("Location: index.php?action=gestionar_admins"); // Asegúrate que esta acción existe en tu index
+    exit();
+}
 }

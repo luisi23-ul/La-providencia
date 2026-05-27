@@ -37,37 +37,45 @@
         <section class="tabla-responsiva-contenedor">
             <table class="tabla-inventario">
                 <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Nombre</th>
-                        <th>Correo</th>
-                        <th>Rol</th>
-                        <th class="texto-centrado">Acciones</th>
-                    </tr>
-                </thead>
-               <tbody>
+    <tr>
+        <th>ID</th>
+        <th>Nombre</th>
+        <th>Correo</th>
+        <th>Permisos</th> <th>Estado</th>
+        <th class="texto-centrado">Acciones</th>
+    </tr>
+</thead>
+<tbody>
     <?php foreach($admins as $a): ?>
     <tr>
-        <td class="columna-id"><?php echo htmlspecialchars($a['id']); ?></td>
-        <td class="columna-nombre"><?php echo htmlspecialchars($a['nombre']); ?></td>
-        <td class="columna-correo"><?php echo htmlspecialchars($a['correo']); ?></td>
+        <td><?php echo htmlspecialchars($a->id ?? 'N/A'); ?></td>
+        <td><?php echo htmlspecialchars($a->nombre ?? 'Sin nombre'); ?></td>
+        <td><?php echo htmlspecialchars($a->correo ?? 'Sin correo'); ?></td>
         
-        <td class="columna-apellido"><?php echo htmlspecialchars($a['apellido'] ?? 'N/A'); ?></td>
-        <td class="columna-permisos"><?php echo htmlspecialchars($a['permisos'] ?? 'Ninguno'); ?></td>
-        
-        <td class="columna-rol">
-            <span class="badge-categoria">
-                <?php echo ($a['id_rol'] == 1) ? 'Master' : 'Administrador'; ?>
-            </span>
+        <td class="columna-permisos">
+            <?php echo htmlspecialchars($a->permisos ?? 'Ninguno'); ?>
         </td>
 
+        <td>
+            <span class="badge-estado <?php echo ($a->estado == 1) ? 'bg-activo' : 'bg-inactivo'; ?>">
+                <?php echo ($a->estado == 1) ? 'Activo' : 'Inactivo'; ?>
+            </span>
+        </td>
+        
         <td class="columna-acciones texto-centrado">
-            <button type="button" class="btn-accion btn-editar" onclick="location.href='index.php?action=editar_admin&id=<?php echo $a['id']; ?>'">
+            <button type="button" class="btn-accion btn-editar" onclick="location.href='index.php?action=editar_admin&id=<?php echo $a->id; ?>'">
                 <i class="fas fa-edit"></i>
             </button>
-            <button type="button" class="btn-accion btn-eliminar" onclick="if(confirm('¿Eliminar?')) location.href='index.php?action=eliminar_admin&id=<?php echo $a['id']; ?>'">
-                <i class="fas fa-trash-alt"></i>
-            </button>
+
+            <?php if ($a->estado == 1): ?>
+                <a href="index.php?action=toggleEstado&id=<?php echo $a->id; ?>&estado=0" class="btn-accion btn-desactivar">
+                    <i class="fas fa-toggle-off"></i>
+                </a>
+            <?php else: ?>
+                <a href="index.php?action=toggleEstado&id=<?php echo $a->id; ?>&estado=1" class="btn-accion btn-activar">
+                    <i class="fas fa-toggle-on"></i>
+                </a>
+            <?php endif; ?>
         </td>
     </tr>
     <?php endforeach; ?>

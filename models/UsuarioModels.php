@@ -9,37 +9,39 @@ class UsuarioModels {
         $this->db = Database::connect(); 
     }
 
-    // --- MÉTODOS PARA EL MASTER (Gestión de Admins) ---
-
-    // Obtener solo usuarios de un rol específico (rol 2 para admins)
+    //  solo usuarios de un rol específico (rol 2 para admins)
    public function obtenerUsuarioPorId($id) {
     $stmt = $this->db->prepare("SELECT * FROM usuarios WHERE id = ?");
     $stmt->execute([$id]);
     return $stmt->fetch(PDO::FETCH_ASSOC);
 }
-    // Registrar un nuevo Admin (similar al de cliente pero con rol fijo)
-    // En UsuarioModels.php
+
+    // Registra un nuevo Admin parecido al  cliente pero con rol fijo
 public function registrarUsuarioModel($datos) {
     $sql = "INSERT INTO usuarios (nombre, correo, clave, id_rol, permisos) VALUES (?, ?, ?, ?, ?)";
     $stmt = $this->db->prepare($sql);
     $stmt->execute([$datos['nombre'], $datos['correo'], $datos['clave'], $datos['rol'], $datos['permisos']]);
 }
 
-    // Eliminar cualquier usuario (Admin o Cliente)
-   public function eliminarAdminModel($id) {
-    $sql = "DELETE FROM usuarios WHERE id = ?";
+    // Eliminar cualquier usuario 2 o 3
+  public function eliminarAdminModel($id) {
+    $sql = "UPDATE usuarios SET estado = 0 WHERE id = ?";
     $stmt = $this->db->prepare($sql);
     $stmt->execute([$id]);
 }
-    // --- MÉTODOS QUE YA TENÍAS (No los borres) ---
 
     public function login($correo, $clave) {
-        $sql = "SELECT * FROM usuarios WHERE correo = ? AND clave = ? LIMIT 1";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([$correo, $clave]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
-    }
+    // Cambiamos a la lógica de verificación de password_verify
+    $stmt = $this->db->prepare("SELECT * FROM usuarios WHERE correo = ? AND estado = 1 LIMIT 1");
+    $stmt->execute([$correo]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
+    if ($user && password_verify($clave, $user['clave'])) {
+        return $user;
+    }
+    return false;
+}
+// registra solos los clientes
     public function registrarClienteModel($datos) {
         $sql = "INSERT INTO usuarios (nombre, apellido, telefono, correo, clave, id_rol) 
                 VALUES (?, ?, ?, ?, ?, ?)";
@@ -62,15 +64,18 @@ public function registrarUsuarioModel($datos) {
 }
 
 public function obtenerUsuariosPorRol($rol) {
+    // Usamos id_rol (como en tu BD) y quitamos el filtro de estado para traer todos
     $stmt = $this->db->prepare("SELECT * FROM usuarios WHERE id_rol = ?");
     $stmt->execute([$rol]);
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    return $stmt->fetchAll(PDO::FETCH_OBJ);
 }
 
 public function actualizarAdminModel($datos) {
     if (!empty($datos['clave'])) {
         // Actualizar con nueva clave hasheada
-        $sql = "UPDATE usuarios SET nombre = ?, correo = ?, clave = ?, permisos = ? WHERE id = ?";
+        // 
+$sql = "UPDATE usuarios SET nombre = ?, correo = ?, permisos = ?, estado = ? WHERE id = ?";
+// ...
         $stmt = $this->db->prepare($sql);
         $stmt->execute([
             $datos['nombre'], 
@@ -91,4 +96,19 @@ public function actualizarAdminModel($datos) {
         ]);
     }
 }
+
+public function listarAdministradores() {
+        // Usamos la función que YA tienes y que SÍ funciona (la de rol 2)
+        // Esto evita errores de "función no encontrada"
+        $admins = $this->modelo->obtenerUsuariosPorRol(2); 
+        
+        include "views/listado_administradores.php";
+    }
+
+public function actualizarEstadoUsuario($id, $estado) {
+    $sql = "UPDATE usuarios SET estado = ? WHERE id = ?";
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute([$estado, $id]);
+}
+
 }
