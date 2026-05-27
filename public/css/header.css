@@ -395,6 +395,28 @@
     display: none !important;
 }
 
+/* Si el contenedor principal tiene la clase panel-administracion, escondemos el menú hamburguesa */
+.panel-administracion  .main-header .menu-toggle,
+.panel-administracion .menu-toggle {
+    display: none !important;
+}
+
+/* Forzamos que el espacio que deja el botón no se note */
+.panel-administracion .nav-actions {
+    display: none !important; /* Oculta todo el bloque de acciones si solo está el botón */
+}
+
+/* Si el panel administrativo está presente, oculta la barra pública */
+body:has(.panel-administracion) .main-header {
+    display: none !important;
+}
+
+/* Evita que el contenido principal del dashboard se mueva hacia abajo */
+body:has(.panel-administracion) #app {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+}
+
 @keyframes slideInMenu {
     from { transform: translateX(100%); }
     to { transform: translateX(0); }

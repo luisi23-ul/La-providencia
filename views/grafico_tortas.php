@@ -13,20 +13,24 @@ $jsonBackend = isset($datosEstadisticas) ? json_encode($datosEstadisticas) : "nu
 
     <main class="main-dashboard-content">
 
-        <header class="dashboard-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
-            <section>
-                <h2>Análisis Estadístico: Gráfico de Tortas</h2>
-                <p class="bienvenida-sub">Métricas de control de salidas generales de <span>La Providencia</span></p>
-            </section>
+        <header class="pagos-header">
+            <nav class="header-top">
+                <a href="index.php?action=dashboard" class="btn-regresar-panel">
+                    <i class="fas fa-arrow-left"></i> 
+                </a>
+            </nav>
 
-            <section class="grupo-botones-reporte" style="display: flex; gap: 10px; align-items: center;">
-                <a href="index.php?action=exportar_excel&tipo=estadisticas&grafico=torta" style="text-decoration: none;">
-                    <button type="button" style="background-color: #22c55e; color: white; border: none; cursor: pointer; padding: 10px 16px; border-radius: 6px; font-weight: bold; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">📊 Excel</button>
-                </a>
-                <a href="index.php?action=exportar_pdf&tipo=estadisticas" style="text-decoration: none;">
-                    <button type="button" onclick="generarPDFGrafico()" style="background-color: #ef4444; color: white; border: none; cursor: pointer; padding: 10px 16px; border-radius: 6px; font-weight: bold; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">📄 PDF (Gráfico)</button>
-                </a>
-                <a href="index.php?action=dashboard" style="text-decoration: none; padding: 10px 14px; font-size: 0.9rem; color: #64748b;">← Volver</a>
+            <section class="header-bottom">
+                <h2>Análisis Estadístico: Gráfico de Tortas</h2>
+                
+                <nav class="acciones-exportar">
+                    <a href="index.php?action=exportar_excel&tipo=estadisticas&grafico=torta" class="btn-exportar-excel">
+                        <i class="fas fa-file-excel"></i> Excel
+                    </a>
+                    <a href="#" onclick="generarPDFGrafico()" class="btn-exportar-pdf">
+                        <i class="fas fa-file-pdf"></i> PDF
+                    </a>
+                </nav>
             </section>
         </header>
 
@@ -50,9 +54,9 @@ $jsonBackend = isset($datosEstadisticas) ? json_encode($datosEstadisticas) : "nu
             </article>
         </section>
 
-        <section class="contenedor-edicion">
+        <section class="panel-modulo-contenedor">
             <h3>Editar Cantidades</h3>
-            <table>
+            <table class="tabla-modulo-admin">
                 <thead>
                     <tr>
                         <th>Producto</th>

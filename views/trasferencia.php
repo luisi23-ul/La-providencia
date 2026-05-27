@@ -1,5 +1,5 @@
 <link rel="stylesheet" href="public/css/dashboard.css?v=<?php echo time(); ?>">
-<link rel="stylesheet" href="public/css/pagos.css?v=<?php echo time(); ?>">
+
 
 <section class="panel-administracion">
 
@@ -7,8 +7,17 @@
 
     <main class="main-dashboard-content">
 
+      <nav class="navegacion-superior">
+    <a href="index.php?action=metodos_pago" class="btn-regresar-panel">
+        <i class="fas fa-arrow-left"></i>
+    </a>
+</nav>
+
         <section class="contenedor-reporte">
-            <h2>Reporte: Transferencia</h2>
+            <header class="pagos-header">
+                <h2>Reporte:Transferencia</h2>
+                
+            </header>
             
             <article class="tarjeta-total">
                 <p>Total Recaudado en Dólares: <strong>$<?php echo number_format($totalUSD ?? 0, 2); ?></strong></p>

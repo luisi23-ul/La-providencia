@@ -5,20 +5,16 @@
     <?php include 'sidebar.php'; ?>
 
     <main class="main-dashboard-content">
-
+      <nav class="navegacion-superior">
+    <a href="index.php?action=metodos_pago" class="btn-regresar-panel">
+        <i class="fas fa-arrow-left"></i>
+    </a>
+</nav>
         <section class="contenedor-reporte">
             
             <header class="pagos-header">
-                <h2>Reporte: <?php echo htmlspecialchars($nombreMetodo ?? 'Método'); ?></h2>
+                <h2>Reporte:Efectivo Dolares</h2>
                 
-                <nav class="acciones-exportar">
-                    <a href="index.php?action=exportar_excel&tipo=efectivo$" class="btn-exportar-excel">
-                        <i class="fas fa-file-excel"></i> Excel
-                    </a>
-                    <a href="index.php?action=exportar_pdf&tipo=efectivo$" class="btn-exportar-pdf">
-                        <i class="far fa-file-pdf"></i> PDF
-                    </a>
-                </nav>
             </header>
             
             <article class="tarjeta-total">

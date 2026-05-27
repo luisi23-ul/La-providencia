@@ -281,4 +281,3 @@ if (isset($action) && in_array($action, $acciones_admin)) {
 }
 ob_end_flush(); // Envía todo al terminar
 ?>
-

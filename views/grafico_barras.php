@@ -13,28 +13,26 @@ $jsonBackend = isset($datosEstadisticas) ? json_encode($datosEstadisticas) : "nu
 
     <main class="main-dashboard-content">
 
-        <header class="dashboard-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
-            <section>
-                <h2>Análisis Estadístico: Gráfico de Barras</h2>
-                <p class="bienvenida-sub">Métricas de control del stock general de <span>La Providencia</span></p>
-            </section>
-            
-            <section class="grupo-botones-reporte" style="display: flex; gap: 10px; align-items: center;">
-                <a href="index.php?action=exportar_excel&tipo=estadisticas" style="text-decoration: none;">
-                    <button type="button" style="background-color: #22c55e; color: white; border: none; cursor: pointer; padding: 10px 16px; border-radius: 6px; font-weight: bold; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                        📊 Excel Estadísticas
-                    </button>
-                </a>
-                
-                <a href="index.php?action=exportar_pdf&tipo=estadisticas" style="text-decoration: none;">
-                    <button type="button" style="background-color: #ef4444; color: white; border: none; cursor: pointer; padding: 10px 16px; border-radius: 6px; font-weight: bold; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                        📄 PDF Estadísticas (FPDF)
-                    </button>
-                </a>
-                
-                <a href="index.php?action=dashboard" class="btn-regresar-panel" style="text-decoration: none; padding: 10px 14px; font-size: 0.9rem; margin-left: 10px;">← Volver</a>
-            </section>
-        </header>
+      <header class="pagos-header">
+    <nav class="header-top">
+        <a href="index.php?action=dashboard" class="btn-regresar-panel">
+            <i class="fas fa-arrow-left"></i> 
+        </a>
+    </nav>
+
+    <section class="header-bottom">
+        <h2>Análisis Estadístico: Gráfico de Barras</h2>
+        
+        <nav class="acciones-exportar">
+            <a href="index.php?action=exportar_excel&tipo=estadisticas" class="btn-exportar-excel">
+                <i class="fas fa-file-excel"></i> Excel
+            </a>
+            <a href="index.php?action=exportar_pdf&tipo=estadisticas" class="btn-exportar-pdf">
+                <i class="fas fa-file-pdf"></i> PDF
+            </a>
+        </nav>
+    </section>
+</header>
 
         <section class="row-opciones">
             <article class="bloque-opcion card-estadistica-media">
@@ -64,4 +62,5 @@ $jsonBackend = isset($datosEstadisticas) ? json_encode($datosEstadisticas) : "nu
 </section>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 <script src="public/js/grafico_barras.js?v=<?php echo time(); ?>"></script>

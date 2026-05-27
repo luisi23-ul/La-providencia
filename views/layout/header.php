@@ -19,7 +19,6 @@
 
 <header class="main-header">
     <nav class="nav-container">
-    
         <section class="nav-brand">
             <a href="index.php?action=inicio">
                 <img src="public/img/logo-removebg.png" alt="La Providencia" class="brand-logo">
@@ -38,48 +37,24 @@
 
         <section class="nav-actions">
             <?php if ($action == 'inicio' || $action == ''): ?>
-                <a href="index.php?action=login_usuario" class="action-link login-btn" aria-label="Login Clientes">
-                    <i class="fas fa-user"></i>
-                    <span>Iniciar Sesión</span>
-                </a>
-
-                <a href="index.php?action=registro" class="register-cta-btn" aria-label="Registrarse">
-                    <i class="fas fa-user-plus"></i>
-                    <span>Registrarse</span>
-                </a>
-
-                <a href="index.php?action=carrito" class="cart-custom-btn" aria-label="Ver mi Carrito">
-                    <i class="fas fa-shopping-basket"></i>
-                    <span>0</span>
-                </a>
+                <a href="index.php?action=login_usuario" class="action-link login-btn"><i class="fas fa-user"></i> <span>Iniciar Sesión</span></a>
+                <a href="index.php?action=registro" class="register-cta-btn"><i class="fas fa-user-plus"></i> <span>Registrarse</span></a>
+                <a href="index.php?action=carrito" class="cart-custom-btn"><span>0</span></a>
             <?php endif; ?>
 
-            <?php if ($action !== 'inicio' && $action !== ''): ?>
+            <?php 
+            $acciones_admin = ['dashboard', 'listado_productos', 'formulario_producto', 'editar', 'metodos_pago', 'retiro_pedidos', 'detalle_venta', 'admin', 'seccion_graficos'];
+            if ($action !== 'inicio' && $action !== '' && !in_array($action, $acciones_admin)): ?>
                 <button class="menu-toggle" aria-label="Abrir menú">
-                    <span></span>
-                    <span></span>
-                    <span></span>
+                    <span></span><span></span><span></span>
                 </button>
             <?php endif; ?>
         </section>
     </nav>
 
-    <?php if ($action !== 'inicio' && $action !== ''): ?>
+    <?php if ($action !== 'inicio' && $action !== '' && !in_array($action, $acciones_admin)): ?>
         <aside class="nav-menu-responsive">
-            <a href="index.php?action=carrito" class="cart-btn-responsive">
-                <i class="fas fa-shopping-basket"></i>
-                <span>Ver Carrito (0)</span>
-            </a>
-            
-            <nav class="responsive-nav">
-                <ul class="responsive-links-list">
-                    <li><a href="index.php" class="nav-link-res">Inicio</a></li>
-                    <li><a href="index.php?action=ver_catalogo" class="nav-link-res active-res">Catálogo</a></li>
-                    <li><a href="index.php?action=login_usuario" class="nav-link-res">Iniciar Sesión</a></li>
-                    <li><a href="index.php?action=registro" class="nav-link-res">Registrarse</a></li>
-                </ul>
-            </nav>
-        </aside>
+            </aside>
     <?php endif; ?>
 </header>
 

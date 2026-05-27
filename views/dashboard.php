@@ -1,4 +1,5 @@
 <link rel="stylesheet" href="public/css/dashboard.css?v=<?php echo time(); ?>">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <?php 
 $permisos = $_SESSION['permisos'] ?? []; 

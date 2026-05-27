@@ -1,79 +1,90 @@
 <link rel="stylesheet" href="public/css/dashboard.css?v=<?php echo time(); ?>">
-<link rel="stylesheet" href="public/css/listado_productos.css?v=<?php echo time(); ?>">
 
 <section class="panel-administracion">
-
     <?php include 'sidebar.php'; ?>
 
     <main class="main-dashboard-content">
+        <nav class="navegacion-superior">
+            <a href="index.php?action=dashboard" class="btn-regresar-panel">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+        </nav>
 
-        <article class="card-inventario">
+        <section class="inv-container">
             
-            <header class="inventario-header">
+            <header class="inv-header">
                 <h2>Inventario Actual</h2>
-                
-                <nav class="inventario-header-acciones">
-                    <a href="index.php?action=dashboard" class="btn-regresar-panel" title="Volver al Panel Principal">
-                        <i class="fas fa-home"></i> Panel Admin
-                    </a>
-                    
-                    <a href="index.php?action=formulario_producto" class="btn-satin-nuevo" title="Agregar un nuevo producto">
+                <nav class="inv-actions">
+                    <a href="index.php?action=formulario_producto" class="inv-btn-add">
                         <i class="fas fa-plus"></i> Nuevo
                     </a>
-
-                    <a href="index.php?action=exportar_pdf&tipo=inventario" target="_blank" class="btn-regresar-panel" title="Exportar Inventario a PDF" style="background-color: #4b5563;">
+                    <a href="index.php?action=exportar_pdf&tipo=inventario" target="_blank" class="inv-btn-pdf">
                         <i class="fas fa-file-pdf"></i> PDF
                     </a>
-                    <a href="index.php?action=exportar_excel&tipo=inventario" class="btn-regresar-panel" title="Exportar Inventario a Excel" style="background-color: #4b5563;">
+                    <a href="index.php?action=exportar_excel&tipo=inventario" class="inv-btn-excel">
                         <i class="fas fa-file-excel"></i> Excel
                     </a>
                 </nav>
             </header>
 
-            <section class="tabla-responsiva-contenedor">
-                <table class="tabla-inventario">
-                    <thead>
-                        <tr>
-                            <th>Producto</th>
-                            <th>Precio</th>
-                            <th>Stock</th>
-                            <th>Descripción</th>
-                            <th>Categoría</th>
-                            <th>Imagen</th>
-                            <th class="texto-centrado">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach($listaProductos as $p): ?>
-                        <tr>
-                            <td class="columna-producto"><?php echo $p->nombre_producto; ?></td>
-                            <td class="columna-precio">$<?php echo number_format($p->precio, 2); ?></td>
-                            <td class="columna-stock"><?php echo $p->stock; ?> unidades</td>
-                            <td class="columna-descripcion" title="<?php echo $p->descripcion; ?>"><?php echo $p->descripcion; ?></td>
-                            <td class="columna-categoria">
-                                <span class="badge-categoria"><?php echo $p->id_categoria; ?></span>
-                            </td>
-                            <td class="columna-imagen">
-                                <?php if($p->imagen): ?>
-                                    <img src="public/uploads/<?php echo $p->imagen; ?>" alt="Producto">
-                                <?php else: ?>
-                                    <span class="sin-foto">Sin foto</span>
-                                <?php endif; ?>
-                            </td>
-                            <td class="columna-acciones texto-centrado">
-                                <button type="button" class="btn-accion btn-editar" title="Editar" onclick="location.href='index.php?action=editar&id=<?php echo $p->id; ?>'">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button type="button" class="btn-accion btn-eliminar" title="Eliminar" onclick="if(confirm('¿Seguro que deseas eliminar este producto?')) location.href='index.php?action=eliminar_producto&id=<?php echo $p->id; ?>'">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </section>
-            
-        </article>
+            <table class="inv-table">
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Precio</th>
+                        <th>Stock</th>
+                        <th>Descripción</th>
+                        <th>Categoría</th>
+                        <th>Imagen</th>
+                        <th class="inv-text-center">Acciones</th>
+                    </tr>
+                </thead>
+               <tbody>
+    <?php foreach($listaProductos as $p): ?>
+    <tr>
+        <td><strong><?php echo htmlspecialchars($p->nombre_producto); ?></strong></td>
+        
+        <td class="precio-destacado">$<?php echo number_format($p->precio, 2); ?></td>
+        
+        <td class="<?php echo ($p->stock < 5) ? 'stock-alerta' : ''; ?>">
+            <?php echo $p->stock; ?>
+        </td>
+        
+        <td><?php echo htmlspecialchars($p->descripcion); ?></td>
+        
+        <td>
+            <?php 
+            // Definimos clases según el ID (ajusta según tus IDs reales)
+            $badgeClass = ($p->id_categoria == 1) ? 'badge-cocina' : 'badge-hogar';
+            ?>
+            <span class="badge <?php echo $badgeClass; ?>">
+                <?php echo htmlspecialchars($p->id_categoria); ?>
+            </span>
+        </td>
+        
+        <td>
+            <?php if($p->imagen): ?>
+                <img src="public/uploads/<?php echo $p->imagen; ?>" class="inv-img">
+            <?php else: ?>
+                <span class="inv-sin-foto">Sin foto</span>
+            <?php endif; ?>
+        </td>
+        
+        <td class="inv-text-center">
+            <button class="inv-btn-edit" onclick="location.href='index.php?action=editar&id=<?php echo $p->id; ?>'">
+                <i class="fas fa-edit"></i>
+            </button>
+            <button class="inv-btn-del" type="button" onclick="confirmarEliminar(<?php echo $p->id; ?>)">
+    <i class="fas fa-trash-alt"></i>
+</button>
+        </td>
+    </tr>
+    <?php endforeach; ?>
+</tbody>
+            </table>
+        </section>
     </main>
 </section>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="public/js/scripts.js"></script>
