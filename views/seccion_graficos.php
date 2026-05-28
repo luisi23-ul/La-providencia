@@ -5,10 +5,11 @@
     <?php include 'sidebar.php'; ?>
 
     <main class="main-dashboard-content">
-        
+
+
         <header class="dashboard-header">
-            <h2>Módulo de Estadística</h2>
-            <p class="bienvenida-sub">Control de Sistema: <span>Análisis de Inventario</span></p>
+            <div><h2>Módulo de Estadística</h2>
+            <p class="bienvenida-sub">Control de Sistema: <span>Análisis de Inventario</span></p></div>
         </header>
 
         <nav class="row-opciones">

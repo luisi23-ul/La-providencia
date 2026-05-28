@@ -20,6 +20,9 @@
     --texto-mutado: #64748b;       /* Gris de control (Horas, texto verificado) */
 }
 
+/* Corrección de parpadeo - Forzamos visibilidad solo al cargar */
+
+
 /* ==========================================================================
    1. ESTRUCTURA GENERAL (LAYOUT) DE SISTEMA PREMIUM
    ========================================================================== */
@@ -458,9 +461,13 @@ color: #16a34a !important;
 }
 /* Maquetación de la Tabla Base */
 .tabla-modulo-admin {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.92rem;
+    border-collapse: separate !important; /* Necesario para que funcionen los border-radius */
+    border-spacing: 0 !important;
+    border: 1px solid var(--lineas-divisorias);
+    border-radius: 12px !important;
+    overflow: hidden; 
+    width: 100% !important;
+    table-layout: auto; 
 }
 
 /* Formato de Fecha y Hora Premium en Celda */
@@ -500,13 +507,15 @@ color: #16a34a !important;
 
 /* Líneas divisorias y estructura limpia para las celdas */
 .tabla-modulo-admin td {
-    padding: 16px 20px !important;        /* Forzamos el mismo espacio horizontal que las cabeceras th */
+    padding: 12px 14px !important;        /* Forzamos el mismo espacio horizontal que las cabeceras th */
     vertical-align: middle;
     background-color: #ffffff !important; 
     border-bottom: 1px solid var(--lineas-divisorias);  
     text-align: left !important;          /* Datos estrictamente a la izquierda abajo */
     white-space: nowrap !important;       /* Prohíbe que los datos se corten o compriman */
     position: relative;                   /* Clave para posicionar la píldora flotante */
+    white-space: normal !important; /* Permite saltos de línea en lugar de estirar la tabla */
+    word-break: break-word;
 }
 
 /* Separadores Modernos Flotantes (Estilo Minimalista de Redes Sociales) */
@@ -582,18 +591,65 @@ color: #16a34a !important;
     width: 1% !important; /* Fuerza a la última columna a ser compacta y empuja el resto a la izquierda */
 }
 
-/* Estilos base para los botones independientes dentro de las celdas */
-.tabla-modulo-admin td .btn-tabla-success,
-.tabla-modulo-admin td .btn-tabla-info {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 8px 14px;
-    font-weight: 600;
-    font-size: 0.85rem;
-    border-radius: 6px;
-    text-decoration: none;
+.tabla-modulo-admin thead tr:first-child th:first-child {
+    border-top-left-radius: 12px;
+}
+
+/* Redondeado de la esquina superior derecha */
+.tabla-modulo-admin thead tr:first-child th:last-child {
+    border-top-right-radius: 12px;
+}
+
+/* Redondeado de la esquina inferior izquierda */
+.tabla-modulo-admin tbody tr:last-child td:first-child {
+    border-bottom-left-radius: 12px;
+}
+
+/* Redondeado de la esquina inferior derecha */
+.tabla-modulo-admin tbody tr:last-child td:last-child {
+    border-bottom-right-radius: 12px;
+}
+
+.tabla-modulo-admin th:nth-child(3) { width: 10%; } /* Método */
+
+
+.tabla-modulo-admin th:nth-child(8) { width: 10%; } /* dealle*/
+
+.tabla-modulo-admin td {
+    font-size: 0.85rem !important; /* Texto un poco más pequeño */
+}
+
+.btn-tabla-success, 
+.btn-tabla-info {
+    /* Altura fija y uniforme */
+    height: 40px !important; 
+    padding: 6 10px !important;
+    text-decoration: none !important;
+    /* Tamaño de fuente idéntico */
+    font-size: 0.75rem !important;
+    font-weight: 700 !important;
+    
+    /* Centrado perfecto del contenido */
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    
+    /* Garantizar que no se estiren */
+    white-space: nowrap !important;
+    
+    /* Ancho mínimo igualado para que no se vea uno más gordo que el otro */
+    min-width: 110px !important;
+    
+    /* Ajuste de esquinas idéntico */
+    border-radius: 8px !important;
+    border: 1px solid transparent !important;
+}
+
+/* Ajuste específico para el icono para que no desplace el texto */
+.btn-tabla-success i, 
+.btn-tabla-info i {
+    margin-right: 6px !important;
+    font-size: 0.85rem !important;
 }
 
 /* Texto de verificación cuando el pedido ya está entregado */
@@ -626,7 +682,7 @@ color: #16a34a !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    min-width: 130px !important;
+    min-width: 165px !important;
     
     /* Look elegante: Gris pizarra suave */
     background-color: #f1f5f9 !important; /* Gris muy claro */
@@ -646,28 +702,33 @@ color: #16a34a !important;
 }
 
 /* 🏷️ Estados de Venta - Estilo Unificado */
+/* Badge optimizado para evitar ruido visual */
 .badge-listo, 
 .badge-pendiente, 
 .badge-pagado, 
 .badge-entregado {
-    padding: 6px 14px !important;
-    border-radius: 20px !important;
-    font-size: 0.75rem !important;
-    font-weight: 700 !important;
+    padding: 4px 10px !important;     /* Más compacto */
+    border-radius: 6px !important;    /* Menos redondeado, look más profesional */
+    font-size: 0.7rem !important;     /* Un poco más pequeño */
+    font-weight: 800 !important;
     text-transform: uppercase;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.05em;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    min-width: 130px !important; /* Mismo ancho que los métodos para simetría */
+    
+    /* EL CAMBIO CLAVE: Quitamos el ancho fijo y dejamos que el texto mande */
+    min-width: auto !important; 
+    width: fit-content !important; 
+    
     border: 1px solid transparent !important;
 }
 
-/* Colores con bordes sutiles para elevar el diseño */
-.badge-listo { background-color: #d1fae5 !important; color: #065f46 !important; border-color: #a7f3d0 !important; }
-.badge-pendiente { background-color: #ffedd5 !important; color: #ea580c !important; border-color: #fdba74 !important; }
-.badge-pagado { background-color: #d1fae5 !important; color: #065f46 !important; border-color: #a7f3d0 !important; }
-.badge-entregado { background-color: #e2e8f0 !important; color: #64748b !important; border-color: #cbd5e1 !important; }
+/* Ajustes de color con un toque más sutil */
+.badge-listo { background-color: #f0fdf4 !important; color: #166534 !important; border-color: #dcfce7 !important; }
+.badge-pendiente { background-color: #fff7ed !important; color: #9a3412 !important; border-color: #ffedd5 !important; }
+.badge-pagado { background-color: #f0fdf4 !important; color: #166534 !important; border-color: #dcfce7 !important; }
+.badge-entregado { background-color: #f8fafc !important; color: #475569 !important; border-color: #e2e8f0 !important; }
 
 /* ==========================================================================
     ACCIONES DE TABLA (BOTONES DE NIVEL SAAS COMMERCIAL - OPTIMIZADOS)
@@ -1274,6 +1335,7 @@ color: #16a34a !important;
 .panel-administracion .hamburger-menu {
     display: none !important;
 }
+
 
 /* ==========================================================================
    7. RESPONSIVIDAD PARA PANTALLAS CHICAS

@@ -21,23 +21,6 @@ $masterC = new MasterController($db);
 
 $action = $_GET['action'] ?? 'inicio';
 
-
-
-// --- PASO 1: Acciones que no requieren Header ---
-if ($action == 'registrar_cliente') { $usuarioC->guardarCliente(); exit(); }
-if ($action == 'valider_login_registro') { $usuarioC->ingresar(); exit(); }
-if ($action == 'validar_login') { $usuarioC->validarLogin(); exit(); }
-
-// --- PASO 2: Carga de la Interfaz ---
-include 'views/layout/header.php'; 
-echo '<main id="app">'; 
-
-$es_inicio = ($action == 'inicio' || $action == '');
-$clase_main = $es_inicio ? 'main-inicio' : 'main-interno';
-
-echo '<main id="app" class="' . $clase_main . '">';
-
-// --- BLOQUE DE SEGURIDAD MASTER ---
 $acciones_master = [
     'gestionar_admins', 
     'dashboard_master',
@@ -51,6 +34,41 @@ $acciones_master = [
         'toggle_admin',
          'actualizar_configuracion'];
 
+         $acciones_admin = [
+    'dashboard', 
+    'admin', 
+    'listado_productos', 
+    'formulario_producto', 
+    'guardar_producto',
+    'editar', 
+    'actualizar_producto',
+    'eliminar_producto',
+    'seccion_graficos', 
+    'grafico_barras', 
+    'grafico_tortas',
+    'metodos_pago' 
+];
+
+
+// --- PASO 1: Acciones que no requieren Header ---
+if ($action == 'registrar_cliente') { $usuarioC->guardarCliente(); exit(); }
+if ($action == 'valider_login_registro') { $usuarioC->ingresar(); exit(); }
+if ($action == 'validar_login') { $usuarioC->validarLogin(); exit(); }
+
+
+
+
+
+// Solo cargamos el header si NO es la acción de login
+if ($action != 'login') {
+    include 'views/layout/header.php';
+    echo '<main id="app">';
+} else {
+    // Si es login, no incluimos header, solo abrimos el main
+    echo '<main id="app">';
+}
+
+// --- BLOQUE DE SEGURIDAD MASTER ---
 if (in_array($action, $acciones_master)) {
     if (isset($_SESSION['rol']) && ($_SESSION['rol'] == 1 || $_SESSION['rol'] == 2)) {
         switch ($action) {
@@ -103,21 +121,6 @@ case 'toggle_admin':
 }
 // 4. Captura de la acción (por defecto 'inicio')
 $action = $_GET['action'] ?? 'inicio';
-$acciones_admin = [
-    'dashboard', 
-    'admin', 
-    'listado_productos', 
-    'formulario_producto', 
-    'guardar_producto',
-    'editar', 
-    'actualizar_producto',
-    'eliminar_producto',
-    'seccion_graficos', 
-    'grafico_barras', 
-    'grafico_tortas',
-    'metodos_pago' 
-];
-
 
 
 //acciones
@@ -137,11 +140,7 @@ if ($action == 'validar_login') {
 }
 
 //carga vistas
-$es_admin = isset($action) && in_array($action, $acciones_admin);
 
-include 'views/layout/header.php'; 
-
-echo '<main id="app">'; 
 
 switch ($action) {
     // Rutas de Usuario

@@ -15,8 +15,8 @@ $jsonBackend = isset($datosEstadisticas) ? json_encode($datosEstadisticas) : "nu
 
         <header class="pagos-header">
             <nav class="header-top">
-                <a href="index.php?action=dashboard" class="btn-regresar-panel">
-                    <i class="fas fa-arrow-left"></i> 
+                <a href="index.php?action=seccion_graficos" class="btn-regresar-panel">
+                    <i class="fas fa-arrow-left"></i>Volver
                 </a>
             </nav>
 

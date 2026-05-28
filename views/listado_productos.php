@@ -6,7 +6,7 @@
     <main class="main-dashboard-content">
         <nav class="navegacion-superior">
             <a href="index.php?action=dashboard" class="btn-regresar-panel">
-                <i class="fas fa-arrow-left"></i>
+                <i class="fas fa-arrow-left"></i>Volver
             </a>
         </nav>
 
