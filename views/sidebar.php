@@ -50,6 +50,10 @@
             </a>
         <?php endif; ?>
 
+<a href="index.php?action=lista_clientes" class="menu-item <?php echo (($_GET['action'] ?? '') == 'lista_clientes') ? 'active' : ''; ?>">
+    <i class="fas fa-users"></i> Clientes
+</a>
+
         <a href="index.php?action=inicio" class="menu-item return-store">
             <i class="fas fa-store"></i> Tienda
         </a>

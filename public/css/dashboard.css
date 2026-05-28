@@ -1336,14 +1336,175 @@ color: #16a34a !important;
     display: none !important;
 }
 
+/* ==========================================================================
+   VARIABLES GLOBALES (SISTEMA DE DISEÑO LA PROVIDENCIA)
+   ========================================================================== */
+:root {
+    --bg-dark-unificado: #0f172a;
+    --azul-identidad: #0052d4;
+    --azul-identidad-hover: #0044b1;
+    --bg-global: #f8fafc;
+    --lineas-divisorias: #e2e8f0;
+    --texto-principal: #0f172a;
+    --texto-secundario: #475569;
+    --texto-mutado: #64748b;
+}
 
 /* ==========================================================================
-   7. RESPONSIVIDAD PARA PANTALLAS CHICAS
+   ESTRUCTURA GENERAL (LAYOUT)
    ========================================================================== */
+.panel-administracion { min-height: 100vh; width: 100%; display: flex; background-color: var(--bg-global); font-family: 'Poppins', sans-serif; }
+
+.sidebar-admin { width: 260px; min-width: 260px; background-color: var(--bg-dark-unificado); color: #ffffff; padding: 40px 18px; z-index: 100; }
+.main-dashboard-content { flex-grow: 1; padding: 60px 40px; }
+
+/* ==========================================================================
+   TABLAS BASE (ESTILO GLOBAL)
+   ========================================================================== */
+.tabla-modulo-admin {
+    width: 100%;
+    border-collapse: collapse;
+    background: #ffffff;
+    border: 1px solid var(--lineas-divisorias);
+    border-radius: 12px;
+}
+
+.tabla-modulo-admin th {
+    background-color: var(--bg-dark-unificado);
+    color: #ffffff;
+    padding: 16px;
+    text-align: center;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+}
+
+.tabla-modulo-admin td {
+    padding: 16px;
+    border-bottom: 1px solid var(--lineas-divisorias);
+    text-align: center;
+    color: var(--texto-secundario);
+    text-align: center;
+}
+
+/* ==========================================================================
+   TABLA DE CLIENTES (ESPECÍFICA - NO AFECTA OTRAS VISTAS)
+   ========================================================================== */
+.contenedor-clientes .tabla-modulo-admin th:nth-child(1) { width: 30%; }
+.contenedor-clientes .tabla-modulo-admin th:nth-child(2) { width: 40%; 
+}
+.contenedor-clientes .tabla-modulo-admin th:nth-child(3) { width: 15%; }
+.contenedor-clientes .tabla-modulo-admin th:nth-child(4) { width: 15%;text-align: center !important; }
+
+.contenedor-clientes td:nth-child(1) { font-weight: 800; color: var(--texto-principal); }
+.contenedor-clientes td:nth-child(2) { font-weight: 500; }
+
+/* ==========================================================================
+   COMPONENTE: TOGGLE SWITCH
+   ========================================================================== */
+/* ==========================================================================
+   1. COMPONENTE: TOGGLE SWITCH (LIMPIO Y SIN DUPLICADOS)
+   ========================================================================== */
+.switch { position: relative; display: inline-block; width: 40px; height: 20px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+
+.slider { 
+    position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; 
+    background-color: #ef4444; /* Rojo para inactivo */
+    transition: .4s; border-radius: 34px; 
+}
+
+.slider:before { 
+    position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; 
+    background-color: white; transition: .4s; border-radius: 50%; 
+}
+
+input:checked + .slider { background-color: #22c55e; } /* Verde para activo */
+input:checked + .slider:before { transform: translateX(20px); }
+
+/* --- ESTILOS DE COLOR PARA BADGES --- */
+
+/* Badge Inactivo (Rojo) */
+.badge-estado.estado-inactivo {
+    background-color: #fef2f2 !important;
+    color: #e10c0c !important;
+    border: 1px solid #fecaca !important;
+    padding: 6px 14px !important;
+    border-radius: 20px !important;
+    font-weight: 700 !important;
+}
+
+/* Badge Activo (Verde) */
+.badge-estado.estado-activo {
+    background-color: #f0fdf4 !important;
+    color: #166534 !important;
+    border: 1px solid #bbf7d0 !important;
+    padding: 6px 14px !important;
+    border-radius: 20px !important;
+    font-weight: 700 !important;
+}
+
+/* ==========================================================================
+   3. ESTRUCTURA Y BOTONES
+   ========================================================================== */
+.panel-modulo-contenedor { 
+    padding: 35px; 
+    border-radius: 20px; 
+    border: 1px solid #f1f5f9;
+    margin: 24px 0; 
+    background-color: #ffffff; 
+}
+
+.btn-regresar-panel { 
+    display: inline-flex; 
+    align-items: center; 
+    gap: 8px; 
+    padding: 8px 16px; 
+    background-color: #0052d4; /* Azul identidad */
+    color: #ffffff; 
+    border-radius: 8px; 
+    text-decoration: none; 
+}
+
+.celda-centrada {
+    display: flex !important;
+    justify-content: center !important; /* Centra horizontalmente */
+    align-items: center !important;     /* Centra verticalmente */
+    height: 100%;    
+    
+                       /* Ocupa todo el alto de la celda */
+}
+
+/* --- ESTILO PARA NOMBRE --- */
+.celda-nombre {
+    display: flex !important;
+    justify-content: left !important; /* Centra horizontalmente */
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;      /* Negrita para que resalte */
+    color: #1e293b !important;        /* Azul muy oscuro */
+    text-transform: capitalize;
+}
+
+/* --- ESTILO PARA CORREO --- */
+.celda-correo {
+    display: flex !important;
+    justify-content: left !important; 
+    font-size: 0.9rem !important;
+    font-weight: 700 !important;
+    color: #334155 !important;        /* Un color con más contraste que el gris pálido */
+    padding: 2px 0;
+    text-transform: capitalize;
+    align-items: left;
+}
+
+/* ==========================================================================
+7. RESPONSIVIDAD PARA PANTALLAS CHICAS
+========================================================================== */
 @media (max-width: 900px) {
+    
     .panel-administracion {
         flex-direction: column;
     }
+
     .sidebar-admin {
         width: 100%;
         min-width: 100%;

@@ -85,11 +85,11 @@ $rol = $_SESSION['rol'] ?? 0;
 
             <?php if (in_array('retiros', $permisos) || $rol == 1): ?>
             <article class="bloque-opcion">
-                <span class="icon-admin"><i class="fas fa-box-open"></i></span>
-                <h3>listado clientes</h3>
-                <p>Gestiona las entregas y pedidos listos para retirar.</p>
+                <span class="icon-admin"><i class="fas fa-users"></i></span>
+                <h3>Gestionar Clientes</h3>
+                <p>Administra el estado de las cuentas de tus clientes y controla quién tiene acceso a la plataforma.</p>
                 <a href="index.php?action=lista_clientes" class="btn-admin-azul">
-                    Ver Retiros <i class="fas fa-arrow-right"></i>
+                    Gestionar<i class="fas fa-arrow-right"></i>
                 </a>
             </article>
             <?php endif; ?>

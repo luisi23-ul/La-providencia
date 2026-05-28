@@ -131,7 +131,9 @@ $acciones_admin = [
     'grafico_tortas',
     'metodos_pago' ,
     ' gestionarClientes' ,
-    'cambiarEstadoCliente'
+    'cambiarEstadoCliente',
+    'lista_clientes'
+    
 
 ];
 
