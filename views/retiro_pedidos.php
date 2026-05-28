@@ -6,17 +6,29 @@
 
     <main class="main-dashboard-content">
 
+    <nav class="navegacion-superior">
+    <a href="index.php?action=dashboard" class="btn-regresar-panel">
+        <i class="fas fa-arrow-left"></i>Volver 
+    </a>
+</nav>
+
         <section class="panel-modulo-contenedor">
             
-            <header class="pagos-header">
-                <h2>Retiro de Pedidos</h2>
-                <a href="index.php?action=exportar_pdf&tipo=retiros" target="_blank" class="btn-exportar-pdf">
-                    <i class="far fa-file-pdf"></i> PDF 
-                </a>
-                <a href="index.php?action=exportar_excel&tipo=retiros" class="btn-exportar-excel">
-                    <i class="fas fa-file-excel"></i> Excel
-                </a>
-            </header>
+           <header class="pagos-header">
+
+    <section class="header-bottom">
+        <h2>Retiro de Pedidos</h2>
+        
+        <nav class="acciones-exportar">
+            <a href="index.php?action=exportar_pdf&tipo=retiros" target="_blank" class="btn-exportar-pdf">
+                <i class="far fa-file-pdf"></i> PDF
+            </a>
+            <a href="index.php?action=exportar_excel&tipo=retiros" class="btn-exportar-excel">
+                <i class="fas fa-file-excel"></i> Excel
+            </a>
+        </nav>
+    </section>
+</header>
 
             <table class="tabla-modulo-admin">
                 <thead>

@@ -1,154 +1,112 @@
-/* Contenedor principal del carrito */
+/* ==========================================================================
+   CARRITO FINAL - LA PROVIDENCIA (UI PROFESIONAL)
+   ========================================================================== */
+
+:root {
+    --primary-blue: #0052d4;
+    --dark-surface: #1e293b;
+    --accent-brown: #5c2c16;
+    --bg-light: #f8fafc;
+    --white: #ffffff;
+}
+
+/* 1. CONTENEDOR PRINCIPAL Y HEADER */
 .contenedor-carrito {
-    width: 90%;
     max-width: 1000px;
-    margin: 40px auto;
-    background: #fff;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    margin: 0 auto 50px auto;
+    padding-top: 120px;
 }
 
-.contenedor-carrito h2 {
-    text-align: center;
-    color: #2c3e50;
-    margin-bottom: 30px;
-    font-family: 'Arial', sans-serif;
-}
-
-/* Estilos de la Tabla */
-.tabla-carrito {
-    width: 100%;
-    border-collapse: collapse;
+.titulo-carrito {
+    color: var(--accent-brown);
+    font-size: 2rem;
     margin-bottom: 20px;
 }
 
-.tabla-carrito th {
-    background-color: #f8f9fa;
-    color: #333;
-    padding: 15px;
-    text-align: left;
-    border-bottom: 2px solid #dee2e6;
+/* 2. TABLA (CARD) */
+.tabla-wrapper {
+    background: var(--white);
+    padding: 25px;
+    border-radius: 20px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.04);
+    margin-bottom: 20px;
 }
 
-.tabla-carrito td {
-    padding: 15px;
-    border-bottom: 1px solid #eee;
-    vertical-align: middle;
+.tabla-carrito { width: 100%; border-collapse: collapse; }
+.celda-cabecera { color: #94a3b8; text-transform: uppercase; font-size: 0.75rem; padding: 15px; border-bottom: 2px solid var(--bg-light); text-align: left; }
+.celda-producto { padding: 15px; color: var(--dark-surface); font-weight: 600; border-bottom: 1px solid var(--bg-light); }
+
+/* 3. GRID PARA TOTALES Y PAGO (EL "CUADRADITO" LADO A LADO) */
+.contenedor-inferior {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
 }
 
-/* Filas alternas para mejor lectura */
-.tabla-carrito tbody tr:hover {
-    background-color: #f1f1f1;
+/* ESTILO COMPARTIDO PARA AMBAS CARDS */
+.resumen-total, .acciones-carrito {
+    background: var(--white);
+    padding: 25px;
+    border-radius: 20px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.04);
+    border: 1px solid #f1f5f9;
 }
 
-/* Estilo para el botón de eliminar (Quitar) */
-.btn-eliminar {
-    color: #e74c3c;
-    text-decoration: none;
-    font-weight: bold;
-    font-size: 0.9em;
-    padding: 5px 10px;
-    border: 1px solid #e74c3c;
-    border-radius: 4px;
-    transition: 0.3s;
-}
-
-.btn-eliminar:hover {
-    background-color: #e74c3c;
-    color: white;
-}
-
-/* Footer de la tabla (Totales) */
-.total-seccion {
-    font-size: 1.2em;
-    color: #2c3e50;
-    background-color: #fdfdfd;
-}
-
-/* Botones de acción inferior */
-.acciones-carrito {
+/* 4. TOTALES (IZQUIERDA) */
+.resumen-total {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 30px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 10px;
+    text-align: right;
 }
 
-.btn-seguir-comprando {
-    color: #7f8c8d;
-    text-decoration: none;
-    font-weight: bold;
+.resumen-total p { margin: 0; font-weight: 700; color: var(--dark-surface); }
+.resumen-total p span { color: var(--primary-blue); font-size: 1.2rem; }
+.tasa-bcv { font-size: 0.85rem; color: #64748b !important; font-weight: 400 !important; }
+
+/* 5. FORMULARIO PAGO (DERECHA) */
+.formulario-pago {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
 }
 
-.btn-confirmar {
-    background-color: #27ae60;
-    color: white;
-    padding: 12px 25px;
-    text-decoration: none;
-    border-radius: 5px;
-    font-weight: bold;
-    font-size: 1.1em;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+.label-pago { font-weight: 700; color: var(--accent-brown); }
+
+.selector-container select {
+    width: 100%;
+    height: 48px;
+    padding: 0 15px;
+    border-radius: 12px;
+    border: 1px solid #cbd5e1;
+    font-size: 1rem;
+}
+
+.boton-finalizar {
+    height: 48px;
+    width: 100%;
+    background: var(--primary-blue) !important;
+    color: white !important;
+    border-radius: 12px !important;
+    font-weight: 700 !important;
+    border: none;
+    cursor: pointer;
     transition: 0.3s;
 }
 
-.btn-confirmar:hover {
-    background-color: #219150;
-    transform: translateY(-2px);
-}
+.boton-finalizar:hover { background: #003db3 !important; }
 
-/* Mensaje de carrito vacío */
-.carrito-vacio {
-    text-align: center;
-    padding: 50px;
-    color: #95a5a6;
-}
-/* Forzar que el texto sea oscuro y legible */
-.tabla-carrito td, 
-.tabla-carrito td strong {
-    color: #333333 !important; /* Un gris casi negro */
-    font-size: 16px;
-}
-
-.tabla-carrito tr {
-    background-color: white;
-}
-
-/* Para que el nombre del producto resalte */
-.tabla-carrito td b, .tabla-carrito td strong {
-    display: block;
-    margin-bottom: 5px;
-}
-
-/* --- CORRECCIÓN REVENTA DE LETRAS EN EL CARRITO --- */
-
-/* Forzamos a que el título y la tabla tengan color oscuro visible */
-.contenedor-carrito h2 {
-    color: #5c2c16 !important; /* Tu color marrón característico */
-}
-
-.contenedor-carrito table {
-    width: 100%;
-    border-collapse: collapse;
-    color: #333333 !important; /* Color gris oscuro/negro para el texto */
-}
-
-/* Forzamos el color de los encabezados de la tabla (Producto, Precio, etc) */
-.contenedor-carrito th {
-    background-color: #f2f2f2 !important;
-    color: #5c2c16 !important; /* Color marrón para los títulos de la tabla */
-    font-weight: bold;
-    padding: 12px;
-}
-
-/* Forzamos el color de las celdas donde van los nombres de tus productos */
-.contenedor-carrito td {
-    color: #333333 !important;
-    padding: 12px;
-    border-bottom: 1px solid #eee;
-}
-
-/* Aseguramos que el total final también se vea */
-.contenedor-carrito div {
-    color: #333333 !important;
+/* 6. ENLACE SEGUIR COMPRANDO */
+.enlace-seguir {
+    display: inline-block;
+    padding: 10px 20px ;
+    background: var(--white);
+    border-radius: 50px;
+    color: var(--accent-brown);
+    font-weight: 600;
+    text-decoration: none;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    margin-bottom: 30px;
+    
 }

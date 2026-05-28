@@ -1,15 +1,20 @@
 <link rel="stylesheet" href="public/css/dashboard.css?v=<?php echo time(); ?>">
 <link rel="stylesheet" href="public/css/formulario_producto.css?v=<?php echo time(); ?>">
 
+
 <section class="panel-administracion">
 
     <?php include 'sidebar.php'; ?>
 
     <main class="main-dashboard-content">
-        
+        <nav class="navegacion-superior">
+            <a href="index.php?action=dashboard" class="btn-regresar-panel">
+                <i class="fas fa-arrow-left"></i>Volver
+            </a>
+        </nav>
         <article class="card-formulario">
             <header class="formulario-header">
-                <h2>Nuevo Componente</h2>
+                <h2>Nuevo Producto</h2>
                 <p class="subtitle">Añade los detalles del producto para el catálogo.</p>
             </header>
             

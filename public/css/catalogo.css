@@ -1,6 +1,18 @@
 /* ==========================================================================
    DISEÑO DE CATÁLOGO ESTILO MERCADOLIBRE / NIKE (public/css/catalogo.css)
    ========================================================================== */
+/* --- RESET GENERAL Y ESPACIADO --- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: #f5f5f5;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    line-height: 1.6;
+}
 
 /* Contenedor General */
 .contenedor-catalogo {
@@ -199,7 +211,79 @@
     color: #ffffff;
     transform: translateY(-1px);
 }
+/* ==========================================================================
+   HERO SECTION (Estructura Full Width)
+   ========================================================================== */
+.hero-catalogo {
+    background: linear-gradient(135deg, #0052d4 0%, #4364f7 50%, #6fb1fc 100%);
+    width: 100vw;
+    padding: 20px 20px 80px 20px;
+    color: white;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    height: 100%;
+}
 
+.hero-top-bar {
+   
+    padding: 2px 0;
+    margin-bottom: 40px;
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    font-size: 0.85rem;
+    backdrop-filter: blur(5px);
+}
+
+.hero-content {
+    width: 100%;
+    margin: 0 auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;}
+
+    
+
+/* ESTILO DEL TÍTULO */
+.hero-text h1 {
+    font-size: 2.5rem;      /* Tamaño controlado */
+    font-weight: 800;
+    margin: 0;              /* Eliminamos el margen por defecto del navegador */
+    padding: 0;
+    line-height: 1.2;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* Buscador Flotante */
+/* EL BUSCADOR: Ancho y estructura */
+.hero-search-bar {
+    background: white;
+    padding: 6px;
+    border-radius: 15px;
+    display: flex;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    
+    /* ESTO ES LO QUE LO HACE GRANDE */
+    width: 100%;           /* Ocupa el espacio disponible */
+    max-width: 600px;      /* Pero no más de 600px para que no se deforme */
+    margin: 0 auto;        /* Centrado */
+    transform: translateY(30px); 
+}
+
+/* El input debe crecer para llenar el buscador */
+.hero-search-bar input {
+    flex: 1;               /* Esto hace que el input ocupe todo el espacio sobrante */
+    border: none;
+    padding: 15px 25px;
+    font-size: 1.1rem;
+    outline: none;
+    border-radius: 10px;
+    color: #333;
+}
+.hero-search-bar button { background: #0052d4; color: white; border: none; padding: 0 30px; border-radius: 10px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; }
 /* ==========================================================================
    RESPONSIVE (Ajustes de columnas en cascada)
    ========================================================================== */
