@@ -36,28 +36,42 @@ class UsuarioController {
         $datos = array("correo" => $email);
         $objModelo = new UsuarioModels();
         $usuario = $objModelo->buscarUsuarioModel($datos);
-        // Verificamos si existe el usuario y si la clave coincide con el hash
+
+        // 1. Verificamos si existe el usuario y si la clave coincide
         if ($usuario && password_verify($pass, $usuario["clave"])) {
             
+            // 2. NUEVA VALIDACIÓN: Comprobamos si el estado es 1 (activo)
+            // Asumiendo que tu columna en la base de datos se llama 'estado'
+            if (isset($usuario["estado"]) && $usuario["estado"] == 0) {
+                echo "<script>alert('Tu cuenta está desactivada. Contacta al administrador.'); window.location.href='index.php?action=login';</script>";
+                exit();
+            }
+
+            // 3. Si el estado es 1, procedemos a iniciar sesión
             if (session_status() == PHP_SESSION_NONE) session_start();
-           // En UsuarioController.php, dentro de validarLogin(), después de obtener el $usuario
+            
             $_SESSION["id_usuario"] = $usuario["id"];
             $_SESSION["rol"] = $usuario["id_rol"];
             $_SESSION["nombre"] = $usuario["nombre"];
             $_SESSION["permisos"] = explode(',', $usuario["permisos"]);
-                // Redirección 
-                if ($_SESSION['rol'] == 1) {
-            header("Location: index.php?action=dashboard_master");
-        } elseif ($_SESSION['rol'] == 2) {
-            header("Location: index.php?action=dashboard"); 
-        }
+            
+            // Redirección según rol
+            if ($_SESSION['rol'] == 1) {
+                header("Location: index.php?action=dashboard_master");
+            } elseif ($_SESSION['rol'] == 2) {
+                header("Location: index.php?action=dashboard"); 
+            } else {
+                // Opcional: Redirección para clientes (rol 3)
+                header("Location: index.php?action=inicio");
+            }
             exit();
+            
         } else {
+            // Error de credenciales
             echo "<script>alert('Correo o contraseña incorrectos.'); window.location.href='index.php?action=login';</script>";
         }
     }
 }
-
 
 public function mostrarRegistro() {
     include 'views/registro.php';
@@ -101,34 +115,43 @@ public function mostrarLogin_registro() {
     }
 
     // Función para validar el correo y la clave
-    public function ingresar() {
-        if (isset($_POST["correo_ingreso"])) {
+    // En UsuarioController.php
+public function ingresar() {
+    if (isset($_POST["correo_ingreso"])) {
+        
+        $datos = array("correo" => $_POST["correo_ingreso"]);
+        $objModelo = new UsuarioModels();
+        $usuario = $objModelo->buscarUsuarioModel($datos);
+
+        // 1. Verificar si existe y la clave es correcta
+        if ($usuario && password_verify($_POST["clave_ingreso"], $usuario["clave"])) {
             
-            $datos = array(
-                "correo" => $_POST["correo_ingreso"],
-                "clave"  => $_POST["clave_ingreso"]
-            );
-
-            $objModelo = new UsuarioModels();
-            $respuesta = $objModelo->buscarUsuarioModel($datos);
-
-            // Comparamos la clave escrita con el hash de la base de datos
-            if ($respuesta && password_verify($datos["clave"], $respuesta["clave"])) {
-    $_SESSION["id_usuario"] = $respuesta["id"]; 
-    // ------------------------------
-
-    echo "<script>
-            alert('¡Bienvenido(a) a La Providencia, " . $respuesta["nombre"] . "!');
-            window.location.href = 'index.php?action=ver_catalogo';
-          </script>";
-            } else {
+            // 2. FILTRO CRÍTICO: Verificar estado
+            if ((int)$usuario["estado"] === 0) {
                 echo "<script>
-                        alert('Error: El correo o la contraseña no coinciden.');
+                        alert('Tu cuenta está desactivada. Contacta al administrador.'); 
                         window.location.href = 'index.php?action=mostrarLogin_registro';
                       </script>";
+                exit();
             }
+
+            // 3. Iniciar sesión
+            if (session_status() == PHP_SESSION_NONE) session_start();
+            $_SESSION["id_usuario"] = $usuario["id"];
+            $_SESSION["nombre"] = $usuario["nombre"];
+            
+            echo "<script>
+                    alert('¡Bienvenido(a) a La Providencia, " . $usuario["nombre"] . "!');
+                    window.location.href = 'index.php?action=ver_catalogo';
+                  </script>";
+        } else {
+            echo "<script>
+                    alert('Error: El correo o la contraseña no coinciden.');
+                    window.location.href = 'index.php?action=mostrarlogin_registro';
+                  </script>";
         }
     }
+}
 // Carga  detalles pasándole la información de la base de datos
     public function verDetalle($id) {
         if (isset($id) && !empty($id)) {

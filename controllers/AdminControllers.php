@@ -6,6 +6,7 @@ class AdminControllers {
         // Instancia el modeloo
         require_once 'models/ProductoModel.php';
         $this->productoModelo = new ProductoModel();
+        
     }
 
     public function mostrarDashboard() {
@@ -22,13 +23,23 @@ class AdminControllers {
         include 'views/listado_productos.php';
     }
 
-    public function catalogo() {
-    $listaProductos = $this->productoModelo->obtenerProductos();
-    
-    //Carga el catálogo
+   // En controllers/AdminControllers.php
+public function catalogo() {
+    // 1. Inicializar modelo si no lo has hecho en el constructor
+    require_once 'models/ProductoModel.php';
+    $this->productoModelo = new ProductoModel();
+
+    // 2. Capturar filtros
+    $nombre = $_GET['busqueda'] ?? '';
+    $id_cat = $_GET['id_categoria'] ?? '';
+
+    // 3. Obtener datos
+    $categorias = $this->productoModelo->obtenerCategorias();
+    $listaProductos = $this->productoModelo->buscarProductos($nombre, $id_cat);
+
+    // 4. Cargar vista
     require_once 'views/catalogo.php';
 }
-
     public function agregar() {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $datos = [

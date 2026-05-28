@@ -155,7 +155,32 @@ public function obtenerEstadisticasGenerales() {
             exit("Error en ProductoModel::listarProductos: " . $e->getMessage());
         }
     }
+// En models/ProductoModel.php
+public function obtenerCategorias() {
+    $stmt = $this->db->query("SELECT * FROM categorias");
+    return $stmt->fetchAll(PDO::FETCH_OBJ);
+}
 
+public function buscarProductos($nombre, $id_categoria) {
+    // Agregamos la condición p.estado = 1 aquí mismo
+    $sql = "SELECT p.* FROM productos p 
+            WHERE p.estado = 1"; 
+    $params = [];
+
+    if (!empty($nombre)) {
+        $sql .= " AND p.nombre_producto LIKE :nombre";
+        $params[':nombre'] = "%$nombre%";
+    }
+    
+    if (!empty($id_categoria)) {
+        $sql .= " AND p.id_categoria = :id_categoria";
+        $params[':id_categoria'] = $id_categoria;
+    }
+
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute($params);
+    return $stmt->fetchAll(PDO::FETCH_OBJ);
+}
 }
 
 

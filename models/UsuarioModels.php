@@ -55,10 +55,35 @@ public function registrarUsuarioModel($datos) {
             $datos['id_rol']
         ]);
     }
+public function verificarUsuario($email, $password) {
+    // Buscamos al usuario por su email
+    $sql = "SELECT * FROM usuarios WHERE email = :email";
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute([':email' => $email]);
+    $usuario = $stmt->fetch(PDO::FETCH_OBJ);
 
-    public function buscarUsuarioModel($datos) {
-    // Asegúrate de traer 'clave' y 'id_rol' para poder verificar el hash y el permiso
-    $stmt = $this->db->prepare("SELECT * FROM usuarios WHERE correo = :correo");
+    // 1. Verificamos si el usuario existe
+    if ($usuario && password_verify($password, $usuario->password)) {
+        
+        // 2. NUEVA VALIDACIÓN: ¿Está activo?
+        if ($usuario->estado == 1) {
+            return $usuario; // Acceso permitido
+        } else {
+            return 'inactivo'; // Acceso denegado por desactivación
+        }
+    }
+    
+    return false; // Credenciales incorrectas
+}
+    // Dentro de UsuarioModels.php
+public function buscarUsuarioModel($datos) {
+    // Asegúrate de que esta consulta sea exacta. 
+    // He agregado 'estado' explícitamente para poder validarlo.
+    $sql = "SELECT id, nombre, clave, id_rol, permisos, estado 
+            FROM usuarios 
+            WHERE correo = :correo"; 
+    
+    $stmt = $this->db->prepare($sql);
     $stmt->execute([":correo" => $datos["correo"]]);
     return $stmt->fetch(PDO::FETCH_ASSOC);
 }
