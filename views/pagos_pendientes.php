@@ -30,6 +30,7 @@
             </section>
             </header>
 
+            <div class="contenedor-pagos-especifico">
             <table class="tabla-modulo-admin">
                 <thead>
                     <tr>
@@ -85,6 +86,7 @@
                     <?php endif; ?>
                 </tbody>
             </table>
+                    </div>
         </section>
     </main>
 </section>

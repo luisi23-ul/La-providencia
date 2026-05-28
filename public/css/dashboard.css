@@ -590,7 +590,9 @@ color: #16a34a !important;
 .tabla-modulo-admin td:nth-child(8) {
     width: 1% !important; /* Fuerza a la última columna a ser compacta y empuja el resto a la izquierda */
 }
-
+.tabla-modulo-admin td:nth-child(6) {
+    width: 20% !important; /* Fuerza a la última columna a ser compacta y empuja el resto a la izquierda */
+}
 .tabla-modulo-admin thead tr:first-child th:first-child {
     border-top-left-radius: 12px;
 }
@@ -612,12 +614,13 @@ color: #16a34a !important;
 
 .tabla-modulo-admin th:nth-child(3) { width: 10%; } /* Método */
 
-
+.tabla-modulo-admin th:nth-child(3) { width: 10%; } /* Método */
 .tabla-modulo-admin th:nth-child(8) { width: 10%; } /* dealle*/
 
 .tabla-modulo-admin td {
     font-size: 0.85rem !important; /* Texto un poco más pequeño */
 }
+
 
 .btn-tabla-success, 
 .btn-tabla-info {
@@ -701,54 +704,76 @@ color: #16a34a !important;
     color: var(--texto-mutado) !important; 
 }
 
-/* 🏷️ Estados de Venta - Estilo Unificado */
-/* Badge optimizado para evitar ruido visual */
+/* Unificador para que Badge y Botón midan lo mismo */
 .badge-listo, 
-.badge-pendiente, 
-.badge-pagado, 
-.badge-entregado {
-    padding: 4px 10px !important;     /* Más compacto */
-    border-radius: 6px !important;    /* Menos redondeado, look más profesional */
-    font-size: 0.7rem !important;     /* Un poco más pequeño */
-    font-weight: 800 !important;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    display: inline-flex !important;
+.badge-entregado, 
+.btn-tabla-success { 
+    display: inline-inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
     
-    /* EL CAMBIO CLAVE: Quitamos el ancho fijo y dejamos que el texto mande */
-    min-width: auto !important; 
+    /* El truco del "Ajuste al contenido": */
+    padding: 6px 12px !important; 
     width: fit-content !important; 
     
-    border: 1px solid transparent !important;
+    border-radius: 6px !important;
+    font-size: 0.75rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    white-space: nowrap !important; /* Mantiene todo en una línea */
+    text-decoration: none !important;
+}
+
+/* Colores para el estado LISTO (Verde) */
+.badge-listo { 
+    background-color: #f0fdf4 !important; 
+    color: #166534 !important; 
+    border: 1px solid #bbf7d0 !important; 
+}
+
+/* Colores para el estado ENTREGADO (Gris/Neutro) */
+.badge-entregado { 
+    background-color: #f8fafc !important; 
+    color: #475569 !important; 
+    border: 1px solid #e2e8f0 !important; 
+}
+
+/* Estilo del botón "Entregar Pedido" */
+.btn-tabla-success {
+    background-color: #f0fdf4 !important;
+    color: #166534 !important;
+    border: 1px solid #bbf7d0 !important;
+}
+.btn-tabla-success:hover {
+    background-color: #dcfce7 !important;
 }
 
 /* Ajustes de color con un toque más sutil */
 .badge-listo { background-color: #f0fdf4 !important; color: #166534 !important; border-color: #dcfce7 !important; }
-.badge-pendiente { background-color: #fff7ed !important; color: #9a3412 !important; border-color: #ffedd5 !important; }
+.badge-pendiente { width: auto !important;         
+    min-width: 90px !important;       /* Asegura un tamaño mínimo visual */
+    max-width: 150px !important;      /* Evita que se haga gigante */
+    white-space: nowrap !important;   /* OBLIGATORIO: Evita que "PENDI" y "ENTE" se separen */
+    display: inline-flex !important;
+    justify-content: center !important;
+    padding: 6px 12px !important;
+    margin: 0 auto !important;
+    background-color: #fff7ed !important; color: #9a3412 !important; border-color: #ffedd5 !important; }
 .badge-pagado { background-color: #f0fdf4 !important; color: #166534 !important; border-color: #dcfce7 !important; }
 .badge-entregado { background-color: #f8fafc !important; color: #475569 !important; border-color: #e2e8f0 !important; }
 
-/* ==========================================================================
-    ACCIONES DE TABLA (BOTONES DE NIVEL SAAS COMMERCIAL - OPTIMIZADOS)
-   ========================================================================== */
-/*  Acción de "Entregar Pedido" - Estilo SaaS Profesional */
-.btn-tabla-success {
-    background-color: #f0fdf4 !important; /* Verde pastel muy suave */
-    color: #166534 !important;            /* Verde bosque para el texto */
-    border: 1px solid #bbf7d0 !important; /* Borde sutil */
-    box-shadow: none !important;          /* Sin sombras pesadas */
-    font-weight: 600 !important;
-    padding: 8px 16px !important;
-    border-radius: 8px !important;
-    transition: all 0.3s ease !important;
+/* Limita el ancho de la columna ESTADO solo en esta página */
+.contenedor-pagos-especifico .tabla-modulo-admin td:nth-child(6), 
+.contenedor-pagos-especifico .tabla-modulo-admin th:nth-child(6) {
+    width: 120px !important; /* Ajusta este valor hasta que se vea como quieres */
+    text-align: center;
 }
 
-.btn-tabla-success:hover {
-    background-color: #166534 !important; /* Ahora el fondo se vuelve verde oscuro al pasar el mouse */
-    color: #ffffff !important;            /* El texto se vuelve blanco */
-    transform: translateY(-1px);
+/* Asegura que los badges dentro de esta tabla no crezcan demasiado */
+.contenedor-pagos-especifico .badge {
+    width: 90px !important; /* Tamaño fijo pero profesional */
+    display: inline-flex !important;
+    justify-content: center !important;
 }
 
 /* ⚪ Botón "Ver Detalle" (Tu clase: .btn-tabla-info) */
@@ -1336,27 +1361,32 @@ color: #16a34a !important;
     display: none !important;
 }
 
-/* ==========================================================================
-   VARIABLES GLOBALES (SISTEMA DE DISEÑO LA PROVIDENCIA)
-   ========================================================================== */
-:root {
-    --bg-dark-unificado: #0f172a;
-    --azul-identidad: #0052d4;
-    --azul-identidad-hover: #0044b1;
-    --bg-global: #f8fafc;
-    --lineas-divisorias: #e2e8f0;
-    --texto-principal: #0f172a;
-    --texto-secundario: #475569;
-    --texto-mutado: #64748b;
-}
 
 /* ==========================================================================
    ESTRUCTURA GENERAL (LAYOUT)
    ========================================================================== */
-.panel-administracion { min-height: 100vh; width: 100%; display: flex; background-color: var(--bg-global); font-family: 'Poppins', sans-serif; }
+.panel-administracion { min-height: 100vh;
+    width: 100%;
+    
+    /* ¡Magia de CSS Grid! */
+    display: grid;
+    grid-template-columns: 260px 1fr; /* 260px fijo para sidebar, 1fr (todo el resto) para contenido */
+    
+    background-color: var(--bg-global);
+    font-family: 'Poppins', sans-serif;
+    margin: 0;
+    padding: 0;}
 
-.sidebar-admin { width: 260px; min-width: 260px; background-color: var(--bg-dark-unificado); color: #ffffff; padding: 40px 18px; z-index: 100; }
-.main-dashboard-content { flex-grow: 1; padding: 60px 40px; }
+.sidebar-admin { width: 260px; min-width: 260px; background-color: var(--bg-dark-unificado); color: #ffffff; padding: 40px 18px;
+    
+
+   
+    
+}
+.main-dashboard-content { width: 100%; /* Ocupará exactamente el espacio del '1fr' */
+    padding: 60px 40px;
+    box-sizing: border-box;
+    min-height: 100vh; }
 
 /* ==========================================================================
    TABLAS BASE (ESTILO GLOBAL)
