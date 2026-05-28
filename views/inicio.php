@@ -39,8 +39,8 @@ $config = $db->query("SELECT * FROM sistema1 WHERE id = 1")->fetch(PDO::FETCH_OB
 
     </header>
     <figure class="hero-img">
-        <img src="public/img/logo-removebg.png" alt="Logo La Providencia" class="hero-logo-img">
-    </figure>
+    <img src="<?php echo $config->logo_path; ?>" alt="Logo La Providencia" class="hero-logo-img">
+</figure>
     </article>
 </section>
 
@@ -180,7 +180,7 @@ $config = $db->query("SELECT * FROM sistema1 WHERE id = 1")->fetch(PDO::FETCH_OB
                 </figure>
                 <header>
                     <h4>Ubicación</h4>
-                    <p>Barquisimeto - Cabudare, Edo. Lara</p>
+                    <p><?php echo htmlspecialchars($config->direccion); ?></p>
                 </header>
             </article>
 

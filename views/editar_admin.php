@@ -1,6 +1,6 @@
 
 <?php
-// Validar que $a existe y no es nulo
+// Validar que administrador existe y no es nulo
 if (!$a) {
     die("Administrador no encontrado.");
 }

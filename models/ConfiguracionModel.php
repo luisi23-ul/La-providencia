@@ -11,7 +11,7 @@ class ConfiguracionModel {
     }
 
    public function actualizar($d) {
-    // Usaremos un UPDATE directo con bindValue para asegurar el tipo de dato
+    // Asegúrate de incluir TODOS los campos aquí, separados por comas
     $sql = "UPDATE sistema1 SET 
             titulo_hero = :th, 
             subtitulo_hero = :sh, 
@@ -21,12 +21,13 @@ class ConfiguracionModel {
             color_primario = :cp, 
             color_secundario = :cs, 
             color_terciario = :ct, 
-            color_cuaternario = :cq 
+            color_cuaternario = :cq, 
+            logo_path = :lp 
             WHERE id = 1";
 
     $stmt = $this->db->prepare($sql);
     
-    // Asignamos valores individualmente forzando el tipo string
+    // Ahora haz los bindValue para cada uno de los campos anteriores
     $stmt->bindValue(':th', $d['titulo_hero'], PDO::PARAM_STR);
     $stmt->bindValue(':sh', $d['subtitulo_hero'], PDO::PARAM_STR);
     $stmt->bindValue(':dir', $d['direccion'], PDO::PARAM_STR);
@@ -36,6 +37,7 @@ class ConfiguracionModel {
     $stmt->bindValue(':cs', $d['color_secundario'], PDO::PARAM_STR);
     $stmt->bindValue(':ct', $d['color_terciario'], PDO::PARAM_STR);
     $stmt->bindValue(':cq', $d['color_cuaternario'], PDO::PARAM_STR);
+    $stmt->bindValue(':lp', $d['logo_path'], PDO::PARAM_STR);
 
     return $stmt->execute();
 }

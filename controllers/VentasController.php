@@ -162,7 +162,7 @@ class VentaController {
 }
 
     // Listar pagos pendientes y pagados para el administrador
-  public function pagosPendientes() {
+   public function pagosPendientes() {
     $ventas = $this->model->obtenerVentasPorEstado(['pendiente', 'pagado']);
     
     // Cálculo de tasa

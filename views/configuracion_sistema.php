@@ -7,8 +7,8 @@
     ul { list-style: none; padding: 0; }
     li { display: flex; align-items: center; gap: 20px; margin-bottom: 15px; }
     input[type="color"] { border: none; width: 40px; height: 40px; cursor: pointer; border-radius: 4px; }
-    
-    /* ESTILO DEL BOTÓN INTEGRADO */
+                                        
+    /* ESTILO DEL BOTÓN */
     .btn-submit {
         background-color: #0052d4;
         color: white;
@@ -41,7 +41,10 @@
             <label>Teléfono</label>
             <input type="text" name="telefono" value="<?php echo htmlspecialchars($config->telefono); ?>">
 
-            
+            <label>Cambiar Logo</label>
+    <input type="file" name="logo" accept="image/*">
+    
+    <input type="hidden" name="logo_path_actual" value="<?php echo htmlspecialchars($config->logo_path); ?>">
             
             <label>Texto Footer</label>
             <textarea name="footer_texto"><?php echo htmlspecialchars($config->footer_texto); ?></textarea>

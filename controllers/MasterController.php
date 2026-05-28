@@ -162,11 +162,23 @@ public function vistaConfiguracion() {
 
 public function actualizarConfiguracion() {
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        require_once 'models/ConfiguracionModel.php';
+        echo "<pre>"; print_r($_POST); echo "</pre>";
+        $datos = $_POST;
+
+        // Si se subió un logo, lo movemos a la carpeta de uploads
+        if (isset($_FILES['logo']) && $_FILES['logo']['error'] === 0) {
+            $nombreArchivo = 'logo_' . time() . '.png';
+            $rutaDestino = 'public/img/' . $nombreArchivo;
+            move_uploaded_file($_FILES['logo']['tmp_name'], $rutaDestino);
+            $datos['logo_path'] = $rutaDestino; // Pasamos la nueva ruta al modelo
+        } else {
+            $datos['logo_path'] = $_POST['logo_path_actual']; // Mantenemos el anterior
+        }
+
         $modelo = new ConfiguracionModel($this->db);
-        $modelo->actualizar($_POST);
-       header("Location: index.php?action=configuracion_sistema&status=ok");
-        exit(); // Es buena práctica añadir exit() después de un header
+        $modelo->actualizar($datos);
+        header("Location: index.php?action=configuracion_sistema&status=ok");
+        exit();
     }
 }
 }

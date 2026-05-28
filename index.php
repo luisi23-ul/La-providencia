@@ -106,7 +106,10 @@ $acciones_admin = [
     'seccion_graficos', 
     'grafico_barras', 
     'grafico_tortas',
-    'metodos_pago' 
+    'metodos_pago' ,
+    ' gestionarClientes' ,
+    'cambiarEstadoCliente'
+
 ];
 
 
@@ -280,6 +283,16 @@ case 'exportar_pdf':
         $ventaC->manejarReporte($id_metodo);
         break;
 
+        // Dentro del switch que maneja las acciones:
+
+// En tu index.php, busca donde manejas las rutas de usuarios
+case 'lista_clientes':
+    $usuarioC->listarClientes(); // Usamos la misma variable que usas para editar admins
+    break;
+
+case 'cambiarEstadoCliente':
+    $usuarioC->cambiarEstadoCliente(); // Asegúrate de llamar al controlador correcto
+    break;
       
 }
 

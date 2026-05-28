@@ -10,12 +10,18 @@
         <?php foreach ($listaProductos as $p): ?>
             <figure class="card-producto">
                 <picture class="imagen-container">
-                    <?php if (!empty($p->imagen) && file_exists("public/uploads/" . $p->imagen)): ?>
-                        <img src="public/uploads/<?php echo $p->imagen; ?>" alt="<?php echo htmlspecialchars($p->nombre_producto, ENT_QUOTES, 'UTF-8'); ?>">
-                    <?php else: ?>
-                        <img src="public/img/placeholder.png" alt="Imagen no disponible">
-                    <?php endif; ?>
-                </picture>
+    <?php 
+    // Ahora $p->imagen siempre existirá gracias al IFNULL del modelo
+    $ruta_archivo = "public/uploads/" . $p->imagen;
+    
+    // Verificamos que no esté vacío y que exista físicamente
+    if (!empty($p->imagen) && file_exists($_SERVER['DOCUMENT_ROOT'] . '/la-providencia/' . $ruta_archivo)): ?>
+        <img src="<?php echo htmlspecialchars($ruta_archivo); ?>" 
+             alt="<?php echo htmlspecialchars($p->nombre_producto, ENT_QUOTES, 'UTF-8'); ?>">
+    <?php else: ?>
+        <img src="public/img/uploads.png" alt="Imagen no disponible">
+    <?php endif; ?>
+</picture>
                 
                 <figcaption class="cuerpo-producto">
                     <h3><?php echo htmlspecialchars($p->nombre_producto, ENT_QUOTES, 'UTF-8'); ?></h3>
@@ -42,7 +48,7 @@
                         </form>
                     <?php else: ?>
                         <a href="index.php?action=login_usuario" class="btn-login-comprar">
-                            <i class="fas fa-sign-in-alt"></i> Inicia sesión para comprar
+                            <i class="fas fa-sign-in-alt"></i> Inicio de sesión para comprar
                         </a>
                     <?php endif; ?>
                 </figcaption>

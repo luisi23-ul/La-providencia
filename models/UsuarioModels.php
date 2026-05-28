@@ -111,4 +111,9 @@ public function actualizarEstadoUsuario($id, $estado) {
     $stmt->execute([$estado, $id]);
 }
 
+public function obtenerClientes() {
+    // Usamos 'correo' en lugar de 'email' y 'id_rol' en lugar de 'rol'
+    $sql = "SELECT id, nombre, correo, estado FROM usuarios WHERE id_rol = 3";
+    return $this->db->query($sql)->fetchAll(PDO::FETCH_OBJ);
+}
 }

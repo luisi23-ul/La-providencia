@@ -141,7 +141,32 @@ public function mostrarLogin_registro() {
             exit();
         }
     }
-   
+   // Dentro de tu archivo UsuarioController.php
+
+public function listarClientes() {
+    // 1. Instanciamos el modelo de usuarios (el que ya tienes)
+    $modelo = new UsuarioModels($this->db);
+    
+    // 2. Obtenemos los clientes (rol 3)
+    $clientes = $modelo->obtenerClientes(); 
+    
+    // 3. Cargamos la vista de administración
+    require_once 'views/admin_clientes.php';
+}
+
+public function cambiarEstadoCliente() {
+    if ($_SERVER['REQUEST_METHOD'] === 'GET') { // O 'POST', depende de cómo lo envíes
+        $id = $_GET['id'];
+        $estado = $_GET['estado']; // El nuevo estado que quieres aplicar (0 o 1)
+
+        $modelo = new UsuarioModels($this->db);
+        $modelo->actualizarEstadoUsuario($id, $estado); // Usamos la función correcta
+        
+        // ¡CRÍTICO! Redirigir de vuelta a la lista para que no se quede en blanco
+        header("Location: index.php?action=lista_clientes");
+        exit();
+    }
+}
 
 
 

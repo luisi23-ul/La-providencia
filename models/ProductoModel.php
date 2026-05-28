@@ -24,8 +24,16 @@ class ProductoModel {
         ]);
     }
 
-    public function obtenerProductos() {
-    $sql = "SELECT * FROM productos WHERE estado = 1 ORDER BY id DESC";
+   public function obtenerProductos() {
+    // Usamos IFNULL para que, si imagen es NULL, devuelva un string vacío
+    $sql = "SELECT p.id, p.nombre_producto, p.precio, p.stock, 
+                   IFNULL(p.imagen, '') AS imagen,
+                   c.nombre_categoria AS nombre_categoria_real
+            FROM productos p
+            LEFT JOIN categorias c ON p.id_categoria = c.id
+            WHERE p.estado = 1
+            ORDER BY p.id DESC";
+            
     $stmt = $this->db->prepare($sql);
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_OBJ);
