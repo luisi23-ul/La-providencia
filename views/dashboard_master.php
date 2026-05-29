@@ -1,48 +1,72 @@
 
+<link rel="stylesheet" href="public/css/dashboard.css?v=<?php echo time(); ?>">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 
-<header class="dashboard-header">
-    <link rel="stylesheet" href="public/css/dashboard.css?v=<?php echo time(); ?>">
-    <h2>Panel de Control Master</h2>
-    <p class="bienvenida-sub"><span>Configuración Global</span>. Acceso exclusivo para gestión de sistemas y administradores.</p>
-</header>
+<section class="panel-administracion">
 
-<nav class="row-opciones">
+<?php include 'sidebar-master.php'; ?>
 
-    <article class="bloque-opcion">
-        <span class="icon-admin"><i class="fas fa-users-cog"></i></span>
-        <h3>Gestionar Administradores</h3>
-        <p>Crea, edita o elimina cuentas de administradores del sistema.</p>
-        <a href="index.php?action=gestionar_admins" class="btn-admin-azul">
-            Ver Personal <i class="fas fa-arrow-right"></i>
-        </a>
-    </article>
+<main class="master-dashboard-container">
+    
+    <header class="dashboard-header">
+        <h1>Panel de Control Master</h1>
+        <p>Gestión global de sistemas y configuraciones avanzadas.</p>
+    </header>
 
-    <article class="bloque-opcion">
-        <span class="icon-admin"><i class="fas fa-palette"></i></span>
-        <h3>Configuración del Sistema</h3>
-        <p>Cambia colores, logo, títulos y datos de contacto de La Providencia.</p>
-        <a href="index.php?action=configuracion_sistema" class="btn-admin-azul">
-            Editar Diseño <i class="fas fa-arrow-right"></i>
-        </a>
-    </article>
+    <nav class="master-grid" aria-label="Navegación del Panel Master">
+        
+        <article class="bloque-master">
+            <header>
+                <div class="icon-wrapper"><i class="fas fa-user-shield"></i></div>
+                <h3>Gestionar Administradores</h3>
+            </header>
+            <p>Crea, edita o elimina cuentas de administradores del sistema.</p>
+            <footer>
+                <a href="index.php?action=gestionar_admins" class="btn-master">
+                    Ver Personal <i class="fas fa-arrow-right"></i>
+                </a>
+            </footer>
+        </article>
 
-    <article class="bloque-opcion">
-        <span class="icon-admin"><i class="fas fa-boxes"></i></span>
-        <h3>listado administradores</h3>
-        <p>Supervisa el inventario general del sistema.</p>
-        <a href="index.php?action=listado_administradores" class="btn-admin-azul">
-            Ir al Listado <i class="fas fa-arrow-right"></i>
-        </a>
-    </article>
+        <article class="bloque-master">
+            <header>
+                <div class="icon-wrapper"><i class="fas fa-sliders-h"></i></div>
+                <h3>Configuración del Sistema</h3>
+            </header>
+            <p>Cambia colores, logo, títulos y datos de contacto.</p>
+            <footer>
+                <a href="index.php?action=configuracion_sistema" class="btn-master">
+                    Editar Diseño <i class="fas fa-arrow-right"></i>
+                </a>
+            </footer>
+        </article>
+<article class="bloque-master">
+            <header>
+                <div class="icon-wrapper"><i class="fa-solid fa-square-check"></i></div>
+                <h3>Listado Administradores</h3>
+            </header>
+            <p>Supervisa el inventario general del sistema.</p>
+            <footer>
+                <a href="index.php?action=listado_administradores" class="btn-master">
+                    Ir al Listado <i class="fas fa-arrow-right"></i>
+                </a>
+            </footer>
+        </article>
 
-    <article class="bloque-opcion">
-        <span class="icon-admin"><i class="fas fa-boxes"></i></span>
-        <h3>Gestión de administracion de productos</h3>
-        <p>Supervisa el inventario general del sistema.</p>
-        <a href="index.php?action=dashboard" class="btn-admin-azul">
-            Ir al Listado <i class="fas fa-arrow-right"></i>
-        </a>
-    </article>
+        <article class="bloque-master">
+            <header>
+                <div class="icon-wrapper"><i class="fas fa-box-open"></i></div>
+                <h3>Gestión de Productos</h3>
+            </header>
+            <p>Supervisa el inventario general del sistema.</p>
+            <footer>
+                <a href="index.php?action=dashboard" class="btn-master">
+                    Ir al Listado <i class="fas fa-arrow-right"></i>
+                </a>
+            </footer>
+        </article>
 
-</nav>
+        </nav>
+</main>
+</section>    

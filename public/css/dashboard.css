@@ -18,7 +18,16 @@
     --texto-principal: #0f172a;    /* Negro grafito sólido (Títulos y USD) */
     --texto-secundario: #475569;   /* Gris pizarra corporativo (Bs y subtítulos) */
     --texto-mutado: #64748b;       /* Gris de control (Horas, texto verificado) */
+
+    --master-bg: #f1f5f9;         /* Fondo Gris Ceniza */
+    --master-card: #ffffff;       /* Fondo de Tarjeta Blanco */
+    --master-primary: #06241a;    /* Verde Esmeralda (Botones/Bordes) */
+    --master-icon-bg: #d1fae5;    /* Verde Menta pastel */
+    --master-text: #1e293b;       /* Gris Carbón para títulos */
+    --master-p: #64748b;
+    --master-secundary: #047857;       /* Gris suave para párrafos */
 }
+
 
 /* Corrección de parpadeo - Forzamos visibilidad solo al cargar */
 
@@ -1383,7 +1392,8 @@ color: #16a34a !important;
    
     
 }
-.main-dashboard-content { width: 100%; /* Ocupará exactamente el espacio del '1fr' */
+.main-dashboard-content { 
+    width: 100%; /* Ocupará exactamente el espacio del '1fr' */
     padding: 60px 40px;
     box-sizing: border-box;
     min-height: 100vh; }
@@ -1527,6 +1537,1223 @@ input:checked + .slider:before { transform: translateX(20px); }
 }
 
 /* ==========================================================================
+9. dashboard master
+========================================================================== */
+.master-dashboard-container {
+  background-color: var(--master-bg);
+    min-height: 100vh;
+    
+    
+    /* Patrón de puntos muy sutil */
+    background-image: radial-gradient(#94a3b8 1px, transparent 1px);
+    background-size: 30px 30px;
+    /* Al usar #94a3b8 con 1px, se vuelve muy tenue */
+
+     width: 100%; /* Ocupará exactamente el espacio del '1fr' */
+    padding: 40px 60px;
+    box-sizing: border-box;
+    
+}
+
+.dashboard-header h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #0f172a; /* Color oscuro sólido */
+    margin: 0 0 8px 0;
+}
+
+.dashboard-header p {
+    font-size: 1rem;
+    color: #64748b; /* Gris medio para el texto de apoyo */
+    margin: 0;
+}
+
+/* Contenedor Grid */
+.master-grid {
+    
+      width: 100%;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 320px));
+    justify-content: flex-start; 
+    gap: 24px;
+    box-sizing: border-box;
+}
+
+/* Tarjeta Master */
+.bloque-master {
+  background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-top: 6px solid var(--master-primary);
+    border-radius: 20px;
+    padding: 30px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    /* IGUALAMOS TAMAÑO AL ADMIN */
+    min-height: 350px; 
+    height: 100%; 
+    box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.05);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bloque-master:hover {
+   transform: translateY(-6px);
+    border-color: #cbd5e1; /* El borde gris se oscurece un poco al pasar el mouse */
+    box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.08); /* Sombra más pronunciada */
+}
+
+/* Icono en su contenedor */
+.icon-wrapper {
+    width: 50px;
+    height: 50px;
+    /* Fondo verde muy tenue y transparente */
+    background-color: rgba(4, 120, 87, 0.1); 
+    color: var(--master-secundary); /* Verde bosque */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    margin-bottom: 22px;
+    transition: all 0.25s ease;
+}
+
+/* Efecto hover sobre la tarjeta completa */
+.bloque-master:hover .icon-wrapper {
+    background-color: var(--master-secundary); /* Cambia a verde bosque sólido */
+    color: #ffffff; /* Icono blanco */
+}
+
+
+/* Textos */
+.bloque-master h3 {
+    margin: 0 0 10px 0;
+    color: var(--master-text);
+    font-family: 'Poppins', sans-serif;
+}
+
+.bloque-master p {
+    color: var(--master-p);
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+    flex-grow: 1; /* Mantiene el botón alineado al fondo */
+}
+
+/* Botón Master */
+.btn-master {
+    width: 100%;
+    padding: 13px;
+    border-radius: 12px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-top: auto; /* Mantiene el botón siempre alineado al fondo */
+    background-color: var(--master-secundary); /* Tu verde esmeralda */
+    color: #ffffff;
+}
+
+.btn-master:hover {
+    background-color: var(--master-secundary); /* Se llena de verde bosque */
+    color: #ffffff; 
+    filter: brightness(90%);
+    gap: 15px;/* Texto blanco */
+}
+
+.btn-master i {
+    font-size: 1rem !important;
+    min-width: 16px;
+}
+
+
+
+/* ==========================================================================
+   SIDEBAR MASTER (ESTILO VERDE ESMERALDA)
+   ========================================================================== */
+.sidebar-master {
+    width: 260px;
+    min-width: 260px;
+    background-color: var(--master-primary);
+    color: #94a3b8 !important;;
+    display: flex;
+    flex-direction: column;
+    padding: 40px 18px; 
+    box-sizing: border-box;
+    position: relative; 
+    min-height: 100vh;
+    z-index: 100;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-brand-master {
+    margin-bottom: 45px;
+    padding-left: 12px;
+    sidebar-brand h3 {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+}
+
+.sidebar-brand span {
+    font-size: 0.75rem;
+    color: #38bdf8; 
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+}
+
+.sidebar-brand-master h3 {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #ffffff; 
+}
+
+.sidebar-brand-master span {
+ color: #94a3b8 !important; 
+    /* El truco: un resplandor blanco sutil para que parezca metal brillante */
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.2), 0 0 20px rgba(226, 232, 240, 0.4);
+    font-weight: 800;
+}
+
+.sidebar-menu-master {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.menu-item-master {
+    color: #94a3b8  !important;
+    text-decoration: none;
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    white-space: nowrap;
+    transition: all 0.25s ease;
+}
+
+.menu-item-master active {
+    /* Fondo verde claro/brillante que contraste con el fondo oscuro */
+    background-color: #106348 !important; 
+    /* Texto blanco para máxima legibilidad */
+    color: #ffffff !important;
+    font-weight: 700;
+    /* Un pequeño borde a la izquierda para darle un toque de panel profesional */
+    
+}
+
+/* Asegurar que el icono también se mantenga del color correcto cuando está activo */
+.menu-item-master active i {
+    color: #ffffff !important;
+}
+
+.menu-item-master i {
+    font-size: 1.1rem;
+    width: 20px;
+    text-align: center;
+    transition: color 0.25s ease;
+}
+
+/* Efecto Hover: Fondo blanco, texto verde */
+.menu-item-master:hover {
+   background-color: rgba(0, 0, 0, 0.2) !important; 
+    color: #ffffff !important;
+}
+
+
+
+/* Efecto Activo: Fondo blanco, texto verde y sombra */
+.menu-item-master.active {
+    background-color: var(--master-secundary) !important;
+    color: #ffffff !important;
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.menu-item-master.active i {
+    color: #ffffff !important;
+}
+
+/* Tienda: El mismo tono brillante para que resalte */
+.sidebar-menu-master .return-store {
+    color: #94a3b8 !important; 
+    /* El truco: un resplandor blanco sutil para que parezca metal brillante */
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.2), 0 0 20px rgba(226, 232, 240, 0.4);
+    font-weight: 800;
+}
+
+/* Ajuste del hover para que al pasar el mouse también brille */
+.sidebar-menu-master .return-store:hover {
+    color: #94a3b8 !important; 
+    /* El truco: un resplandor blanco sutil para que parezca metal brillante */
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.2), 0 0 20px rgba(226, 232, 240, 0.4);
+
+}
+
+/* Cerrar Sesión: Rojo Neón (Intenso y brillante) */
+.sidebar-menu-master .logout-item {
+    position: relative;
+    margin-top: 40px;
+    color: #ff3e3e !important; /* Rojo neón brillante */
+    text-shadow: 0 0 8px rgba(255, 62, 62, 0.3);
+    padding: 12px 16px !important;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    font-weight: 700;
+    transition: all 0.3s ease;
+}
+
+.sidebar-menu-master .logout-item:hover {
+    background-color: #ff3e3e !important; /* El fondo se vuelve rojo al pasar el mouse */
+    color: #ffffff !important;
+    text-shadow: none;
+}
+
+.sidebar-menu-master .logout-item::before {
+    content: "";
+    position: absolute;
+    top: -20px;
+    left: 16px;
+    right: 16px;
+    height: 1px;
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* ==========================================================================
+Gestion de administradores - MASTER
+========================================================================== */
+
+
+.main-master-content {
+    padding: 40px;
+    width: 100%;
+    min-height: 100vh;
+    background-color: #f8fafc;
+}
+
+/* 2. CARD Y HEADER DEL LISTADO */
+.card-master-listado {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 30px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.master-header-listado {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #f1f5f9;
+}
+
+/* 3. BOTONES MASTER */
+.btn-regresar-master {
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+
+    display: inline-flex !important;
+    align-items: center !important;
+    
+    
+    font-size: 0.85rem !important;
+    
+    
+    /* Estado fijo: Azul identidad sólido */
+   
+    color: #ffffff !important; 
+    
+    
+    border-radius: 8px !important;
+    text-decoration: none !important;
+    transition: all 0.25s ease !important;
+    margin-bottom: 20px !important;
+
+
+}
+
+.btn-regresar-master {
+    background-color: var(--master-primary);
+    color: #ffffff;
+}
+
+.btn-regresar-master:hover {
+    /* Estado hover: Fondo verde muy suave/transparente */
+    background-color: rgba(6, 36, 26, 0.08) !important; 
+    
+    /* Color de texto verde bosque */
+    color: var(--master-secundary) !important;
+    
+    /* Borde sutil del mismo color */
+    border-color: rgba(6, 36, 26, 0.2) !important;
+    
+    /* Efecto de movimiento */
+    transform: translateX(-3px); 
+}
+
+/* Ajuste del icono dentro del botón */
+.btn-regresar-master i {
+    font-size: 0.85rem !important;
+}
+/* 4. TABLA MASTER (ESTILO PREMIUM) */
+.tabla-master-listado {
+    width: 100%;
+    border-collapse: collapse;
+    border-radius: 12px;
+    overflow: hidden;
+    table-layout: fixed; /* Esto es clave para que no se estire sola */
+    width: 100%;
+}
+
+.tabla-master-listado th {
+    background-color: var(--master-primary);
+    color: #ffffff;
+    padding: 18px 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    text-align: center;
+position: relative;
+   border-right: none;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Corta el texto largo con "..." */
+    white-space: nowrap;
+    font-size: 0.8rem !important;      /* Aumentamos de 0.8rem a 0.9rem */
+    font-weight: 780 !important;       /* Más negrita (Extra Bold) */
+    
+    /* Espaciado para mayor aire */
+    padding: 20px 20px !important;     /* Un poco más alto para mayor presencia */
+    
+    /* Legibilidad */
+    letter-spacing: 0.08em !important; /* Separamos un poquito las letras */
+    text-transform: uppercase;
+    color: #ffffff !important;
+}
+
+.tabla-master-listado td {
+    padding: 18px 20px;
+    border-bottom: 1px solid #f1f5f9;
+    text-align: center;
+    color: #334155;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Corta el texto largo con "..." */
+    white-space: nowrap;
+    position: relative;
+    padding: 18px 10px; /* Un poco más de aire vertical */
+    color: #0f172a !important; /* Negro grafito sólido para todo el texto */
+    font-size: 1rem; /* Aumentamos el tamaño general */
+    font-weight: 500;   /
+}
+
+.tabla-master-listado td:not(:last-child)::after {
+    content: "";
+    display: block;
+    position: absolute;
+    right: 0;
+    top: 25%;   /* El separador no toca arriba */
+    bottom: 25%; /* El separador no toca abajo */
+    width: 2px;
+    background-color: #e2e8f0; /* Color gris sutil */
+    border-radius: 10px;      /* Esto le da la forma de píldora */
+    z-index: 10;
+}
+
+.tabla-master-listado th:not(:last-child)::after {
+    content: "";
+    display: block;
+    position: absolute;
+    right: 0;
+    top: 30%;    /* Un poco más corto que en el cuerpo para distinción */
+    bottom: 30%;
+    width: 2px;
+    background-color: #ffffff; /* Color blanco semitransparente para que resalte sobre el fondo verde */
+    border-radius: 10px; /* Forma de píldora */
+    z-index: 10;
+}
+
+/* 5. BADGES DE ESTADO MASTER */
+.badge-estado-master {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+
+/* 6. BOTONES ACCIÓN TABLA */
+.btn-accion-master {
+   display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 8px 12px !important;
+    border-radius: 8px !important;
+    font-size: 0.9rem !important;
+    text-decoration: none !important;
+    transition: all 0.2s ease !important;
+    border: 1px solid #e2e8f0 !important;
+    background-color: #f8fafc !important;
+    color: #475569 !important;
+    cursor: pointer;
+    background: transparent !important;
+}
+
+/* Estado Hover (Al pasar el mouse) */
+.btn-accion-master:hover {
+    background-color: #f1f5f9 !important;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Color específico para DESACTIVAR (Rojo suave) */
+.btn-desactivar-master:hover {
+    color: #dc2626 !important;
+    border-color: #fecaca !important;
+    background-color: #fef2f2 !important;
+}
+
+.btn-editar-master:hover {  color: var(--master-secundary); }
+
+/* tablas columnas*/
+.tabla-master-listado th:nth-child(1) { width: 8%; }  /* ID */
+.tabla-master-listado th:nth-child(2) { width: 18%; } /* Nombre */
+.tabla-master-listado th:nth-child(3) { width: 22%; } /* Correo */
+.tabla-master-listado th:nth-child(4) { width: 30%; } /* Permisos */
+.tabla-master-listado th:nth-child(5) { width: 10%; } /* Estado */
+.tabla-master-listado th:nth-child(6) { width: 12%; } /* Acciones */
+
+/*LIstado tablas lo que va adentro */
+
+/* ==========================================================================
+   TIPOGRAFÍA: PESO Y LEGIBILIDAD PREMIUM
+   ========================================================================== */
+
+.tabla-master-listado td {
+    padding: 12px 10px; /* Un poco más de aire vertical */
+    color: #0f172a !important; /* Negro grafito sólido para todo el texto */
+    font-size: 0.9rem; /* Aumentamos el tamaño general */
+    font-weight: 500;   /* Peso medio base */
+    vertical-align: middle !important;
+}
+
+/* 1. IDs más grandes y pesados */
+.tabla-master-listado td:nth-child(1) {
+    font-weight: 900 !important; /* Bold extremo */
+    color: #020617 !important;   /* Negro puro */
+    font-size: 0.9rem;
+}
+
+/* 2. Nombres con más presencia */
+.tabla-master-listado td:nth-child(2) {
+    font-weight: 800 !important; /* Mucho más Bold */
+    font-size: 1rem;
+    color: #1e293b !important;
+}
+
+/* 3. Correos: Un poco más de peso */
+.tabla-master-listado td:nth-child(3) {
+    font-weight: 600 !important;
+}
+
+.tabla-master-listado td:nth-child(5) {
+    font-weight: 800 !important;
+    font-size: 0.75rem;
+}
+
+.master-columna-permisos {
+    font-size: 0.8rem;
+    font-weight: 600 !important;
+    color: #334155 !important;
+    
+}
+
+/* Encabezados Verde Bosque (el color Master) */
+.tabla-master-listado thead {
+    background-color: #06241a; /* Verde bosque */
+    color: #ffffff;
+}
+
+/* ==========================================================================
+   BOTONES DE ACCIÓN: TAMAÑO Y PRESENCIA
+   ========================================================================== */
+
+/* Aumentamos el tamaño del botón y el icono */
+.btn-accion-master {
+    padding: 10px 14px !important; /* Más padding para que el botón sea más grande */
+    border-radius: 8px !important;
+    font-size: 1.1rem !important;  /* Icono más grande */
+    transition: all 0.2s ease !important;
+    background-color: transparent;
+}
+
+/* Ajuste específico para que el icono no se deforme */
+.btn-accion-master i {
+    font-size: 1.1rem !important; /* Tamaño visible y claro */
+    line-height: 1;
+}
+
+/* ==========================================================================
+   BADGE ESTADO: ESTILO PÍLDORA (MONOCROMO PREMIUM)
+   ========================================================================== */
+
+.badge-estado-master {
+    /* Estructura */
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 6px 16px !important;
+    border-radius: 50px !important; /* Píldora redondeada */
+    
+    /* Tipografía */
+    font-size: 0.70rem !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    
+    /* Asegurar ancho uniforme */
+    min-width: 100px !important;
+}
+
+/* Estado ACTIVO: Verde Bosque Suave */
+.bg-activo-master {
+    background-color: #dcfce7 !important; /* Verde menta muy claro */
+    color: #064e3b !important;            /* Verde bosque oscuro (tu color Master) */
+}
+
+/* Estado INACTIVO: Gris Suave (para no ser tan agresivo como el rojo) */
+.bg-inactivo-master {
+    background-color: #f1f5f9 !important; /* Gris muy claro */
+    color: #475569 !important;            /* Gris pizarra */
+}
+
+/* ==========================================================================
+7. efecto zebra
+========================================================================== */
+
+.tabla-master-listado tbody tr:nth-child(even) {
+    background-color: #f1f5f9 !important; /* Un gris muy tenue para la fila zebra */
+}
+
+.tabla-master-listado tbody tr:hover {
+    background-color: #f1f5f9 !important; /* Resalte al pasar el mouse */
+}
+
+/* ==========================================================================
+   BOTÓN "NUEVO ADMIN" - ACCIÓN PRINCIPAL (CALL TO ACTION)
+   ========================================================================== */
+
+.btn-satin-nuevo-master {
+  display: inline-flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    padding: 10px 20px !important;
+    border-radius: 12px !important;
+    font-size: 0.85rem !important;
+    font-weight: 700 !important;
+    text-decoration: none !important;
+    
+    /* Colores minimalistas */
+    background-color: #f1f5f9 !important; /* Gris muy claro */
+    color: #475569 !important;            /* Gris pizarra */
+    border: 1px solid #e2e8f0 !important; /* Borde muy sutil */
+    
+    transition: all 0.2s ease !important;
+}
+
+/* Efecto Hover: ¡El botón se "enciende"! */
+.btn-satin-nuevo-master:hover {
+    background-color: #e2e8f0 !important;
+    color: var(--master-secundary) !important;
+    transform: translateY(-2px);
+}
+
+/* Efecto al presionar (Active) */
+.btn-satin-nuevo-master:active {
+    transform: translateY(0);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.2) !important;
+}
+
+/* Icono ligeramente más grande para equilibrar */
+.btn-satin-nuevo-master i {
+    font-size: 1.1rem !important;
+    color: var(--master-secundary) !important;
+}
+
+/* ==========================================================================
+   TÍTULO DEL PANEL MASTER - CONTRASTE Y PESO VISUAL
+   ========================================================================== */
+
+.master-header-listado h2 {
+    /* 1. Color definido para contrastar con fondo blanco */
+    color: var(--bg-dark-unificado) !important; 
+    
+    /* 2. Tamaño y peso para presencia */
+    font-size: 1.8rem !important;
+    font-weight: 900 !important;
+    
+    /* 3. Espaciado y alineación */
+    margin: 0 !important;
+    letter-spacing: -0.5px !important;
+    
+    /* 4. Asegurar visibilidad */
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+}
+
+/* 5. Si quieres la barrita decorativa que usa el Admin, agrégala así: */
+.master-header-listado h2::before {
+    content: "";
+    width: 6px;
+    height: 30px;
+    background-color: var(--master-secundary) !important;
+    border-radius: 4px;
+}
+
+/* Estilo del icono en el título */
+.titulo-con-icono {
+    display: flex !important;
+    align-items: center !important;
+    gap: 15px !important; /* Espacio entre el icono y el texto */
+    color: var(--master-primary) !important;
+    font-size: 1.75rem !important;
+    font-weight: 800 !important;
+    margin: 0 !important;
+    gap: 12px !important;
+    
+}
+
+
+
+.titulo-con-icono i {
+    font-size: 1.6rem !important; /* Un poco más pequeño que el texto para equilibrio */
+    color: var(--master-secundary) !important; /* Verde bosque */
+    background-color: transparent; /* Fondo verde menta muy suave */
+    padding: 10px;
+    border-radius: 10px;
+}
+
+/* ==========================================================================
+   FORMULARIO MASTER: INTEGRACIÓN FINAL
+   ========================================================================== */
+.main-view-container {
+    
+    margin: 0 auto;
+    padding: 3px 5px !important;
+    margin-top:30px;
+    margin-bottom:30px;
+}
+
+.master-divider {
+    width: 100%;
+    height: 1px; /* Grosor de un píxel */
+    background-color: rgba(0, 0, 0, 0.08); /* Gris casi invisible */
+    margin: 15px 0; /* Espacio antes y después para que no pegue con nada */
+    display: block; /* Asegura que sea un elemento de bloque */
+}
+
+.master-action-header{
+    margin:20px 0;
+    padding-left:10px;
+}
+
+/* Header del Formulario (El título con icono que definimos) */
+.master-form-header {
+    margin-bottom: 30px;
+    
+}
+
+.master-form-header h2 {
+    color: var(--master-primary);
+    font-size: 1.6rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.master-form-header p {
+    color: var(--master-p);
+    font-size: 0.9rem;
+    margin-top: 5px;
+}
+
+/* Grid de dos columnas */
+.master-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    margin-top: 20px;
+}
+
+/* Columna Izquierda (Inputs) 
+.form-col-principal {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    border: none !important; 
+    padding: 0 !important;   
+    margin: 0 0 20px 0 !important;
+}
+*/
+
+.grupo-control {
+border: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.grupo-control label {
+    display: block;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--master-text);
+    margin-bottom: 8px;
+}
+
+/* Columna Derecha (Permisos) */
+.form-col-permisos {
+    background: #f8fafc;
+    padding: 25px;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+}
+
+.master-checkbox-group .master-label-group {
+    font-weight: 800;
+    color: var(--master-primary);
+    margin-bottom: 15px;
+    display: block;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+}
+
+.master-permissions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    
+}
+
+.master-permissions-grid label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.85rem;
+    color: var(--master-text);
+    cursor: pointer;
+    padding: 8px 0;
+    transition: 0.2s;
+}
+
+.master-permissions-grid label:hover {
+    color: var(--master-primary);
+    font-weight: 600;
+}
+
+/* Inputs */
+.providencia-field-master {
+    width: 100%;
+    padding: 14px;
+    border-radius: 10px;
+    border: 1px solid #cbd5e1;
+    font-size: 0.95rem;
+    margin-top: 8px;
+    background-color: #f8fafc; /* Un gris muy suave para que el usuario sepa que es campo editable */
+}
+
+/* Botón Guardar */
+.master-form-footer {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: flex-end;
+    
+    padding-right: 5px;
+}
+
+.btn-save-master {
+  background-color: var(--master-primary) !important; /* Usa tu color primario */
+    color: white;
+    padding: 14px 32px;
+    border-radius: 12px; /* Mismo redondeo que tus cajas para consistencia */
+    font-weight: 700;
+    font-size: 0.95rem;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margint:auto;
+}
+
+/* Efecto Hover: Cuando pasas el mouse */
+.btn-save-master:hover {
+    background-color: var(--master-secundary) !important; /* Un poco más oscuro */
+    transform: translateY(-2px); /* Salto sutil hacia arriba */
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15); /* Sombra más pronunciada */
+}
+
+/* Efecto Active: Cuando hace clic */
+.btn-save-master:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* ==========================================================================
+IZquierda contenedor agreagar admin
+========================================================================== */
+
+.form-col-principal-card, 
+.form-col-permisos {
+    background: #ffffff; /* Fondo blanco */
+    padding: 30px;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); /* Sombra suave para que floten */
+    height: 100%;
+    
+}
+
+/* Ajuste de los campos para que se vean bien dentro de la nueva tarjeta */
+.grupo-control {
+    margin-bottom: 20px;
+}
+
+.grupo-control:last-child {
+    margin-bottom: 0;
+}
+
+.card-formulario-master {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-top: 6px solid var(--master-primary) !important; /* La línea verde superior */
+    border-radius: 20px !important;
+    padding: 30px !important;
+    box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.05) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    height: auto !important;
+    
+}
+
+.main-view-sistema{
+    margin:50px ;
+    
+}
+
+/* ==========================================================================
+   TIPOGRAFÍA PARA INPUT LABELS (JERARQUÍA Y ESTILO)
+   ========================================================================== */
+
+.grupo-control label {
+    display: block;
+    color: var(--master-primary) !important; /* Usamos tu color verde bosque */
+    font-weight: 800 !important;             /* Extra negrita */
+    font-size: 0.75rem !important;           /* Tamaño justo para no verse gigante */
+    text-transform: uppercase;               /* Estilo profesional */
+    letter-spacing: 0.05em;                  /* Separación sutil */
+    margin-bottom: 10px !important;          /* Aire debajo del título */
+    padding-left: 2px;
+    margin-top: 10px;
+}
+
+/* Opcional: Pequeño efecto al enfocar el input para destacar la etiqueta */
+.providencia-field-master:focus {
+    border: 2px solid var(--master-secundary) !important; /* Tu color secundario aquí */
+    outline: none !important;
+    /* Un pequeño brillo extra (glow) opcional para que destaque más */
+    box-shadow: 0 0 0 3px rgba(4, 120, 87, 0.15) !important;
+}
+
+providencia-field-master::placeholder {
+    color: rgba(148, 163, 184, 0.3) !important; /* Un gris claro elegante */
+    font-size: 0.9rem !important;
+    font-weight: 400 !important;
+    opacity: 1 !important; /* Asegura que el color se vea tal cual */
+    font-style: italic;    /* Le da un toque sofisticado y distinto al texto real */
+}
+
+/* Opcional: Cuando el usuario hace clic, el placeholder desaparece de forma suave */
+.providencia-field-master:focus::placeholder {
+    color: #e2e8f0 !important; /* Se vuelve aún más tenue al escribir */
+}
+
+/* Título de sección */
+.master-section-title {
+    font-size: 1rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--master-primary);
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 15px;
+    padding-left: 20px;
+}
+
+/* El recuadro gris que unifica todo */
+.master-inner-box {
+    background: transparent !important;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 30px 20px;
+    /* El Shadow sutil que le da profundidad */
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08); 
+    
+    /* Pequeño margen para que no se pegue al borde de la Card principal */
+    margin: 5px;
+    flex-grow: 1; /* Esto hace que la caja gris crezca para igualar alturas */
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start; 
+    padding: 30px;
+}
+
+/* Para que los campos no se vean pegados contra el borde de la caja gris */
+.master-inner-box .grupo-control {
+    margin-bottom: 15px;
+}
+.master-inner-box .grupo-control:last-child {
+    margin-bottom: 0;
+}
+
+/* 1. Ocultar el checkbox nativo */
+.master-permissions-grid label input[type="checkbox"] {
+appearance: none;
+    -webkit-appearance: none;
+    width: 24px !important;      /* Más grande y cómodo */
+    height: 24px !important;     /* Más grande y cómodo */
+    border: 2px solid #cbd5e1;
+    border-radius: 50% !important; /* ¡Aquí está la magia del redondeado! */
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: grid;
+    place-content: center;
+    flex-shrink: 0;
+    background-color: white !important;
+}
+
+/* 2. El estilo cuando está marcado (Checked) */
+.master-permissions-grid label input[type="checkbox"]:checked {
+    background-color: #064e3b !important;
+}
+
+/* 3. La "palomita" (check) */
+.master-permissions-grid label input[type="checkbox"]:checked::before {
+    content: "\f00c"; /* Icono de FontAwesome */
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    color: white;
+    font-size: 12px;
+}
+
+.master-permissions-grid label input[type="checkbox"]:checked::after {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: white; 
+}
+
+/* La grilla ahora se expande para llenar todo el espacio */
+.master-permissions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Dos columnas */
+    gap: 25px; /* Más espacio entre opciones */
+    align-content: start; /* Alinea los elementos al inicio */
+    flex-grow: 1; /* Esto es lo que hace que ocupe todo el espacio sobrante */
+    padding: 10px;
+    margin:auto;
+    margin-top:40px;
+}
+
+/* Opcional: Si quieres que las filas se separen automáticamente */
+.master-permissions-grid label {
+display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    
+    /* Fondo verde claro */
+    background-color: #dcfce7 !important; 
+    
+    /* CORRECCIÓN: El border-radius debe ser solo el número y la unidad */
+    border-radius: 20px !important; 
+    
+    /* El borde si lo quieres, pero más sutil */
+    border: 1px solid #dcfce7 !important; /* Un borde verde muy suave */
+    
+    cursor: pointer;
+    transition: all 0.1s ease;
+
+}
+
+
+
+.master-permissions-grid label:hover {
+    background-color: #f1f5f9;
+}
+
+/* 2. El estilo cuando el checkbox está seleccionado (Efecto "Activo") */
+.master-permissions-grid label:has(input:checked) {
+    background-color: rgba(var(--master-secundary-rgb), 0.08); /* Fondo suave con tu color */
+    border: 1px solid var(--master-secundary); /* Borde que resalta */
+}
+
+/* 3. Ajuste de texto para que se vea premium */
+.master-permissions-grid label span {
+
+    font-size: 0.95rem !important;  /* Un pelín más grande */
+    font-weight: 700 !important;    /* Bold bien marcado */
+    color: var(--master-primary) !important;      /* Un verde muy oscuro, casi negro, para que resalte mucho */
+    letter-spacing: -0.02em;
+}
+
+.master-permissions-grid label:has(input:checked) span {
+    color: var(--master-primary); /* El texto se vuelve color corporativo al activar */
+    font-weight: 700;
+   
+}
+
+.btn-desactivar-master:hover {
+    color: #dc2626 !important;
+    border-color: #fecaca !important;
+    background-color: #fef2f2 !important;
+}
+
+/* Color específico para ACTIVAR (Verde suave) */
+.btn-activar-master:hover {
+    color: #16a34a !important;
+    border-color: #bbf7d0 !important;
+    background-color: #f0fdf4 !important;
+}
+
+/* Tabla dedicada a esta vista */
+.tabla-admin-master {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    border-collapse: collapse;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+/* Definición de anchos exactos */
+.col-nombre { width: 30%; text-align: center; padding-left: 20px; }
+.col-estado { width: 30%; text-align: center; }
+.col-accion { width: 30%; text-align: center; }
+
+/* Estilo de celdas */
+.tabla-admin-master th {
+    padding: 20px;
+    color: #ffffff;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 2px solid #f1f5f9;
+    background-color: var
+}
+
+.tabla-admin-master tbody tr:nth-child(even) {
+    background-color: #f8fafc;
+}
+
+.tabla-admin-master thead {
+    background-color: var(--master-primary); /* Verde bosque */
+}
+
+.tabla-admin-master td {
+    padding: 18px 20px;
+    color: #0f172a; /* Color oscuro */
+    font-size: 1.05rem; /* Tamaño de letra grande */
+    font-weight: 600;
+}
+
+/* Botones compactos y coloridos */
+.acciones-container { display: flex; justify-content: center; }
+
+.btn-toggle-mini {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: 0.2s;
+    border: 1px solid transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center; /* Esto centra el texto y el icono */
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: 0.2s;
+    border: 1px solid transparent;
+    
+    /* ESTA ES LA CLAVE PARA QUE MIDAN LO MISMO */
+    width: 130px; /* Puedes ajustar este número según cuánto espacio tengas */
+    text-align: center;
+}
+
+
+.tabla-admin-master th:not(:last-child),
+.tabla-admin-master td:not(:last-child) {
+    border-right: 1px solid #cbd5e1; /* Esta es la línea vertical */
+}
+
+/* 3. Ajuste para que la línea no toque los bordes superior/inferior del encabezado */
+.tabla-admin-master th {
+    border-bottom: none !important; /* Limpiamos el borde de abajo del header */
+}
+
+/* Verde para Activar */
+.btn-activar {
+    background: #f0fdf4;
+    color: #166534;
+    border-color: #bbf7d0;
+}
+.btn-activar:hover { background: #dcfce7; }
+
+/* Rojo para Desactivar */
+.btn-desactivar {
+    background: #fef2f2;
+    color: #991b1b;
+    border-color: #fecaca;
+}
+.btn-desactivar:hover { background: #fee2e2; }
+
+
+
+/* ==========================================================================
 7. RESPONSIVIDAD PARA PANTALLAS CHICAS
 ========================================================================== */
 @media (max-width: 900px) {
@@ -1547,5 +2774,11 @@ input:checked + .slider:before { transform: translateX(20px); }
     }
     .panel-modulo-contenedor {
         overflow-x: auto;
+    }
+}
+
+@media (max-width: 768px) {
+    .master-form-grid {
+        grid-template-columns: 1fr;
     }
 }

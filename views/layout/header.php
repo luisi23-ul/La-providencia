@@ -12,6 +12,12 @@ if (!$config) {
     $config = (object) ['nombre_empresa' => 'La Providencia', 'color_primario' => '#2c3e50'];
 }
 ?>
+
+<?php
+// Esto verifica si estamos en una vista de Admin o Master
+$esAdminO_Master = in_array($action, $acciones_master) || in_array($action, $acciones_admin);
+?>
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -31,6 +37,7 @@ if (!$config) {
 </head>
 <body class="<?php echo ($action == 'nosotros') ? 'page-about' : ''; ?>">
 
+<?php if (!$esAdminO_Master && $action != 'login'): ?>
 <header class="main-header">
     <nav class="nav-container">
         <section class="nav-brand">
@@ -68,7 +75,7 @@ if (!$config) {
         </section>
     </nav>
 </header>
-
+<?php endif; ?>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     function mostrarAlerta(icono, titulo, mensaje, redireccion = null) {

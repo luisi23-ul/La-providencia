@@ -1,92 +1,63 @@
-<style>
-    .contenedor-reporte { background: #fff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin: 20px; }
-    .tabla-admin { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    .tabla-admin th { background: #f8f9fa; padding: 15px; text-align: left; border-bottom: 2px solid #dee2e6; }
-    .tabla-admin td { padding: 15px; border-bottom: 1px solid #eee; }
-    
-    .btn-activar, .btn-desactivar {
-        padding: 8px 15px;
-        border-radius: 5px;
-        text-decoration: none;
-        font-size: 0.9rem;
-        color: white;
-        transition: 0.3s;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-    }
-    .btn-activar { background: #28a745; }
-    .btn-activar:hover { background: #218838; }
-    .btn-desactivar { background: #dc3545; }
-    .btn-desactivar:hover { background: #c82333; }
-    
-    .estado-badge { padding: 5px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
-    .bg-activo { background: #d4edda; color: #155724; }
-    .bg-inactivo { background: #f8d7da; color: #721c24; }
+<link rel="stylesheet" href="public/css/dashboard.css?v=<?php echo time(); ?>">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    /* Forzar visibilidad del texto en la tabla */
-.tabla-admin {
-    color: #333333 !important; /* Gris oscuro, muy legible sobre fondo blanco */
-}
+<section class="panel-administracion">
+    <?php include 'sidebar-master.php'; ?>
 
-.tabla-admin th {
-    color: #000000 !important; /* Títulos en negro puro */
-    font-weight: bold;
-}
+    <main class="main-master-content">
+        <nav class="navegacion-superior">
+            <a href="index.php?action=dashboard_master" class="btn-regresar-master">
+                <i class="fas fa-arrow-left"></i> Volver
+            </a>
+        </nav>
 
-.tabla-admin td {
-    color: #444444 !important; /* Texto de filas en gris oscuro */
-}
+        <article class="card-master-listado">
+            <header class="master-header-listado">
+                <h2 class="titulo-con-icono">
+                    <i class="fas fa-users-cog"></i> Gestión de Administradores
+                </h2>
+            </header>
 
-/* Asegurar que el texto dentro de los badges sea visible */
-.estado-badge {
-    color: #ffffff !important; /* Texto blanco sobre fondos de color */
-    text-shadow: 0 1px 1px rgba(0,0,0,0.2); /* Sombra suave para que resalte */
-}
-</style>
-
-
-<section class="contenedor-reporte">
-    <h2><i class="fas fa-users-cog"></i> Gestión de Administradores</h2>
-    
-    <table class="tabla-admin">
-        <thead>
-            <tr>
-                <th>Nombre</th>
-                <th>Estado</th>
-                <th>Acción</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php if (!empty($admins)): ?>
-                <?php foreach ($admins as $admin): ?>
-                <?php if ($admin !== null): // Validación extra de seguridad ?>
-                <tr>
-                    <td><?php echo htmlspecialchars($admin->nombre ?? 'Sin nombre'); ?></td>
-                    <td>
-                        <span class="estado-badge <?php echo (isset($admin->estado) && $admin->estado == 1) ? 'bg-activo' : 'bg-inactivo'; ?>">
-                            <?php echo (isset($admin->estado) && $admin->estado == 1) ? 'Activo' : 'Inactivo'; ?>
-                        </span>
-                    </td>
-                    <td>
-                        <?php if (isset($admin->estado) && $admin->estado == 1): ?>
-                            <a href="index.php?action=toggle_admin&id=<?php echo $admin->id ?? 0; ?>&estado=0" class="btn-desactivar">
-                                <i class="fas fa-toggle-off"></i> Desactivar
-                            </a>
-                        <?php else: ?>
-                            <a href="index.php?action=toggle_admin&id=<?php echo $admin->id ?? 0; ?>&estado=1" class="btn-activar">
-                                <i class="fas fa-toggle-on"></i> Activar
-                            </a>
-                        <?php endif; ?>
-                    </td>
-                </tr>
-                <?php endif; ?>
-                <?php endforeach; ?>
-            <?php else: ?>
-                <tr>
-                    <td colspan="3">No se encontraron administradores.</td>
-                </tr>
-            <?php endif; ?>
-        </tbody>
-    </table>
+            <section class="tabla-master-contenedor">
+                <table class="tabla-admin-master">
+    <thead>
+        <tr>
+            <th class="col-nombre">Nombre</th>
+            <th class="col-estado">Estado</th>
+            <th class="col-accion">Acción</th>
+        </tr>
+    </thead>
+    <tbody>
+        <?php foreach($admins as $admin): ?>
+        <tr>
+            <td class="col-nombre"><?php echo htmlspecialchars($admin->nombre); ?>
+            <span class="separador-vertical"></span>
+        </td>
+            <td class="col-estado">
+                <span class="badge-estado-master <?php echo ($admin->estado == 1) ? 'bg-activo-master' : 'bg-inactivo-master'; ?>">
+                    <?php echo ($admin->estado == 1) ? 'ACTIVO' : 'INACTIVO'; ?>
+                </span>
+                <span class="separador-vertical"></span>
+            </td>
+            <td class="col-accion">
+                <div class="acciones-container">
+                    <?php if ($admin->estado == 1): ?>
+                        <a href="index.php?action=toggle_admin&id=<?php echo $admin->id; ?>&estado=0" class="btn-toggle-mini btn-desactivar">
+                            <i class="fas fa-toggle-off"></i> Desactivar
+                        </a>
+                    <?php else: ?>
+                        <a href="index.php?action=toggle_admin&id=<?php echo $admin->id; ?>&estado=1" class="btn-toggle-mini btn-activar">
+                            <i class="fas fa-toggle-on"></i> Activar
+                        </a>
+                    <?php endif; ?>
+                    <span class="separador-vertical"></span>
+                </div>
+            </td>
+        </tr>
+        <?php endforeach; ?>
+    </tbody>
+</table>
+            </section>
+        </article>
+    </main>
 </section>

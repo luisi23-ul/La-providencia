@@ -1,51 +1,70 @@
 <link rel="stylesheet" href="public/css/dashboard.css?v=<?php echo time(); ?>">
-<link rel="stylesheet" href="public/css/formulario_producto.css?v=<?php echo time(); ?>">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-<article class="card-formulario">
+<section class="panel-administracion">
+
+
+<?php include 'sidebar-master.php'; ?>
+
+<main class="main-view-container">
     
-    <header class="formulario-header">
-        <h2>Nuevo Administrador</h2>
-        <p class="subtitle">Registra los datos de acceso y asigna permisos iniciales.</p>
+    <header class="master-action-header">
+        <a href="index.php?action=gestionar_admins" class="btn-regresar-master">
+            <i class="fas fa-arrow-left"></i> Volver
+        </a>
     </header>
-    
-    <form id="formAdmin" action="index.php?action=guardar_nuevo_admin" method="POST">
-        
-        <fieldset class="grupo-control">
-            <label>Nombre Completo</label>
-            <input type="text" name="nombre" class="providencia-field" placeholder="Ej: Juan Pérez" required>
-        </fieldset>
 
-        <fieldset class="grupo-control">
-            <label>Correo Electrónico</label>
-            <input type="email" name="correo" class="providencia-field" placeholder="ejemplo@providencia.com" required>
-        </fieldset>
+    <article class="card-master-form">
+        <header class="master-form-header">
+            <h2><i class="fas fa-user-plus"></i> Nuevo Administrador</h2>
+            <p>Define los accesos y credenciales del sistema.</p>
+            <div class="master-divider"></div>
+        </header>
 
-        <fieldset class="grupo-control">
-            <label>Contraseña de Acceso</label>
-            <input type="password" name="clave" class="providencia-field" placeholder="********" required>
-        </fieldset>
-
-        <fieldset class="grupo-control" style="background: #f8fafc; padding: 15px; border-radius: 10px; border: 1px solid #e2e8f0;">
-            <label style="margin-bottom: 10px; display: block; font-weight: bold;">Funciones Permitidas</label>
-            <section style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <label><input type="checkbox" name="permisos[]" value="cargar_producto"> Cargar Producto</label>
-                <label><input type="checkbox" name="permisos[]" value="gestionar_productos"> Gestionar Productos</label>
-                <label><input type="checkbox" name="permisos[]" value="graficos"> Gráficos Estadísticos</label>
-                <label><input type="checkbox" name="permisos[]" value="pagos"> Pagos Pendientes</label>
-                <label><input type="checkbox" name="permisos[]" value="retiros"> Retiro de Pedidos</label>
-                <label><input type="checkbox" name="permisos[]" value="metodos_pago"> Métodos de Pago</label>
-            </section>
-        </fieldset>
-
-        <footer class="formulario-acciones">
-            <a href="#" class="btn-providencia-save" onclick="document.getElementById('formAdmin').submit(); return false;">
-                GUARDAR ADMINISTRADOR
-            </a>
+        <form id="formAdmin" action="index.php?action=guardar_nuevo_admin" method="POST" class="master-form-grid">
             
-            <a href="index.php?action=gestionar_admins" class="btn-providencia-link btn-secondary-satin">
-                <i class="fas fa-users-cog"></i> VOLVER AL LISTADO
-            </a>
-        </footer>
+        <article class="card-formulario-master">
+            <h3 class="master-section-title"><i class="fas fa-user-edit"></i> Datos de Acceso</h3>
+            <div class="form-col-principal form-col-principal-card">
+                <fieldset class="grupo-control">
+                    <label>Nombre Completo</label>
+                    <input type="text" name="nombre" class="providencia-field-master" placeholder="Ej: Juan Pérez" required>
+                </fieldset>
 
-    </form>
+                <fieldset class="grupo-control">
+                    <label>Correo Electrónico</label>
+                    <input type="email" name="correo" class="providencia-field-master" placeholder="ejemplo@providencia.com" required>
+                </fieldset>
+
+                <fieldset class="grupo-control">
+                    <label>Contraseña de Acceso</label>
+                    <input type="password" name="clave" class="providencia-field-master" placeholder="********" required>
+                </fieldset>
+            </div>
+        </article>
+
+        <article class="card-formulario-master">
+    <h3 class="master-section-title"><i class="fas fa-shield-alt"></i> Funciones Permitidas</h3>
+    
+    <div class="master-inner-box">
+        <section class="master-permissions-grid">
+            <label><input type="checkbox" name="permisos[]" value="cargar_producto"> Cargar Producto</label>
+            <label><input type="checkbox" name="permisos[]" value="gestionar_productos"> Gestionar Productos</label>
+            <label><input type="checkbox" name="permisos[]" value="graficos"> Estadísticas </label>
+            <label><input type="checkbox" name="permisos[]" value="pagos"> Pagos Pendientes</label>
+            <label><input type="checkbox" name="permisos[]" value="retiros"> Retiro de Pedidos</label>
+            <label><input type="checkbox" name="permisos[]" value="metodos_pago"> Métodos de Pago</label>
+        </section>
+    </div>
 </article>
+
+            <footer class="master-form-footer">
+                <button type="submit" class="btn-save-master">
+                    <i class="fas fa-save"></i> Guardar
+                </button>
+            </footer>
+
+        </form>
+    </article>
+</main>
+</section>
