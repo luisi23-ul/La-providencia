@@ -31,7 +31,7 @@ $acciones_master = [
        'eliminar_admin',
         'configuracion_sistema',
         'listado_administradores',
-        'toggle_admin',
+       'toggle_admin' ,
          'actualizar_configuracion'];
 
          $acciones_admin = [
@@ -99,6 +99,10 @@ if (in_array($action, $acciones_master)) {
     $masterC = new MasterController($db);
     $masterC->listarAdministradores();
     break;        
+
+    case 'toggle_admin':
+    $masterC->toggleAdmin();
+    break;
             case 'configuracion_sistema': 
                 $masterC->vistaConfiguracion(); 
                 break;

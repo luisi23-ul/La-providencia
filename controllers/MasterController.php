@@ -140,6 +140,25 @@ public function listarAdministradores() {
         include "views/listado_administradores.php";
     }
 
+    public function toggleAdmin() {
+    // 1. Verificación de seguridad básica
+    if (!isset($_GET['id']) || !isset($_GET['estado'])) {
+        die("Parámetros faltantes.");
+    }
+
+    $id = intval($_GET['id']);
+    $estado = intval($_GET['estado']); // 1 para activo, 0 para inactivo
+
+    // 2. Llamar al modelo
+    // Asumo que ya tienes un método en UsuarioModels llamado 'actualizarEstadoUsuario' 
+    // o similar. Si no, lo crearemos en el paso 2.
+    $this->modelo->actualizarEstadoUsuario($id, $estado);
+
+    // 3. Redirigir
+    header("Location: index.php?action=gestionar_admins");
+    exit();
+}
+
 
 // En el método que carga la vista de configuración:
 public function vistaConfiguracion() {

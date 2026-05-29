@@ -62,21 +62,21 @@
             </span>
         </td>
         
-        <td class="columna-acciones texto-centrado">
-            <button type="button" class="btn-accion btn-editar" onclick="location.href='index.php?action=editar_admin&id=<?php echo $a->id; ?>'">
-                <i class="fas fa-edit"></i>
-            </button>
+       <td class="columna-acciones texto-centrado">
+    <button type="button" class="btn-accion btn-editar" onclick="location.href='index.php?action=editar_admin&id=<?php echo $a->id; ?>'">
+        <i class="fas fa-edit"></i>
+    </button>
 
-            <?php if ($a->estado == 1): ?>
-                <a href="index.php?action=toggleEstado&id=<?php echo $a->id; ?>&estado=0" class="btn-accion btn-desactivar">
-                    <i class="fas fa-toggle-off"></i>
-                </a>
-            <?php else: ?>
-                <a href="index.php?action=toggleEstado&id=<?php echo $a->id; ?>&estado=1" class="btn-accion btn-activar">
-                    <i class="fas fa-toggle-on"></i>
-                </a>
-            <?php endif; ?>
-        </td>
+    <?php if ($a->estado == 1): ?>
+        <a href="index.php?action=toggle_admin&id=<?php echo $a->id; ?>&estado=0" class="btn-accion btn-desactivar" title="Desactivar">
+            <i class="fas fa-toggle-off"></i>
+        </a>
+    <?php else: ?>
+        <a href="index.php?action=toggle_admin&id=<?php echo $a->id; ?>&estado=1" class="btn-accion btn-activar" title="Activar">
+            <i class="fas fa-toggle-on"></i>
+        </a>
+    <?php endif; ?>
+</td>
     </tr>
     <?php endforeach; ?>
 </tbody>

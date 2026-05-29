@@ -63,13 +63,17 @@
                         
                         <?php if (isset($_SESSION["id_usuario"])): ?>
                             <form action="index.php" method="GET" class="formulario-pedido">
-                                <input type="hidden" name="action" value="agregar_carrito">
-                                <input type="hidden" name="id" value="<?php echo $p->id; ?>">
-                                <input type="number" name="cantidad" value="1" min="1" max="<?php echo $p->stock; ?>" class="input-cantidad">
-                                <button type="submit" class="btn-agregar">
-                                    <i class="fas fa-shopping-cart"></i> <span>Agregar</span>
-                                </button>
-                            </form>
+    <input type="hidden" name="action" value="agregar_carrito">
+    <input type="hidden" name="id" value="<?php echo $p->id; ?>">
+    
+    <input type="hidden" name="nombre" value="<?php echo htmlspecialchars($p->nombre_producto); ?>">
+    <input type="hidden" name="precio" value="<?php echo $p->precio; ?>">
+    
+    <input type="number" name="cantidad" value="1" min="1" max="<?php echo $p->stock; ?>" class="input-cantidad">
+    <button type="submit" class="btn-agregar">
+        <i class="fas fa-shopping-cart"></i> <span>Agregar</span>
+    </button>
+</form>
                         <?php else: ?>
                             <a href="index.php?action=login_usuario" class="btn-login-comprar">
                                 <i class="fas fa-sign-in-alt"></i> Iniciar sesión para comprar
