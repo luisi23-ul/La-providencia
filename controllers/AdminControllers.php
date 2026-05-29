@@ -23,21 +23,19 @@ class AdminControllers {
         include 'views/listado_productos.php';
     }
 
-   // En controllers/AdminControllers.php
 public function catalogo() {
     // 1. Inicializar modelo si no lo has hecho en el constructor
     require_once 'models/ProductoModel.php';
     $this->productoModelo = new ProductoModel();
 
-    // 2. Capturar filtros
+    // Capturar filtros
     $nombre = $_GET['busqueda'] ?? '';
     $id_cat = $_GET['id_categoria'] ?? '';
 
-    // 3. Obtener datos
+    //  Obtener datos
     $categorias = $this->productoModelo->obtenerCategorias();
     $listaProductos = $this->productoModelo->buscarProductos($nombre, $id_cat);
 
-    // 4. Cargar vista
     require_once 'views/catalogo.php';
 }
     public function agregar() {
@@ -76,7 +74,7 @@ public function eliminar() {
     exit();
 }
 
-//  para abrir el formulario de edición
+//  para abrir el formulario de edicio
 public function editar() {
     $id = $_GET['id'];
     
@@ -126,9 +124,6 @@ public function actualizar() {
  public function grafico_barras() {
     require_once 'models/ProductoModel.php';
     $productoModelo = new ProductoModel();
-
-    // Traemos de la base de datos el array el inventario crítico y ventas
-    //  de que contenga los 5 con MENOS stock
     $datosEstadisticas = $productoModelo->obtenerEstadisticasGenerales();
 
     require_once 'views/grafico_barras.php';

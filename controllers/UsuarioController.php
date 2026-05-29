@@ -37,7 +37,7 @@ class UsuarioController {
         $objModelo = new UsuarioModels();
         $usuario = $objModelo->buscarUsuarioModel($datos);
 
-        // 1. Verificamos si existe el usuario y si la clave coincide
+        // aca se verif que si existe el usuario y si la clave coincide
         if ($usuario && password_verify($pass, $usuario["clave"])) {
             
             // 2. NUEVA VALIDACIÓN: Comprobamos si el estado es 1 (activo)
@@ -47,7 +47,7 @@ class UsuarioController {
                 exit();
             }
 
-            // 3. Si el estado es 1, procedemos a iniciar sesión
+            //  Si el estado es 1, procedemos a iniciar sesión
             if (session_status() == PHP_SESSION_NONE) session_start();
             
             $_SESSION["id_usuario"] = $usuario["id"];
@@ -61,7 +61,6 @@ class UsuarioController {
             } elseif ($_SESSION['rol'] == 2) {
                 header("Location: index.php?action=dashboard"); 
             } else {
-                // Opcional: Redirección para clientes (rol 3)
                 header("Location: index.php?action=inicio");
             }
             exit();
@@ -115,7 +114,6 @@ public function mostrarLogin_registro() {
     }
 
     // Función para validar el correo y la clave
-    // En UsuarioController.php
 public function ingresar() {
     if (isset($_POST["correo_ingreso"])) {
         
@@ -123,10 +121,8 @@ public function ingresar() {
         $objModelo = new UsuarioModels();
         $usuario = $objModelo->buscarUsuarioModel($datos);
 
-        // 1. Verificar si existe y la clave es correcta
+        //  Verifi si existe y la clave es correcta
         if ($usuario && password_verify($_POST["clave_ingreso"], $usuario["clave"])) {
-            
-            // 2. FILTRO CRÍTICO: Verificar estado
             if ((int)$usuario["estado"] === 0) {
                 echo "<script>
                         alert('Tu cuenta está desactivada. Contacta al administrador.'); 
@@ -135,7 +131,7 @@ public function ingresar() {
                 exit();
             }
 
-            // 3. Iniciar sesión
+            //  Iniciar sesión
             if (session_status() == PHP_SESSION_NONE) session_start();
             $_SESSION["id_usuario"] = $usuario["id"];
             $_SESSION["nombre"] = $usuario["nombre"];
@@ -152,7 +148,7 @@ public function ingresar() {
         }
     }
 }
-// Carga  detalles pasándole la información de la base de datos
+// Carga  detalles pasaandole a lan de la base de datos
     public function verDetalle($id) {
         if (isset($id) && !empty($id)) {
             // Consultamos al modelo usando los métodos que acabamos de crear
@@ -164,28 +160,25 @@ public function ingresar() {
             exit();
         }
     }
-   // Dentro de tu archivo UsuarioController.php
 
 public function listarClientes() {
-    // 1. Instanciamos el modelo de usuarios (el que ya tienes)
     $modelo = new UsuarioModels($this->db);
     
-    // 2. Obtenemos los clientes (rol 3)
+   
     $clientes = $modelo->obtenerClientes(); 
     
-    // 3. Cargamos la vista de administración
+   
     require_once 'views/admin_clientes.php';
 }
 
 public function cambiarEstadoCliente() {
-    if ($_SERVER['REQUEST_METHOD'] === 'GET') { // O 'POST', depende de cómo lo envíes
+    if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $id = $_GET['id'];
-        $estado = $_GET['estado']; // El nuevo estado que quieres aplicar (0 o 1)
+        $estado = $_GET['estado']; 
 
         $modelo = new UsuarioModels($this->db);
-        $modelo->actualizarEstadoUsuario($id, $estado); // Usamos la función correcta
+        $modelo->actualizarEstadoUsuario($id, $estado);
         
-        // ¡CRÍTICO! Redirigir de vuelta a la lista para que no se quede en blanco
         header("Location: index.php?action=lista_clientes");
         exit();
     }

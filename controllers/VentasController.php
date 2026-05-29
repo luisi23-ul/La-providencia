@@ -5,12 +5,13 @@ class VentaController {
     private $db;
     private $model;
 
+    //edgar preguntame antes de tocar algo
     public function __construct($db) {
         $this->db = $db;
         $this->model = new VentaModel($this->db);
     }
 
-    // Carga la tabla con los productos seleccionados y manejamos la api de dolar
+    // Carga la tabla con los productos seleccionados y manejamos la api de dollar
     public function mostrarCarrito() {
     $urlBcv = "https://www.bcv.org.ve";
     $tasaCambio = 526.86940000; 
@@ -45,12 +46,11 @@ class VentaController {
         }
     }
 
-    // Consulta para obtener los métodos de pago de tu BD
+    // Consulta para obtener los meetodos de pago de tu BD
     $db = Database::connect();
     $query = $db->query("SELECT * FROM metodos_pago");
     $metodos = $query->fetchAll(PDO::FETCH_OBJ);
 
-    // Calculamos los totales reales del carrito
     $totalFinal = 0;
     if (isset($_SESSION["carrito"])) {
         foreach ($_SESSION["carrito"] as $item) {
@@ -61,7 +61,7 @@ class VentaController {
     $totalBolivares = $totalFinal * $tasaCambio;
     include "views/Carrito.php";
 }
-    // Añade el producto a la sesión y salta de una vez a la vista del carrito
+    // Añade el producto a la sesión y salta de unna vez a la vista del carrito
     public function añadir() {
         if (isset($_GET["id"]) && isset($_GET["nombre"])) {
             $id = $_GET["id"];
@@ -83,7 +83,7 @@ class VentaController {
         exit();
     }
 
-    // Elimina un producto específico del carrito
+    // Elimina un producto esp del carrito
     public function eliminarItem() {
         if (isset($_GET["id"])) {
             $id = $_GET["id"];
@@ -236,7 +236,7 @@ private function obtenerTasaBCV() {
     }
     public function verDetalle($id) {
         if (isset($id) && !empty($id)) {
-            // Consultamos al modelo usando los métodos que acabamos de crear
+            // Consultamos al modelo usando los meetodos que acabamos de crear
             $venta = $this->model->obtenerVenta($id);
             $detalles = $this->model->obtenerDetalles($id);
 

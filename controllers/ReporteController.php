@@ -1,14 +1,12 @@
 <?php
-// controllers/ReporteController.php
-
-// 1. Carga automática de dependencias de Composer
+//edgar ni se te ocurra tocar algo de aqui
 require_once __DIR__ . '/../vendor/autoload.php';
 
 // 2. Importaciones necesarias de PhpSpreadsheet para datos y archivos
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
-// 3. IMPORTACIONES CRUCIALES PARA PODER GENERAR EL GRÁFICO NATIVO (FALTABAN ESTAS)
+// importaciones para los graficos
 use PhpOffice\PhpSpreadsheet\Chart\Chart;
 use PhpOffice\PhpSpreadsheet\Chart\DataSeries;
 use PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues;
@@ -18,13 +16,11 @@ use PhpOffice\PhpSpreadsheet\Chart\Title;
 class ReporteController {
     private $db;
     
-    // El resto de tu código del constructor y funciones se queda exactamente igual...
-    // Recibe la conexión desde el index.php
     public function __construct($db) {
         $this->db = $db;
     }
     
-    // Función interna para centralizar la búsqueda de datos según el tipo
+    // Función interna para centralizar la búsqueda de datos  tipo
     private function obtenerDatosReporte($tipo) {
         if ($tipo === 'inventario') {
             require_once "models/ProductoModel.php"; 
@@ -58,9 +54,7 @@ class ReporteController {
         exit("Tipo de reporte no válido.");
     }
 
-    // ==========================================
-    // LOGICA PARA EXPORTAR A EXCEL
-    // ==========================================
+  // exel
    public function generarExcel() {
     $tipo = $_GET['tipo'] ?? '';
     $reporte = $this->obtenerDatosReporte($tipo);
@@ -68,32 +62,26 @@ class ReporteController {
     if ($tipo === 'estadisticas') {
         if (ob_get_length()) ob_end_clean();
 
-        // --- LÓGICA: Ordenar y limitar a los 5 con menor stock ---
         $datos = $reporte['datos'];
         // Ordenamos de menor a mayor stock
         usort($datos, function($a, $b) {
             return (int)$a->stock - (int)$b->stock;
         });
-        // Cortamos para obtener solo los primeros 5
+        //  para obtener solo los primeros 5
         $datos = array_slice($datos, 0, 5);
 
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Análisis Estadístico');
 
-        // ... (Tu código de estilos y encabezados permanece igual) ...
-
-        // Procesamos la matemática con el total original o los 5? 
-        // Nota: Si quieres la estadística de los 5, usa $datos. 
-        // Si quieres la estadística del total, usa $reporte['datos'].
         $valoresStock = [];
         foreach ($datos as $p) { // Usamos $datos filtrado
             $valoresStock[] = (int)$p->stock;
         }
         
-        // ... (Tu lógica de media, mediana, moda permanece igual) ...
+       
 
-        // 3. Tabla de Datos para la Gráfica (usando los 5 limitados)
+        //  Tabla de Datos para la Gráfica 5 menos
         $sheet->setCellValue('A9', 'Producto Analizado');
         $sheet->setCellValue('B9', 'Stock Disponible');
         $sheet->getStyle('A9:B9')->getFont()->setBold(true);
@@ -107,9 +95,7 @@ class ReporteController {
         }
        $filaFin = $filaInicio - 1;
 
-// --- CORRECCIÓN AQUÍ ---
-// Usamos el nombre de la hoja tal cual está definido
-// ... (Código anterior hasta $filaFin) ...
+
 
 $nombreHoja = 'Análisis Estadístico';
 $rangoCategorias = "'" . $nombreHoja . "'!\$A$10:\$A$" . $filaFin;
@@ -118,7 +104,7 @@ $rangoValores = "'" . $nombreHoja . "'!\$B$10:\$B$" . $filaFin;
 $categories = [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', $rangoCategorias, null, 5)];
 $values = [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('Number', $rangoValores, null, 5)];
 
-// --- LÓGICA DINÁMICA ---
+// la dinamica
 $graficoTipo = ($_GET['grafico'] ?? '') === 'torta' 
     ? \PhpOffice\PhpSpreadsheet\Chart\DataSeries::TYPE_PIECHART 
     : \PhpOffice\PhpSpreadsheet\Chart\DataSeries::TYPE_BARCHART;
@@ -149,7 +135,7 @@ $chart = new \PhpOffice\PhpSpreadsheet\Chart\Chart('grafico_stock', $title, null
 $chart->setTopLeftPosition('D4');
 $chart->setBottomRightPosition('L15');
 $sheet->addChart($chart);
-// ... (resto del código igual) ...
+
 
         $nombreArchivo = "Top5_Stock_Bajo_" . date('d_m_Y') . ".xlsx";
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -162,22 +148,13 @@ $sheet->addChart($chart);
         exit();
     }
 
-        // -------------------------------------------------------------------------
-        // CASO 2: Reportes Clásicos de Tablas (Inventario, Ventas, Retiros) en .xls
-        // -------------------------------------------------------------------------
-       // -------------------------------------------------------------------------
-        // CASO 2: Reportes Clásicos de Tablas (Inventario, Ventas, Retiros)
-        // -------------------------------------------------------------------------
-       // -------------------------------------------------------------------------
-        // CASO 2: Reporte generado con PhpSpreadsheet (Sin errores de extensión)
-        // -------------------------------------------------------------------------
         if (ob_get_length()) ob_end_clean();
         
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
         $tasa = 36.50; // Ajusta según tu variable real
 
-        // 1. Título del Reporte
+        //  Título del Reporte
         $sheet->setCellValue('A1', $reporte['titulo']);
         $sheet->mergeCells('A1:F1');
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
@@ -192,7 +169,7 @@ $sheet->addChart($chart);
         $sheet->fromArray($headers, NULL, 'A3');
         $sheet->getStyle('A3:F3')->getFont()->setBold(true);
 
-        // 3. Llenar Datos
+        //  Llenar Datos
         $fila = 4;
         foreach ($reporte['datos'] as $d) {
             if ($tipo === 'inventario') {
@@ -210,7 +187,7 @@ $sheet->addChart($chart);
             $fila++;
         }
 
-        // 4. Salida del archivo
+       
         $nombreArchivo = "Reporte_" . $tipo . "_" . date('d_m_Y') . ".xlsx";
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment;filename="' . $nombreArchivo . '"');
@@ -220,13 +197,10 @@ $sheet->addChart($chart);
         $writer->save('php://output');
         exit();
          }
-    // ==========================================
-    // LOGICA PARA IMPRIMIR / EXPORTAR A PDF (REQUERIDO)
-    // ==========================================
+   // pdf
     public function generarPDF() {
         $tipo = $_GET['tipo'] ?? '';
         
-        // Si el reporte es estadístico, usamos el window.print() nativo y limpio
         if ($tipo === 'estadisticas') {
             $reporte = $this->obtenerDatosReporte($tipo);
             if (ob_get_length()) ob_end_clean();
@@ -270,13 +244,7 @@ $sheet->addChart($chart);
             exit();
         }
 
-        // =========================================================================
-        // AQUÍ RECOMIENDO DEJAR TU CÓDIGO CLÁSICO DE FPDF/TCPDF PARA LAS TABLAS SIMPLES
-        // ASÍ EL PROFESOR VERÁ QUE USAS LAS LIBRERÍAS EXIGIDAS EN EL TRABAJO ESCRITO
-        // =========================================================================
-        // =========================================================================
-        // REPORTE ESTÁNDAR (INVENTARIO Y VENTAS) - IGUAL A VISTA ADMINISTRATIVA
-        // =========================================================================
+       
         $reporte = $this->obtenerDatosReporte($tipo);
         if (ob_get_length()) ob_end_clean();
         ?>

@@ -17,29 +17,25 @@ class MasterController {
     include 'views/dashboard_master.php';
 }
 
-    //  administradores CRUD
+    //  administradores CRUDD
   public function gestionarAdmins() {
-    // 1. Verificación de seguridad: Inicializar el modelo si es null (Fix para el error)
     if ($this->modelo === null) {
         require_once 'models/UsuarioModels.php';
         $this->modelo = new UsuarioModels();
     }
 
-    // 2. Control de acceso
+    //  Control de acceso
     if ($_SESSION['rol'] != 1 && $_SESSION['rol'] != 2) {
         die("Acceso denegado: No tienes permisos para gestionar administradores.");
     }
     
-    // 3. Llamar a la función del modelo
     $admins = $this->modelo->obtenerUsuariosPorRol(2);
     
-    // 4. Cargar la vista
     include 'views/gestionar_admins.php';
 }
 
    // crea nuevos adm
 public function crearAdmin() {
-    // 1. Depuración: Ver qué recibe el controlador
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (empty($_POST['nombre'])) {
             die("ERROR: El formulario no envió el campo 'nombre'. Verifica los 'name' de tus inputs.");
@@ -83,19 +79,17 @@ public function crearAdmin() {
 }
 
    public function eliminarAdmin() {
-    // Verificar que el ID viene en la URL
     if (isset($_GET['id'])) {
         $id = $_GET['id'];
         $this->modelo->eliminarAdminModel($id);
     }
     
-    // Redirigir de vuelta al listado
     header("Location: index.php?action=gestionar_admins");
     exit();
 }
    
  public function actualizarAdmin() {
-    // 1. Recibir datos del formulario
+    //  datos del formulario
     $id = $_POST['id'];
     $nombre = $_POST['nombre'];
     $correo = $_POST['correo'];
@@ -113,16 +107,9 @@ public function crearAdmin() {
 
     $this->modelo->actualizarAdminModel($datos);
 
-    // 3. Redirigir de vuelta al listado
     header("Location: index.php?action=gestionar_admins");
     exit();
 }
-
-
-
-
-// Actualizar los cambios de la pagin
-// Modifica la función actualizarConfiguracion así:
 
 
 public function listarAdministradores() {
@@ -132,16 +119,13 @@ public function listarAdministradores() {
             $this->modelo = new UsuarioModels();
         }
 
-        // 2. Llamar a la función que SÍ tienes definida y funciona
-        // Usamos la que ya comprobaste que trae los de rol 2
         $admins = $this->modelo->obtenerUsuariosPorRol(2); 
         
-        // 3. Incluir la vista
         include "views/listado_administradores.php";
     }
 
     public function toggleAdmin() {
-    // 1. Verificación de seguridad básica
+    //  Verificación de seguridad 
     if (!isset($_GET['id']) || !isset($_GET['estado'])) {
         die("Parámetros faltantes.");
     }
@@ -149,12 +133,9 @@ public function listarAdministradores() {
     $id = intval($_GET['id']);
     $estado = intval($_GET['estado']); // 1 para activo, 0 para inactivo
 
-    // 2. Llamar al modelo
-    // Asumo que ya tienes un método en UsuarioModels llamado 'actualizarEstadoUsuario' 
-    // o similar. Si no, lo crearemos en el paso 2.
+   
     $this->modelo->actualizarEstadoUsuario($id, $estado);
 
-    // 3. Redirigir
     header("Location: index.php?action=gestionar_admins");
     exit();
 }
@@ -184,14 +165,13 @@ public function actualizarConfiguracion() {
         echo "<pre>"; print_r($_POST); echo "</pre>";
         $datos = $_POST;
 
-        // Si se subió un logo, lo movemos a la carpeta de uploads
         if (isset($_FILES['logo']) && $_FILES['logo']['error'] === 0) {
             $nombreArchivo = 'logo_' . time() . '.png';
             $rutaDestino = 'public/img/' . $nombreArchivo;
             move_uploaded_file($_FILES['logo']['tmp_name'], $rutaDestino);
             $datos['logo_path'] = $rutaDestino; // Pasamos la nueva ruta al modelo
         } else {
-            $datos['logo_path'] = $_POST['logo_path_actual']; // Mantenemos el anterior
+            $datos['logo_path'] = $_POST['logo_path_actual']; 
         }
 
         $modelo = new ConfiguracionModel($this->db);

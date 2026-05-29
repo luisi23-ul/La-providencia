@@ -50,7 +50,7 @@ $acciones_master = [
 ];
 
 
-// --- PASO 1: Acciones que no requieren Header ---
+//  Acciones que no requieren Header
 if ($action == 'registrar_cliente') { $usuarioC->guardarCliente(); exit(); }
 if ($action == 'valider_login_registro') { $usuarioC->ingresar(); exit(); }
 if ($action == 'validar_login') { $usuarioC->validarLogin(); exit(); }
@@ -59,7 +59,7 @@ if ($action == 'validar_login') { $usuarioC->validarLogin(); exit(); }
 
 
 
-// Solo cargamos el header si NO es la acción de login
+// Solo carga el header si NO es la acción de login
 if ($action != 'login') {
     include 'views/layout/header.php';
     echo '<main id="app">';
@@ -68,7 +68,7 @@ if ($action != 'login') {
     echo '<main id="app">';
 }
 
-// --- BLOQUE DE SEGURIDAD MASTER ---
+//BLOQUE DE SEGURIDAD MASTER 
 if (in_array($action, $acciones_master)) {
     if (isset($_SESSION['rol']) && ($_SESSION['rol'] == 1 || $_SESSION['rol'] == 2)) {
         switch ($action) {
@@ -94,32 +94,30 @@ if (in_array($action, $acciones_master)) {
                 $masterC->eliminarAdmin($_GET['id']);
                  break;
 
-         case 'listado_administradores':
-    // Pasamos la variable $db que ya tienes definida en tu index
-    $masterC = new MasterController($db);
-    $masterC->listarAdministradores();
-    break;        
+                case 'listado_administradores':
+            $masterC = new MasterController($db);
+            $masterC->listarAdministradores();
+            break;        
 
-    case 'toggle_admin':
-    $masterC->toggleAdmin();
-    break;
+            case 'toggle_admin':
+            $masterC->toggleAdmin();
+            break;
             case 'configuracion_sistema': 
                 $masterC->vistaConfiguracion(); 
                 break;
-                    // Cambia la línea de tu switch en index.php a esto:
-// En tu index.php, simplifica el switch así:
-case 'actualizar_configuracion':
-    $masterC->actualizarConfiguracion(); // Usa la instancia que ya creaste arriba
-    break;
+                   
+            case 'actualizar_configuracion':
+                $masterC->actualizarConfiguracion(); // Usa la instancia que ya creaste arriba
+                break;
                 }
         echo '</main></main>'; // Cerrar etiquetas
-        exit();
-    } else {
-        header("Location: index.php?action=login");
-        exit();
-    }
-}
-// 4. Captura de la acción (por defecto 'inicio')
+                exit();
+            } else {
+                header("Location: index.php?action=login");
+                exit();
+            }
+        }
+
 $action = $_GET['action'] ?? 'inicio';
 $acciones_admin = [
     'dashboard', 
@@ -291,41 +289,39 @@ case 'grafico_tortas':
         $usuarioC->mostrarInicio();
         break;
 
-    // --- MÓDULO DE REPORTES Y EXPORTACIÓN ---
-case 'exportar_excel':
-    // Limpiamos el tipo: eliminamos caracteres como '$' por si acaso
-    $tipo = isset($_GET['tipo']) ? trim(str_replace('$', '', $_GET['tipo'])) : 'inventario';
-    $reporteC->generarExcel($tipo); 
-    exit;
+    //  DE REPORTES Y EXPORTACIÓN 
+    case 'exportar_excel':
+        // Limpiamos el tipo: eliminamos caracteres como '$' por si acaso
+        $tipo = isset($_GET['tipo']) ? trim(str_replace('$', '', $_GET['tipo'])) : 'inventario';
+        $reporteC->generarExcel($tipo); 
+        exit;
 
-case 'exportar_pdf':
-    $tipo = isset($_GET['tipo']) ? trim(str_replace('$', '', $_GET['tipo'])) : 'inventario';
-    $reporteC->generarPDF($tipo);
-    exit;
+    case 'exportar_pdf':
+        $tipo = isset($_GET['tipo']) ? trim(str_replace('$', '', $_GET['tipo'])) : 'inventario';
+        $reporteC->generarPDF($tipo);
+        exit;
 
     case 'ver_reporte':
         $id_metodo = isset($_GET['metodo']) ? intval($_GET['metodo']) : 0;
         $ventaC->manejarReporte($id_metodo);
         break;
 
-        // Dentro del switch que maneja las acciones:
+       
+    case 'lista_clientes':
+        $usuarioC->listarClientes(); // Usamos la misma variable que usas para editar admins
+        break;
 
-// En tu index.php, busca donde manejas las rutas de usuarios
-case 'lista_clientes':
-    $usuarioC->listarClientes(); // Usamos la misma variable que usas para editar admins
-    break;
-
-case 'cambiarEstadoCliente':
-    $usuarioC->cambiarEstadoCliente(); // Asegúrate de llamar al controlador correcto
-    break;
-      
-}
+    case 'cambiarEstadoCliente':
+        $usuarioC->cambiarEstadoCliente(); // Asegúrate de llamar al controlador correcto
+        break;
+        
+    }
 
 echo '</main>';
 
-// Si es una acción administrativa, cerramos la sección del panel que abrió el header
+
 if (isset($action) && in_array($action, $acciones_admin)) {
     echo '</section>';
 }
-ob_end_flush(); // Envía todo al terminar
+ob_end_flush(); 
 ?>

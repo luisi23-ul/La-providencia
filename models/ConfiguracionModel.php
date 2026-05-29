@@ -11,7 +11,6 @@ class ConfiguracionModel {
     }
 
    public function actualizar($d) {
-    // Asegúrate de incluir TODOS los campos aquí, separados por comas
     $sql = "UPDATE sistema1 SET 
             titulo_hero = :th, 
             subtitulo_hero = :sh, 
@@ -26,8 +25,6 @@ class ConfiguracionModel {
             WHERE id = 1";
 
     $stmt = $this->db->prepare($sql);
-    
-    // Ahora haz los bindValue para cada uno de los campos anteriores
     $stmt->bindValue(':th', $d['titulo_hero'], PDO::PARAM_STR);
     $stmt->bindValue(':sh', $d['subtitulo_hero'], PDO::PARAM_STR);
     $stmt->bindValue(':dir', $d['direccion'], PDO::PARAM_STR);

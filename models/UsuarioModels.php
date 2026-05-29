@@ -4,7 +4,7 @@ require_once 'config/db.php';
 class UsuarioModels {
     private $db;
 
-    // Recibimos $db como argumento
+    // edgar preguntar anes de tocar
     public function __construct() {
         $this->db = Database::connect(); 
     }
@@ -56,7 +56,6 @@ public function registrarUsuarioModel($datos) {
         ]);
     }
 public function verificarUsuario($email, $password) {
-    // Buscamos al usuario por su email
     $sql = "SELECT * FROM usuarios WHERE email = :email";
     $stmt = $this->db->prepare($sql);
     $stmt->execute([':email' => $email]);
@@ -65,20 +64,17 @@ public function verificarUsuario($email, $password) {
     // 1. Verificamos si el usuario existe
     if ($usuario && password_verify($password, $usuario->password)) {
         
-        // 2. NUEVA VALIDACIÓN: ¿Está activo?
         if ($usuario->estado == 1) {
-            return $usuario; // Acceso permitido
+            return $usuario; 
         } else {
-            return 'inactivo'; // Acceso denegado por desactivación
+            return 'inactivo'; 
         }
     }
     
-    return false; // Credenciales incorrectas
+    return false;
 }
-    // Dentro de UsuarioModels.php
+
 public function buscarUsuarioModel($datos) {
-    // Asegúrate de que esta consulta sea exacta. 
-    // He agregado 'estado' explícitamente para poder validarlo.
     $sql = "SELECT id, nombre, clave, id_rol, permisos, estado 
             FROM usuarios 
             WHERE correo = :correo"; 
@@ -89,7 +85,6 @@ public function buscarUsuarioModel($datos) {
 }
 
 public function obtenerUsuariosPorRol($rol) {
-    // Usamos id_rol (como en tu BD) y quitamos el filtro de estado para traer todos
     $stmt = $this->db->prepare("SELECT * FROM usuarios WHERE id_rol = ?");
     $stmt->execute([$rol]);
     return $stmt->fetchAll(PDO::FETCH_OBJ);
@@ -97,8 +92,7 @@ public function obtenerUsuariosPorRol($rol) {
 
 public function actualizarAdminModel($datos) {
     if (!empty($datos['clave'])) {
-        // Actualizar con nueva clave hasheada
-        // 
+        
 $sql = "UPDATE usuarios SET nombre = ?, correo = ?, permisos = ?, estado = ? WHERE id = ?";
 // ...
         $stmt = $this->db->prepare($sql);
@@ -110,7 +104,6 @@ $sql = "UPDATE usuarios SET nombre = ?, correo = ?, permisos = ?, estado = ? WHE
             $datos['id']
         ]);
     } else {
-        // Actualizar sin tocar la clave
         $sql = "UPDATE usuarios SET nombre = ?, correo = ?, permisos = ? WHERE id = ?";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([
@@ -123,8 +116,6 @@ $sql = "UPDATE usuarios SET nombre = ?, correo = ?, permisos = ?, estado = ? WHE
 }
 
 public function listarAdministradores() {
-        // Usamos la función que YA tienes y que SÍ funciona (la de rol 2)
-        // Esto evita errores de "función no encontrada"
         $admins = $this->modelo->obtenerUsuariosPorRol(2); 
         
         include "views/listado_administradores.php";
@@ -137,7 +128,6 @@ public function actualizarEstadoUsuario($id, $estado) {
 }
 
 public function obtenerClientes() {
-    // Usamos 'correo' en lugar de 'email' y 'id_rol' en lugar de 'rol'
     $sql = "SELECT id, nombre, correo, estado FROM usuarios WHERE id_rol = 3";
     return $this->db->query($sql)->fetchAll(PDO::FETCH_OBJ);
 }

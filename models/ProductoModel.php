@@ -7,7 +7,7 @@ class ProductoModel {
     public function __construct() {
         $this->db = Database::connect(); 
     }
-
+// edgar es mejor que no toques nada de aqui primeroo preguntameeeee
    public function registrarProducto($datos) {
        
         $sql = "INSERT INTO productos (nombre_producto, descripcion, precio, stock, imagen, id_categoria) 
@@ -25,7 +25,6 @@ class ProductoModel {
     }
 
    public function obtenerProductos() {
-    // Usamos IFNULL para que, si imagen es NULL, devuelva un string vacío
     $sql = "SELECT p.id, p.nombre_producto, p.precio, p.stock, 
                    IFNULL(p.imagen, '') AS imagen,
                    c.nombre_categoria AS nombre_categoria_real
@@ -69,12 +68,9 @@ public function obtenerPorId($id) {
 
 public function descontarStock($id, $cantidad) {
     try {
-        // CORREGIDO: 'id' es el nombre exacto de tu columna en phpMyAdmin
         $sql = "UPDATE productos SET stock = stock - :cantidad WHERE id = :id";
         
         $stmt = $this->db->prepare($sql);
-        
-        // Aseguramos que pasen como números enteros limpios
         $stmt->bindValue(':cantidad', (int)$cantidad, PDO::PARAM_INT);
         $stmt->bindValue(':id', (int)$id, PDO::PARAM_INT);
         
@@ -115,12 +111,12 @@ public function modificarProducto($datos) {
 
 public function obtenerEstadisticasGenerales() {
         try {
-            // 1. SOLICITUD DE TODO EL INVENTARIO REAL: Traemos todos los productos activos o registrados
+        
             $sqlInventario = "SELECT nombre_producto, stock FROM productos ORDER BY stock ASC";
             $stmtInventario = $this->db->query($sqlInventario);
             $inventarioCompleto = $stmtInventario->fetchAll(PDO::FETCH_ASSOC);
 
-            // 2. PRODUCTOS MÁS VENDIDOS: Cruce de datos con la tabla detalle_ventas
+        
             $sqlVentas = "SELECT p.nombre_producto, COALESCE(SUM(dv.cantidad), 0) as total_vendido 
                           FROM productos p
                           LEFT JOIN detalle_ventas dv ON p.id = dv.id_producto 
@@ -142,27 +138,24 @@ public function obtenerEstadisticasGenerales() {
         }
     }
 
-    // Asegúrate de pegar esto DENTRO de la clase ProductoModel en models/ProductoModel.php
-    public function listarProductos() {
-        try {
-            // Usamos la propiedad de conexión que tenga tu modelo (usualmente $this->d
-            $sql = "SELECT id, nombre_producto, precio, stock, descripcion, id_categoria FROM productos";
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute();
+    // para obtener los productos
+public function listarProductos() {
+    // Usamos un JOIN para traer el nombre_categoria
+    $sql = "SELECT p.*, c.nombre_categoria 
+            FROM productos p 
+            INNER JOIN categorias c ON p.id_categoria = c.id";
             
-            return $stmt->fetchAll(PDO::FETCH_OBJ);
-        } catch (PDOException $e) {
-            exit("Error en ProductoModel::listarProductos: " . $e->getMessage());
-        }
-    }
-// En models/ProductoModel.php
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_OBJ);
+}
+
 public function obtenerCategorias() {
     $stmt = $this->db->query("SELECT * FROM categorias");
     return $stmt->fetchAll(PDO::FETCH_OBJ);
 }
 
 public function buscarProductos($nombre, $id_categoria) {
-    // Agregamos la condición p.estado = 1 aquí mismo
     $sql = "SELECT p.* FROM productos p 
             WHERE p.estado = 1"; 
     $params = [];
