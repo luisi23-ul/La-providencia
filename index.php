@@ -46,7 +46,11 @@ $acciones_master = [
     'seccion_graficos', 
     'grafico_barras', 
     'grafico_tortas',
-    'metodos_pago' 
+    'metodos_pago',
+    'punto_venta', 'ventas', 'verificar_pagos', 'pagos_banco', 'pagos_pendientes', 'retiro_pedidos', 'detalle_venta', 'ver_reporte',
+    'categorias', 'ajustes_inventario', 'kardex',
+    'proveedores', 'compras', 'nueva_compra', 'detalle_compra',
+    'lista_clientes'
 ];
 
 
@@ -132,7 +136,7 @@ $acciones_admin = [
     'grafico_barras', 
     'grafico_tortas',
     'metodos_pago' ,
-    ' gestionarClientes' ,
+    'gestionarClientes' ,
     'cambiarEstadoCliente',
     'lista_clientes'
     
@@ -282,6 +286,19 @@ case 'grafico_tortas':
         case 'metodos_pago':
         include "views/metodos_pago.php";
      break;
+
+    case 'punto_venta': include 'views/ventas/punto_venta.php'; break;
+    case 'ventas': include 'views/ventas/ventas.php'; break;
+    case 'verificar_pagos': include 'views/ventas/verificar_pagos.php'; break;
+    case 'pagos_banco': include 'views/ventas/pagos_banco.php'; break;
+    case 'categorias': include 'views/inventario/categorias.php'; break;
+    case 'ajustes_inventario': include 'views/inventario/ajustes.php'; break;
+    case 'kardex': include 'views/inventario/kardex.php'; break;
+    case 'proveedores': include 'views/compras/proveedores.php'; break;
+    case 'compras': include 'views/compras/compras.php'; break;
+    case 'nueva_compra': include 'views/compras/nueva_compra.php'; break;
+    case 'detalle_compra': include 'views/compras/detalle_compra.php'; break;
+    case 'cerrar_sesion': $usuarioC->cerrarSesion(); break;
 
 
 
