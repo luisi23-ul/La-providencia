@@ -13,15 +13,15 @@ $tabs = ['1' => ['Activos', $activos], '0' => ['Desactivados', count($clientes) 
     <div class="cab-txt"><small>Gestión</small><h2>Clientes</h2></div>
     <div class="cab-acc"><button type="button" class="btn btn-pri" data-abrir-modal="modal-cliente"><svg class="i"><use href="#i-mas"/></svg>Nuevo cliente</button></div>
   </header>
-  <div class="herr">
+  <div class="filtros">
     <label class="buscar"><svg class="i"><use href="#i-buscar"/></svg><input type="search" placeholder="Buscar por nombre, cédula o teléfono" aria-label="Buscar cliente" data-filtro-tabla="tabla-cli" data-filtro-vacio="vacio-cli"></label>
-    <div class="seg" role="group" aria-label="Estado">
-      <?php foreach ($tabs as $k => [$t, $n]): ?><a href="index.php?action=lista_clientes&estado=<?= $k ?>" class="seg-link" aria-current="<?= $est === (string) $k ? 'page' : 'false' ?>"><?= $t ?><span><?= $n ?></span></a><?php endforeach; ?>
-    </div>
+    <nav class="f-grupo" aria-label="Estado">
+      <?php foreach ($tabs as $k => [$t, $n]): ?><a href="index.php?action=lista_clientes&estado=<?= $k ?>" class="f-op" aria-current="<?= $est === (string) $k ? 'page' : 'false' ?>"><?= $t ?><span class="f-cuenta"><?= $n ?></span></a><?php endforeach; ?>
+    </nav>
   </div>
   <section class="tabla-caja" aria-label="Listado de clientes">
     <div class="tabla-scroll">
-      <table class="tabla-resp" id="tabla-cli">
+      <table class="tabla-resp" id="tabla-cli" data-paginar="10">
         <thead><tr><th>Cliente</th><th>Teléfono</th><th class="c-media">Correo</th><th class="num">Compras</th><th>Cuenta</th><th class="num"></th></tr></thead>
         <tbody>
         <?php foreach ($lista as $c):
@@ -52,7 +52,7 @@ $tabs = ['1' => ['Activos', $activos], '0' => ['Desactivados', count($clientes) 
 <dialog class="modal" id="modal-cliente" aria-labelledby="mcl-titulo">
   <form method="POST" action="index.php?action=guardar_cliente">
     <input type="hidden" name="id">
-    <header class="modal-cab"><div><h3 id="mcl-titulo" data-si-edita="Editar cliente" data-si-crea="Nuevo cliente">Nuevo cliente</h3><p>Los campos con * son obligatorios.</p></div><button type="button" class="ic-btn" data-cerrar aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button></header>
+    <header class="modal-cab"><span class="modal-ic"><svg class="i"><use href="#i-usuarios"/></svg></span><div><h3 id="mcl-titulo" data-si-edita="Editar cliente" data-si-crea="Nuevo cliente">Nuevo cliente</h3><p>Los campos con * son obligatorios.</p></div><button type="button" class="ic-btn" data-cerrar aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button></header>
     <div class="modal-cuerpo form-grid">
       <div class="campo"><label for="mcl-ced">Cédula o RIF <span class="ob">*</span></label><input id="mcl-ced" name="cedula" required placeholder="V-12345678" autocomplete="off"></div>
       <div class="campo"><label for="mcl-tel">Teléfono</label><input id="mcl-tel" name="telefono" type="tel" inputmode="tel" placeholder="0414-5550123"></div>

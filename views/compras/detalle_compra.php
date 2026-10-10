@@ -55,7 +55,7 @@ $unidades = array_sum(array_map(fn($d) => $d->cantidad, $detalles));
 <dialog class="modal chico" id="modal-anular" aria-labelledby="ma-titulo">
   <form method="POST" action="index.php?action=anular_compra">
     <input type="hidden" name="id" value="<?= (int) $compra->id ?>">
-    <header class="modal-cab"><div><h3 id="ma-titulo">¿Anular la compra <?= $num ?>?</h3></div></header>
+    <header class="modal-cab"><span class="modal-ic peligro"><svg class="i"><use href="#i-alerta"/></svg></span><div><h3 id="ma-titulo">¿Anular la compra <?= $num ?>?</h3></div></header>
     <div class="modal-cuerpo">
       <p>Se restarán <b><?= $unidades ?> unidades</b> del stock de <b><?= $destino ?></b> y quedará registrado en Movimientos.</p>
       <p class="muted">La compra no se borra: queda en el historial marcada como anulada.</p>

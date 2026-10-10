@@ -46,24 +46,29 @@ $url = fn($stock) => 'index.php?' . http_build_query(array_filter(['action' => '
     </div>
   </header>
 
-  <form class="herr" method="GET" action="index.php">
+  <form class="filtros" method="GET" action="index.php" aria-label="Filtros">
     <input type="hidden" name="action" value="listado_productos">
     <?php if ($filtro): ?><input type="hidden" name="stock" value="<?= $e($filtro) ?>"><?php endif; ?>
     <label class="buscar"><svg class="i"><use href="#i-buscar"/></svg><input type="search" placeholder="Buscar por código o nombre" aria-label="Buscar producto" data-filtro-tabla="tabla-productos" data-filtro-vacio="vacio-productos"></label>
-    <select class="selector" name="categoria" aria-label="Categoría" onchange="this.form.submit()">
-      <option value="">Todas las categorías</option>
-      <?php foreach ($categorias as $c): ?><option value="<?= (int) $c->id ?>" <?= $catSel === (string) $c->id ? 'selected' : '' ?>><?= $e($c->nombre_categoria) ?></option><?php endforeach; ?>
-    </select>
-    <div class="seg" role="group" aria-label="Filtrar por stock">
-      <a href="<?= $e($url('')) ?>" class="seg-link" aria-current="<?= $filtro === '' ? 'page' : 'false' ?>">Todos<span><?= count($listaProductos) ?></span></a>
-      <a href="<?= $e($url('bajo')) ?>" class="seg-link" aria-current="<?= $filtro === 'bajo' ? 'page' : 'false' ?>">Stock bajo<span><?= $conteo['bajo'] ?></span></a>
-      <a href="<?= $e($url('agotado')) ?>" class="seg-link" aria-current="<?= $filtro === 'agotado' ? 'page' : 'false' ?>">Agotados<span><?= $conteo['agot'] ?></span></a>
-    </div>
+    <nav class="f-grupo" aria-label="Filtrar por stock">
+      <a href="<?= $e($url('')) ?>" class="f-op" aria-current="<?= $filtro === '' ? 'page' : 'false' ?>">Todos<span class="f-cuenta"><?= count($listaProductos) ?></span></a>
+      <a href="<?= $e($url('bajo')) ?>" class="f-op" aria-current="<?= $filtro === 'bajo' ? 'page' : 'false' ?>">Stock bajo<span class="f-cuenta"><?= $conteo['bajo'] ?></span></a>
+      <a href="<?= $e($url('agotado')) ?>" class="f-op" aria-current="<?= $filtro === 'agotado' ? 'page' : 'false' ?>">Agotados<span class="f-cuenta"><?= $conteo['agot'] ?></span></a>
+    </nav>
+    <label class="f-select<?= $catSel !== '' ? ' activo' : '' ?>"><svg class="i"><use href="#i-etiqueta"/></svg>
+      <select name="categoria" aria-label="Categoría" data-auto-enviar data-desplegable>
+        <option value="">Todas las categorías</option>
+        <?php foreach ($categorias as $c): ?><option value="<?= (int) $c->id ?>"<?= $catSel === (string) $c->id ? ' selected' : '' ?>><?= $e($c->nombre_categoria) ?></option><?php endforeach; ?>
+      </select>
+    </label>
+    <?php if ($filtro !== '' || $catSel !== ''): ?>
+    <a href="index.php?action=listado_productos" class="f-quitar"><svg class="i"><use href="#i-x"/></svg>Quitar filtros</a>
+    <?php endif; ?>
   </form>
 
   <section class="tabla-caja" aria-label="Listado de productos">
     <div class="tabla-scroll">
-      <table id="tabla-productos">
+      <table id="tabla-productos" data-paginar="10" data-filtro-tambien=".tarjetas-prod">
         <thead>
           <tr>
             <th class="c-media">Código</th>
@@ -122,7 +127,7 @@ $url = fn($stock) => 'index.php?' . http_build_query(array_filter(['action' => '
       </table>
     </div>
 
-    <ul class="tarjetas-prod">
+    <ul class="tarjetas-prod" data-paginar="10">
       <?php foreach ($lista as $p):
           $codigo = $p->codigo ?? ('P-' . str_pad($p->id, 4, '0', STR_PAD_LEFT));
           $cat = $p->nombre_categoria ?? ($nombreCat[$p->id_categoria] ?? 'Sin categoría');

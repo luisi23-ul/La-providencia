@@ -10,7 +10,7 @@ $tipos = ['ajuste' => ['ajuste', 'Conteo'], 'merma' => ['merma', 'Merma'], 'tran
 ?>
 <section class="contenido">
   <header class="cab">
-    <div class="cab-txt"><small>Inventario</small><h2>Ajustes de stock</h2><small>Para corregir existencias sin editar el producto. Cada ajuste queda en Movimientos.</small></div>
+    <div class="cab-txt"><small>Inventario</small><h2>Ajustes de stock</h2></div>
   </header>
   <form class="ajuste-layout" id="form-ajuste" action="index.php?action=guardar_ajuste" method="POST">
     <section class="caja" aria-labelledby="t-ajuste">

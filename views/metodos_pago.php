@@ -11,7 +11,7 @@ include __DIR__ . '/admin/_abrir.php';
 ?>
 <section class="contenido">
   <header class="cab">
-    <div class="cab-txt"><small>Gestión</small><h2>Métodos de pago</h2><small>Los datos que pongas aquí son los que ve el cliente cuando va a pagar.</small></div>
+    <div class="cab-txt"><small>Gestión</small><h2>Métodos de pago</h2></div>
     <div class="cab-acc"><button type="button" class="btn btn-pri" data-abrir-modal="modal-metodo"><svg class="i"><use href="#i-mas"/></svg>Nuevo método</button></div>
   </header>
   <section class="lista-metodos" aria-label="Métodos de pago">
@@ -41,7 +41,7 @@ include __DIR__ . '/admin/_abrir.php';
 <dialog class="modal" id="modal-metodo" aria-labelledby="mm-titulo">
   <form method="POST" action="index.php?action=guardar_metodo_pago">
     <input type="hidden" name="id">
-    <header class="modal-cab"><div><h3 id="mm-titulo" data-si-edita="Editar método de pago" data-si-crea="Nuevo método de pago">Nuevo método de pago</h3></div><button type="button" class="ic-btn" data-cerrar aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button></header>
+    <header class="modal-cab"><span class="modal-ic"><svg class="i"><use href="#i-tarjeta"/></svg></span><div><h3 id="mm-titulo" data-si-edita="Editar método de pago" data-si-crea="Nuevo método de pago">Nuevo método de pago</h3></div><button type="button" class="ic-btn" data-cerrar aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button></header>
     <div class="modal-cuerpo" style="display:flex;flex-direction:column;gap:14px">
       <div class="campo"><label for="mm-nombre">Nombre <span class="ob">*</span></label><input id="mm-nombre" name="nombre" required maxlength="50" placeholder="Ej.: Pago móvil"></div>
       <div class="campo"><span class="lbl">Moneda</span>

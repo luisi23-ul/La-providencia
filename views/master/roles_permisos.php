@@ -16,7 +16,7 @@ $primerRol = $editables ? (int) $editables[0]->id : 1;
 ?>
 <section class="contenido">
   <header class="cab">
-    <div class="cab-txt"><small>Panel Master</small><h2>Roles y permisos</h2><small>Marca qué puede hacer cada rol. Los administradores heredan los permisos de su rol.</small></div>
+    <div class="cab-txt"><small>Panel Master</small><h2>Roles y permisos</h2></div>
     <div class="cab-acc"><button type="button" class="btn btn-pri" data-abrir-modal="modal-rol"><svg class="i"><use href="#i-mas"/></svg>Nuevo rol</button></div>
   </header>
 
@@ -73,7 +73,7 @@ $primerRol = $editables ? (int) $editables[0]->id : 1;
 
 <dialog class="modal chico" id="modal-rol" aria-labelledby="mr-titulo">
   <form method="POST" action="index.php?action=guardar_rol">
-    <header class="modal-cab"><div><h3 id="mr-titulo">Nuevo rol</h3><p>Después marca en la tabla qué puede hacer.</p></div><button type="button" class="ic-btn" data-cerrar aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button></header>
+    <header class="modal-cab"><span class="modal-ic"><svg class="i"><use href="#i-escudo"/></svg></span><div><h3 id="mr-titulo">Nuevo rol</h3><p>Después marca en la tabla qué puede hacer.</p></div><button type="button" class="ic-btn" data-cerrar aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button></header>
     <div class="modal-cuerpo">
       <div class="campo"><label for="mr-nombre">Nombre del rol <span class="ob">*</span></label><input id="mr-nombre" name="nombre_rol" required maxlength="50" placeholder="Ej.: Almacenista"></div>
     </div>

@@ -233,6 +233,7 @@
       monto: 0,
       ref: '',
       banco: '',
+      titular_nombre: pv.cliente ? (pv.cliente.n || '') : '',
       titular_cedula: pv.cliente ? (pv.cliente.doc || '') : '',
       titular_telefono: pv.cliente ? (pv.cliente.tel || '') : '',
       vueltoEn: '$'
@@ -244,6 +245,7 @@
     cobro.m = id;
     cobro.ref = '';
     cobro.banco = '';
+    cobro.titular_nombre = pv.cliente ? (pv.cliente.n || '') : '';
     cobro.titular_cedula = pv.cliente ? (pv.cliente.doc || '') : '';
     cobro.titular_telefono = pv.cliente ? (pv.cliente.tel || '') : '';
     cobro.monto = enMoneda(falta(), met(id).mon);
@@ -297,6 +299,10 @@
           '</select>' +
         '</div>' +
         '<div class="campo">' +
+          '<label for="pc-titular">Nombre del titular <span class="ob">*</span></label>' +
+          '<input id="pc-titular" autocomplete="off" placeholder="Como aparece en el banco" value="' + esc(cobro.titular_nombre) + '">' +
+        '</div>' +
+        '<div class="campo">' +
           '<label for="pc-cedula">Cédula del titular <span class="ob">*</span></label>' +
           '<input id="pc-cedula" autocomplete="off" placeholder="V-12345678" value="' + esc(cobro.titular_cedula) + '">' +
         '</div>' +
@@ -326,6 +332,7 @@
     var faltanDatosBancarios = false, motivo = '';
     if (m.ref && cobro.monto > 0) {
       if (!cobro.banco) { faltanDatosBancarios = true; motivo = 'Selecciona el banco de ' + m.n + '.'; }
+      else if (!cobro.titular_nombre.trim()) { faltanDatosBancarios = true; motivo = 'Escribe el nombre del titular.'; }
       else if (!cobro.titular_cedula.trim()) { faltanDatosBancarios = true; motivo = 'Escribe la cédula del titular.'; }
       else if (!cobro.titular_telefono.trim()) { faltanDatosBancarios = true; motivo = 'Escribe el teléfono del titular.'; }
       else if (!cobro.ref.trim()) { faltanDatosBancarios = true; motivo = 'Falta la referencia de ' + m.n + '.'; }
@@ -364,6 +371,7 @@
         monto: r2(cobro.monto),
         ref: cobro.ref.trim(),
         banco: cobro.banco,
+        titular_nombre: cobro.titular_nombre.trim(),
         titular_cedula: cobro.titular_cedula.trim(),
         titular_telefono: cobro.titular_telefono.trim()
       });
@@ -382,6 +390,7 @@
       pintarPie();
     }
     if (e.target.id === 'pc-ref') { cobro.ref = e.target.value; pintarPie(); }
+    if (e.target.id === 'pc-titular') { cobro.titular_nombre = e.target.value; pintarPie(); }
     if (e.target.id === 'pc-cedula') { cobro.titular_cedula = e.target.value; pintarPie(); }
     if (e.target.id === 'pc-telefono') { cobro.titular_telefono = e.target.value; pintarPie(); }
   });
@@ -401,6 +410,7 @@
         monto: r2(cobro.monto),
         ref: cobro.ref.trim(),
         banco: cobro.banco,
+        titular_nombre: cobro.titular_nombre.trim(),
         titular_cedula: cobro.titular_cedula.trim(),
         titular_telefono: cobro.titular_telefono.trim()
       });
@@ -416,6 +426,7 @@
       add('tasa_cambio[]', TASA);
       add('referencia[]', p.ref || '');
       add('banco[]', p.banco || '');
+      add('titular_nombre[]', p.titular_nombre || '');
       add('titular_cedula[]', p.titular_cedula || '');
       add('titular_telefono[]', p.titular_telefono || '');
     });

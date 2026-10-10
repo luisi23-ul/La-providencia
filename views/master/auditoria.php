@@ -19,32 +19,38 @@ $fecha = fn($v) => date('d/m', strtotime($v)) . ' · ' . str_replace(['am', 'pm'
 ?>
 <section class="contenido">
   <header class="cab">
-    <div class="cab-txt"><small>Panel Master</small><h2>Auditoría</h2><small>Lo que hizo cada persona en el sistema. No se puede editar ni borrar.</small></div>
+    <div class="cab-txt"><small>Panel Master</small><h2>Auditoría</h2></div>
     <div class="cab-acc"><a href="index.php?<?= $e(http_build_query(['action' => 'exportar_auditoria'] + $f)) ?>" class="btn btn-sec"><svg class="i"><use href="#i-archivo"/></svg>Excel</a></div>
   </header>
 
-  <form class="herr" method="GET" action="index.php" id="filtros-aud">
+  <form class="filtros" method="GET" action="index.php" id="filtros-aud" aria-label="Filtros">
     <input type="hidden" name="action" value="auditoria">
     <label class="buscar"><svg class="i"><use href="#i-buscar"/></svg><input type="search" name="q" value="<?= $e($f['q']) ?>" placeholder="Buscar en la descripción" aria-label="Buscar en la descripción"></label>
-    <select class="selector" name="usuario" aria-label="Usuario">
-      <option value="">Todos los usuarios</option>
-      <?php foreach ($usuarios as $u): ?>
-        <option value="<?= (int) $u->id ?>" <?= (string) $u->id === (string) $f['usuario'] ? 'selected' : '' ?>><?= $e(trim($u->nombre . ' ' . ($u->apellido ?? ''))) ?></option>
-      <?php endforeach; ?>
-    </select>
-    <select class="selector" name="modulo" aria-label="Módulo">
-      <option value="">Todos los módulos</option>
-      <?php foreach ($modulos as $m): ?>
-        <option <?= $m === $f['modulo'] ? 'selected' : '' ?>><?= $e($m) ?></option>
-      <?php endforeach; ?>
-    </select>
-    <span class="fecha-rango">Desde <input type="date" name="desde" value="<?= $e($f['desde']) ?>" aria-label="Desde"> hasta <input type="date" name="hasta" value="<?= $e($f['hasta']) ?>" aria-label="Hasta"></span>
-    <noscript><button type="submit" class="btn btn-sec">Filtrar</button></noscript>
+    <?php $periodoFiltro = ['modo' => 'rango', 'defecto' => '7 días']; include __DIR__ . '/../admin/_periodo.php'; ?>
+    <label class="f-select<?= $f['usuario'] !== '' ? ' activo' : '' ?>"><svg class="i"><use href="#i-usuarios"/></svg>
+      <select name="usuario" aria-label="Usuario" data-auto-enviar data-desplegable data-buscar="Buscar usuario">
+        <option value="">Todos los usuarios</option>
+        <?php foreach ($usuarios as $u): ?>
+        <option value="<?= (int) $u->id ?>"<?= (string) $u->id === (string) $f['usuario'] ? ' selected' : '' ?>><?= $e(trim($u->nombre . ' ' . ($u->apellido ?? ''))) ?></option>
+        <?php endforeach; ?>
+      </select>
+    </label>
+    <label class="f-select<?= $f['modulo'] !== '' ? ' activo' : '' ?>"><svg class="i"><use href="#i-panel"/></svg>
+      <select name="modulo" aria-label="Módulo" data-auto-enviar data-desplegable>
+        <option value="">Todos los módulos</option>
+        <?php foreach ($modulos as $m): ?>
+        <option<?= $m === $f['modulo'] ? ' selected' : '' ?>><?= $e($m) ?></option>
+        <?php endforeach; ?>
+      </select>
+    </label>
+    <?php if ($f['q'] !== '' || $f['usuario'] !== '' || $f['modulo'] !== '' || isset($_GET['desde']) || isset($_GET['hasta'])): ?>
+    <a href="index.php?action=auditoria" class="f-quitar"><svg class="i"><use href="#i-x"/></svg>Quitar filtros</a>
+    <?php endif; ?>
   </form>
 
   <section class="tabla-caja" aria-label="Registro de auditoría">
     <div class="tabla-scroll">
-      <table class="tabla-resp">
+      <table class="tabla-resp" data-paginar="10">
         <thead><tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Módulo</th><th>Descripción</th><th class="c-media">IP</th></tr></thead>
         <tbody>
         <?php foreach ($registros as $r):

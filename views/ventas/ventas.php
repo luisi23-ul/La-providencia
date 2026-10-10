@@ -37,50 +37,40 @@ $pctTienda = $total > 0 ? round(($tienda / $total) * 100) : 0;
     </div>
   </header>
 
-  <form id="form-filtro-ventas" class="herr" method="GET" action="index.php" style="flex-wrap: wrap; gap: 0.5rem;">
+  <form class="filtros" method="GET" action="index.php" aria-label="Filtros">
     <input type="hidden" name="action" value="ventas">
-
-    <label class="buscar">
-      <svg class="i"><use href="#i-buscar"/></svg>
-      <input type="search" name="q" value="<?= $e($f['q']) ?>" placeholder="Buscar por n.º de venta o cliente">
+    <label class="buscar"><svg class="i"><use href="#i-buscar"/></svg><input type="search" name="q" value="<?= $e($f['q']) ?>" placeholder="Buscar por n.º de venta o cliente" aria-label="Buscar venta"></label>
+    <?php $periodoFiltro = ['modo' => 'rango', 'todo' => true]; include __DIR__ . '/../admin/_periodo.php'; ?>
+    <label class="f-select<?= $f['estado'] !== '' ? ' activo' : '' ?>"><svg class="i"><use href="#i-recibo"/></svg>
+      <select name="estado" aria-label="Estado" data-auto-enviar data-desplegable>
+        <option value="">Todos los estados</option>
+        <?php foreach ($estados as $k => [, $t]): ?>
+        <option value="<?= $k ?>"<?= $f['estado'] === $k ? ' selected' : '' ?>><?= $t ?></option>
+        <?php endforeach; ?>
+      </select>
     </label>
-
-    <div style="display: inline-flex; align-items: center; gap: 0.4rem; background: var(--bg-card, #fff); padding: 0.35rem 0.6rem; border-radius: 6px; border: 1px solid #ccc;">
-      <span style="font-size: 0.85rem; color: #555;">Desde</span>
-      <input type="date" name="desde" value="<?= $e($f['desde']) ?>" style="border: none; outline: none; font-size: 0.85rem;">
-      <span style="font-size: 0.85rem; color: #555;">hasta</span>
-      <input type="date" name="hasta" value="<?= $e($f['hasta']) ?>" style="border: none; outline: none; font-size: 0.85rem;">
-    </div>
-
-    <select class="selector" name="estado">
-      <option value="">Todos los estados</option>
-      <?php foreach ($estados as $k => [, $t]): ?>
-        <option value="<?= $k ?>" <?= $f['estado'] === $k ? 'selected' : '' ?>><?= $t ?></option>
-      <?php endforeach; ?>
-    </select>
-
-    <select class="selector" name="origen">
-      <option value="">Tienda y online</option>
-      <option value="tienda_fisica" <?= $f['origen'] === 'tienda_fisica' ? 'selected' : '' ?>>Solo tienda</option>
-      <option value="online" <?= $f['origen'] === 'online' ? 'selected' : '' ?>>Solo online</option>
-    </select>
-
-    <button type="submit" onclick="this.form.submit()" class="btn btn-pri">Filtrar</button>
+    <label class="f-select<?= $f['origen'] !== '' ? ' activo' : '' ?>"><svg class="i"><use href="#i-tienda"/></svg>
+      <select name="origen" aria-label="Origen" data-auto-enviar data-desplegable>
+        <option value="">Tienda y online</option>
+        <option value="tienda_fisica"<?= $f['origen'] === 'tienda_fisica' ? ' selected' : '' ?>>Solo tienda</option>
+        <option value="online"<?= $f['origen'] === 'online' ? ' selected' : '' ?>>Solo online</option>
+      </select>
+    </label>
     <?php if ($f['desde'] !== '' || $f['hasta'] !== '' || $f['estado'] !== '' || $f['origen'] !== '' || $f['q'] !== ''): ?>
-      <a href="index.php?action=ventas" class="btn btn-sec" style="text-decoration:none;">Limpiar</a>
+    <a href="index.php?action=ventas" class="f-quitar"><svg class="i"><use href="#i-x"/></svg>Quitar filtros</a>
     <?php endif; ?>
   </form>
 
   <section class="mini-kpis" aria-label="Resumen del periodo">
-    <div><span>Vendido</span><b><?= $usd($total) ?></b><small><?= $bs($total) ?></small></div>
-    <div><span>Ventas</span><b><?= count($validas) ?></b><small>ticket promedio <?= $usd(count($validas) ? $total / count($validas) : 0) ?></small></div>
-    <div><span>Tienda / Online</span><b><?= $pctTienda ?>% / <?= $total ? (100 - $pctTienda) : 0 ?>%</b><small><?= $usd($tienda) ?> en tienda</small></div>
-    <div><span>Por cobrar</span><b><?= $usd($porCobrar) ?></b><small>pagos sin verificar</small></div>
+    <div><span class="mk-ic"><svg class="i"><use href="#i-dolar"/></svg></span><span>Vendido</span><b><?= $usd($total) ?></b><small><?= $bs($total) ?></small></div>
+    <div class="mk-oscuro"><span class="mk-ic"><svg class="i"><use href="#i-recibo"/></svg></span><span>Ventas</span><b><?= count($validas) ?></b><small>ticket promedio <?= $usd(count($validas) ? $total / count($validas) : 0) ?></small></div>
+    <div class="mk-claro"><span class="mk-ic"><svg class="i"><use href="#i-tienda"/></svg></span><span>Tienda / Online</span><b><?= $pctTienda ?>% / <?= $total ? (100 - $pctTienda) : 0 ?>%</b><small><?= $usd($tienda) ?> en tienda</small><span class="mk-barra" aria-hidden="true"><i style="width: <?= $pctTienda ?>%"></i><i style="width: <?= $total ? 100 - $pctTienda : 0 ?>%"></i></span></div>
+    <div class="mk-ambar"><span class="mk-ic"><svg class="i"><use href="#i-alerta"/></svg></span><span>Por cobrar</span><b><?= $usd($porCobrar) ?></b><small>pagos sin verificar</small></div>
   </section>
 
   <section class="tabla-caja" aria-label="Listado de ventas">
     <div class="tabla-scroll">
-      <table class="tabla-resp">
+      <table class="tabla-resp" data-paginar="10">
         <thead>
           <tr>
             <th>Venta</th>
@@ -130,7 +120,7 @@ $pctTienda = $total > 0 ? round(($tienda / $total) * 100) : 0;
       </table>
     </div>
     <?php if (!$ventas): ?>
-      <div class="vacio-filtro" style="padding: 2.5rem; text-align: center; color: #64748b;">
+      <div class="vacio-filtro">
         No hay ventas con los filtros aplicados.
       </div>
     <?php endif; ?>

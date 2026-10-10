@@ -1,5 +1,7 @@
 <?php
 $menu = 'metodos_pago';
+$metodoId = $metodoId ?? (int) ($_GET['metodo'] ?? 0);
+$metodoNombre = $metodoNombre ?? 'este método';
 $tituloPagina = 'Cobrado con ' . $metodoNombre;
 $ventas = $ventas ?? [];
 include __DIR__ . '/../admin/_abrir.php';
@@ -12,7 +14,6 @@ $totUsd = array_sum(array_map(fn($v) => $v->total, $lista));
 $totBs = array_sum(array_map(fn($v) => $v->total_bs ?? $v->total * $tasa, $lista));
 $porDia = [];
 foreach ($lista as $v) { $d = date('Y-m-d', strtotime($v->fecha)); $porDia[$d] = ($porDia[$d] ?? 0) + $v->total; }
-$rapidos = ['Hoy' => [date('Y-m-d'), date('Y-m-d')], 'Últimos 7 días' => [date('Y-m-d', strtotime('-6 days')), date('Y-m-d')], 'Este mes' => [date('Y-m-01'), date('Y-m-d')]];
 ?>
 <section class="contenido">
   <a href="index.php?action=metodos_pago" class="volver"><svg class="i"><use href="#i-volver"/></svg>Métodos de pago</a>
@@ -20,19 +21,15 @@ $rapidos = ['Hoy' => [date('Y-m-d'), date('Y-m-d')], 'Últimos 7 días' => [date
     <div class="cab-txt"><small>Lo cobrado</small><h2><?= $e($metodoNombre) ?></h2></div>
     <div class="cab-acc"><a href="index.php?<?= $e(http_build_query(['action' => 'exportar_excel', 'tipo' => 'metodo', 'metodo' => $metodoId, 'desde' => $f['desde'], 'hasta' => $f['hasta']])) ?>" class="btn btn-sec"><svg class="i"><use href="#i-archivo"/></svg>Excel</a></div>
   </header>
-  <form class="herr" method="GET" action="index.php">
+  <form class="filtros" method="GET" action="index.php" aria-label="Filtros">
     <input type="hidden" name="action" value="ver_reporte">
     <input type="hidden" name="metodo" value="<?= (int) $metodoId ?>">
-    <label class="fecha-rango">Desde <input type="date" name="desde" value="<?= $e($f['desde']) ?>" aria-label="Desde"> hasta <input type="date" name="hasta" value="<?= $e($f['hasta']) ?>" aria-label="Hasta"></label>
-    <button type="submit" class="btn btn-sec">Filtrar</button>
-    <div class="seg" role="group" aria-label="Periodos rápidos">
-      <?php foreach ($rapidos as $t => [$d, $h]): ?><a href="index.php?<?= $e(http_build_query(['action' => 'ver_reporte', 'metodo' => $metodoId, 'desde' => $d, 'hasta' => $h])) ?>" class="seg-link" aria-current="<?= $f['desde'] === $d && $f['hasta'] === $h ? 'page' : 'false' ?>"><?= $t ?></a><?php endforeach; ?>
-    </div>
+    <?php $periodoFiltro = ['modo' => 'rango', 'defecto' => 'Este mes']; include __DIR__ . '/../admin/_periodo.php'; ?>
   </form>
   <section class="mini-kpis" aria-label="Resumen del periodo">
-    <div><span>Cobrado</span><b><?= $usd($totUsd) ?></b><small><?= number_format($totBs, 2) ?> Bs</small></div>
-    <div><span>Ventas</span><b><?= count($lista) ?></b><small>promedio <?= $usd(count($lista) ? $totUsd / count($lista) : 0) ?></small></div>
-    <div><span>Días con cobros</span><b><?= count($porDia) ?></b><small><?= $porDia ? 'mejor día ' . date('d/m', strtotime(array_search(max($porDia), $porDia))) . ', ' . $usd(max($porDia)) : 'sin cobros' ?></small></div>
+    <div><span class="mk-ic"><svg class="i"><use href="#i-dolar"/></svg></span><span>Cobrado</span><b><?= $usd($totUsd) ?></b><small><?= number_format($totBs, 2) ?> Bs</small></div>
+    <div class="mk-oscuro"><span class="mk-ic"><svg class="i"><use href="#i-recibo"/></svg></span><span>Ventas</span><b><?= count($lista) ?></b><small>promedio <?= $usd(count($lista) ? $totUsd / count($lista) : 0) ?></small></div>
+    <div class="mk-claro"><span class="mk-ic"><svg class="i"><use href="#i-calendario"/></svg></span><span>Días con cobros</span><b><?= count($porDia) ?></b><small><?= $porDia ? 'mejor día ' . date('d/m', strtotime(array_search(max($porDia), $porDia))) . ', ' . $usd(max($porDia)) : 'sin cobros' ?></small></div>
   </section>
   <section class="tabla-caja" aria-label="Ventas cobradas">
     <div class="tabla-scroll">

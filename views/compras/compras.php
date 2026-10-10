@@ -17,22 +17,24 @@ $url = fn($estado) => 'index.php?' . http_build_query(array_filter(['action' => 
       <a href="index.php?action=nueva_compra" class="btn btn-pri"><svg class="i"><use href="#i-mas"/></svg>Registrar compra</a>
     </div>
   </header>
-  <form class="herr" method="GET" action="index.php">
+  <form class="filtros" method="GET" action="index.php" aria-label="Filtros">
     <input type="hidden" name="action" value="compras">
     <?php if ($f['estado']): ?><input type="hidden" name="estado" value="<?= $e($f['estado']) ?>"><?php endif; ?>
     <label class="buscar"><svg class="i"><use href="#i-buscar"/></svg><input type="search" placeholder="Buscar por n.º de factura o proveedor" aria-label="Buscar compra" data-filtro-tabla="tabla-compras" data-filtro-vacio="vacio-compras"></label>
-    <label class="fecha-rango">Desde <input type="date" name="desde" value="<?= $e($f['desde']) ?>" aria-label="Desde"> hasta <input type="date" name="hasta" value="<?= $e($f['hasta']) ?>" aria-label="Hasta"></label>
-    <button type="submit" class="btn btn-sec">Filtrar</button>
-    <div class="seg" role="group" aria-label="Filtrar por estado">
-      <a href="<?= $e($url('')) ?>" class="seg-link" aria-current="<?= $f['estado'] === '' ? 'page' : 'false' ?>">Todas</a>
-      <a href="<?= $e($url('recibido')) ?>" class="seg-link" aria-current="<?= $f['estado'] === 'recibido' ? 'page' : 'false' ?>">Recibidas</a>
-      <a href="<?= $e($url('anulado')) ?>" class="seg-link" aria-current="<?= $f['estado'] === 'anulado' ? 'page' : 'false' ?>">Anuladas</a>
-    </div>
+    <?php $periodoFiltro = ['modo' => 'rango', 'defecto' => 'Este mes']; include __DIR__ . '/../admin/_periodo.php'; ?>
+    <nav class="f-grupo" aria-label="Filtrar por estado">
+      <a href="<?= $e($url('')) ?>" class="f-op" aria-current="<?= $f['estado'] === '' ? 'page' : 'false' ?>">Todas</a>
+      <a href="<?= $e($url('recibido')) ?>" class="f-op" aria-current="<?= $f['estado'] === 'recibido' ? 'page' : 'false' ?>">Recibidas</a>
+      <a href="<?= $e($url('anulado')) ?>" class="f-op" aria-current="<?= $f['estado'] === 'anulado' ? 'page' : 'false' ?>">Anuladas</a>
+    </nav>
+    <?php if ($f['estado'] !== '' || isset($_GET['desde']) || isset($_GET['hasta'])): ?>
+    <a href="index.php?action=compras" class="f-quitar"><svg class="i"><use href="#i-x"/></svg>Quitar filtros</a>
+    <?php endif; ?>
   </form>
   <p class="sub-resumen"><?= count($recibidas) ?> compras recibidas en el periodo por <b><?= $usd($total) ?></b> (<?= $bs($total) ?>).</p>
   <section class="tabla-caja" aria-label="Listado de compras">
     <div class="tabla-scroll">
-      <table class="tabla-resp" id="tabla-compras">
+      <table class="tabla-resp" id="tabla-compras" data-paginar="10">
         <thead><tr><th>Compra</th><th>Proveedor</th><th class="c-media">Destino</th><th class="num c-media">Productos</th><th class="num">Total</th><th>Estado</th><th class="num"></th></tr></thead>
         <tbody>
         <?php foreach ($lista as $c): $destino = $c->destino_stock === 'online' ? 'Online' : 'Tienda física'; ?>

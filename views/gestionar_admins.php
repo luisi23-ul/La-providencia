@@ -20,7 +20,7 @@ $acceso = function ($fecha) {
 ?>
 <section class="contenido">
   <header class="cab">
-    <div class="cab-txt"><small>Panel Master</small><h2>Administradores</h2><small>Cada persona entra con su correo y tiene un rol. Los permisos se definen en Roles y permisos.</small></div>
+    <div class="cab-txt"><small>Panel Master</small><h2>Administradores</h2></div>
     <div class="cab-acc"><button type="button" class="btn btn-pri" data-abrir-modal="modal-admin"><svg class="i"><use href="#i-mas"/></svg>Nueva cuenta</button></div>
   </header>
 
@@ -62,7 +62,7 @@ $acceso = function ($fecha) {
 <dialog class="modal" id="modal-admin" aria-labelledby="ma-titulo">
   <form method="POST" action="index.php?action=guardar_nuevo_admin" id="form-admin" data-crear="index.php?action=guardar_nuevo_admin" data-editar="index.php?action=actualizar_admin">
     <input type="hidden" name="id">
-    <header class="modal-cab"><div><h3 id="ma-titulo" data-si-crea="Nueva cuenta" data-si-edita="Editar cuenta">Nueva cuenta</h3><p>La persona entra al panel con este correo.</p></div><button type="button" class="ic-btn" data-cerrar aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button></header>
+    <header class="modal-cab"><span class="modal-ic"><svg class="i"><use href="#i-escudo"/></svg></span><div><h3 id="ma-titulo" data-si-crea="Nueva cuenta" data-si-edita="Editar cuenta">Nueva cuenta</h3><p>La persona entra al panel con este correo.</p></div><button type="button" class="ic-btn" data-cerrar aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button></header>
     <div class="modal-cuerpo form-grid">
       <div class="campo"><label for="ma-nombre">Nombre <span class="ob">*</span></label><input id="ma-nombre" name="nombre" required maxlength="100" autocomplete="off"></div>
       <div class="campo"><label for="ma-apellido">Apellido</label><input id="ma-apellido" name="apellido" maxlength="50" autocomplete="off"></div>

@@ -1,38 +1,77 @@
 (function () {
   var pagos = Panel.datos('datos-pagos') || [], usd = Panel.usd, esc = Panel.esc, fmtBs = Panel.fmtBs;
   var det = document.getElementById('det-pago'), verif = document.getElementById('verif');
-  if (!pagos.length) { det.innerHTML = '<div class="vacio-filtro">Elige un pago de la lista.</div>'; return; }
+  var alerta = Panel.datos('alerta-pago');
+  if (alerta) Panel.avisar({ tipo: alerta.tipo, titulo: alerta.titulo, texto: alerta.texto, accion: alerta.deshacer ? 'Deshacer' : '', href: alerta.deshacer, segundos: alerta.deshacer ? 9 : 5 });
+  if (!det) return;
+  if (!pagos.length) { det.innerHTML = '<p class="vacio-filtro">Elige un pago de la lista.</p>'; return; }
 
-  function montoTxt(p) { return p.moneda === 'USD' ? usd(p.monto) : fmtBs(p.monto) + ' Bs'; }
+  var venta = function (p) { return '#' + String(p.venta).padStart(4, '0'); };
+  var enUsd = function (p) { return p.moneda === 'USD' ? p.monto : p.monto / p.tasa; };
+  var enBs = function (p) { return p.moneda === 'USD' ? p.monto * p.tasa : p.monto; };
+  var icono = function (p) { return p.es_efectivo ? 'efectivo' : (/transfer/i.test(p.metodo) ? 'banco' : 'movil'); };
+
+  function montos(p) {
+    return '<dl class="vf-montos">' +
+      '<div class="vf-monto"><span class="vf-moneda">Bs</span><dt>En bolívares</dt><dd>' + fmtBs(enBs(p)) + ' Bs</dd></div>' +
+      '<div class="vf-monto usd"><span class="vf-moneda">$</span><dt>En dólares</dt><dd>' + usd(enUsd(p)) + '</dd></div>' +
+      '<p class="vf-tasa"><svg class="i"><use href="#i-dolar"/></svg>Tasa cobrada <b>' + fmtBs(p.tasa) + ' Bs por $</b></p></dl>';
+  }
+
+  function datos(p) {
+    if (p.es_efectivo) return '';
+    var t = p.titular || {}, html = '<dl class="vf-datos">';
+    html += '<div class="vf-dato"><span class="ic"><svg class="i"><use href="#i-recibo"/></svg></span><dt>Referencia' +
+      (p.ref ? '<button type="button" class="vf-copiar" data-ref="' + esc(p.ref) + '" aria-label="Copiar referencia"><svg class="i"><use href="#i-copiar"/></svg></button>' : '') +
+      '</dt><dd class="vf-ref">' + esc(p.ref || 'Sin referencia') + '</dd></div>';
+    html += '<div class="vf-dato"><span class="ic"><svg class="i"><use href="#i-banco"/></svg></span><dt>Banco</dt><dd>' + esc(p.banco || 'No indicado') + (p.origen ? '<small>' + esc(p.origen) + '</small>' : '') + '</dd></div>';
+    var principal = t.nombre || t.doc || 'Sin datos', detalle = [t.nombre ? t.doc : '', t.tel].filter(Boolean).join(' · ');
+    html += '<div class="vf-dato"><span class="ic"><svg class="i"><use href="#i-usuarios"/></svg></span><dt>Titular</dt><dd>' + esc(principal) + (detalle ? '<small>' + esc(detalle) + '</small>' : '') + '</dd></div>';
+    if (p.img) html += '<div class="vf-dato vf-captura"><span class="ic"><svg class="i"><use href="#i-archivo"/></svg></span><dt>Captura del cliente</dt><dd><a href="' + esc(p.img) + '" target="_blank" rel="noopener"><img src="' + esc(p.img) + '" alt="Comprobante enviado por el cliente"></a></dd></div>';
+    return html + '</dl>';
+  }
+
+  function cuenta(p) {
+    var falta = Math.max(0, p.total - p.previos), este = enUsd(p), queda = falta - este;
+    var res = Math.abs(queda) < 0.01 ? '<div class="res"><b><svg class="i"><use href="#i-check"/></svg>Queda saldada</b></div>'
+      : queda > 0 ? '<div class="res corto"><b><svg class="i"><use href="#i-alerta"/></svg>Faltarían ' + usd(queda) + '</b></div>'
+      : '<div class="res corto"><b><svg class="i"><use href="#i-alerta"/></svg>Sobran ' + usd(-queda) + '</b><span>Hay que devolverlos</span></div>';
+    return '<section class="vf-sec"><h4><span class="n">2</span>Cómo queda la venta ' + venta(p) + '</h4>' +
+      '<div class="vf-cubre"><div class="lin"><div><span>Total de la venta</span><b>' + usd(p.total) + '</b></div><div><span>Ya pagado</span><b>' + usd(p.previos) + '</b></div><div><span>Este pago</span><b>− ' + usd(este) + '</b></div><div class="f"><span>Quedaría por cobrar</span><span>' + usd(Math.max(0, queda)) + '</span></div></div>' + res + '</div></section>';
+  }
+
   function mostrar(i) {
     var p = pagos[i];
     document.querySelectorAll('[data-pago]').forEach(function (b) { b.setAttribute('aria-current', String(+b.getAttribute('data-pago') === i)); });
-    var usdPago = p.moneda === 'USD' ? p.monto : p.monto / p.tasa, falta = Math.max(0, p.total - p.previos);
-    var coincide = Math.abs(usdPago - falta) < 0.01, dif = falta - usdPago, difBs = dif * p.tasa;
-    var res = coincide ? '<p class="vp-res"><svg class="i"><use href="#i-check"/></svg><span>Este pago cubre exactamente lo que falta. Al aprobarlo, la venta queda pagada.</span></p>'
-      : dif > 0 ? '<p class="vp-res"><svg class="i"><use href="#i-alerta"/></svg><span>Se queda corto por <b class="cifra">' + fmtBs(difBs) + ' Bs</b> (' + usd(dif) + '). Si lo apruebas, la venta queda con ese saldo pendiente.</span></p>'
-      : '<p class="vp-res"><svg class="i"><use href="#i-alerta"/></svg><span>Pagó <b class="cifra">' + fmtBs(-difBs) + ' Bs</b> de más. Habría que devolverle esa diferencia.</span></p>';
-    var acciones = p.estado === 'pendiente'
-      ? '<footer class="vp-acciones"><button type="button" class="btn btn-peligro" id="btn-rechazar"><svg class="i"><use href="#i-x"/></svg>Rechazar</button><button type="button" class="btn btn-ok" id="btn-aprobar"><svg class="i"><use href="#i-check"/></svg>Aprobar pago</button></footer>'
-      : '<footer class="vp-acciones"><div class="resultado-pago ' + (p.estado === 'aprobado' ? 'ok' : 'no') + '"><b>' + (p.estado === 'aprobado' ? 'Aprobado' : 'Rechazado') + '</b>' + (p.por ? ' por ' + esc(p.por) : '') + (p.obs ? '<br>Motivo: ' + esc(p.obs) : '') + '</div></footer>';
-    det.innerHTML = '<button type="button" class="volver volver-cola" id="volver-cola"><svg class="i"><use href="#i-volver"/></svg>Volver a la lista</button>' +
-      '<div class="vp"><header class="vp-cab"><div><span class="vp-sub">Venta #' + String(p.venta).padStart(4, '0') + (p.fecha ? ', ' + esc(p.fecha) : '') + '</span><h3>' + esc(p.cliente) + '</h3></div><span class="chip">' + esc(p.metodo) + '</span></header>' +
-      '<div class="vp-cuerpo"><figure class="comprobante">' + (p.img ? '<a href="' + esc(p.img) + '" target="_blank" rel="noopener" aria-label="Ver comprobante en grande"><img src="' + esc(p.img) + '" alt="Comprobante enviado por el cliente"></a>' : '<div class="vacio-filtro">El cliente no subió captura.</div>') + '<figcaption>Captura que subió el cliente</figcaption></figure>' +
-      '<div class="vp-datos"><section class="vp-banco"><h4>Búscalo en tu banco</h4><p class="vp-hint">Abre la cuenta del banco y confirma que llegó un pago con estos datos.</p><dl class="vp-filas">' +
-      '<div class="vp-fila destacada"><dt>Monto</dt><dd><b class="cifra">' + montoTxt(p) + '</b><small>= ' + (p.moneda === 'USD' ? fmtBs(p.monto * p.tasa) + ' Bs' : usd(usdPago)) + ' a tasa ' + p.tasa.toFixed(2) + '</small></dd></div>' +
-      '<div class="vp-fila"><dt>Referencia</dt><dd class="vp-ref-caja"><b class="vp-ref">' + esc(p.ref || 'Sin referencia') + '</b>' + (p.ref ? '<button type="button" class="vp-copiar" data-copiar="' + esc(p.ref) + '">Copiar</button>' : '') + '</dd></div>' +
-      '<div class="vp-fila"><dt>Fecha y hora</dt><dd>' + esc(p.fecha) + '</dd></div>' +
-      '<div class="vp-fila"><dt>Pagado desde</dt><dd>' + esc(p.banco || 'Banco no indicado') + (p.origen ? '<small>' + esc(p.origen) + '</small>' : '') + '</dd></div></dl></section>' +
-      '<section class="vp-cubre ' + (coincide ? 'si' : 'no') + '"><h4>¿Cubre la venta #' + String(p.venta).padStart(4, '0') + '?</h4>' +
-      '<div class="vp-cuenta"><span>Total <b>' + usd(p.total) + '</b></span>' + (p.previos ? '<span>− ya pagado <b>' + usd(p.previos) + '</b></span>' : '') + '<span>= falta <b>' + usd(falta) + '</b></span></div>' + res +
-      '<a href="index.php?action=detalle_venta&id=' + p.venta + '" class="pc-link">Ver la venta completa</a></section></div></div>' + acciones + '</div>';
+    var cab = '<button type="button" class="volver volver-cola" id="volver-cola"><svg class="i"><use href="#i-volver"/></svg>Volver a la lista</button>' +
+      '<header class="vf-cab"><div><small>Venta <a href="index.php?action=detalle_venta&amp;id=' + p.venta + '">' + venta(p) + '</a>' + (p.fecha ? ' · ' + esc(p.fecha) : '') + '</small><h3>' + esc(p.cliente) + '</h3></div>' +
+      '<span class="dv-chip neutro"><svg class="i"><use href="#i-' + icono(p) + '"/></svg>' + esc(p.metodo) + '</span></header>';
+    var cuerpo;
+    if (p.estado === 'pendiente') {
+      cuerpo = '<div class="vf-cuerpo"><section class="vf-sec"><h4><span class="n">1</span>' + (p.es_efectivo ? 'Confirma el efectivo recibido' : 'Búscalo en tu banco') + '</h4>' +
+        '<p>' + (p.es_efectivo ? 'Cuenta el dinero y confirma que coincide.' : 'Confirma que llegó un pago con estos datos.') + '</p>' + montos(p) + datos(p) + '</section>' + cuenta(p) + '</div>' +
+        '<footer class="vf-acc"><button type="button" class="btn btn-rech" id="btn-rechazar"><svg class="i"><use href="#i-x"/></svg>Rechazar</button><button type="button" class="btn btn-ok" id="btn-aprobar"><svg class="i"><use href="#i-check"/></svg>Aprobar pago</button></footer>';
+    } else {
+      var ok = p.estado === 'aprobado', quien = [p.por ? 'por ' + p.por : (p.es_efectivo && p.registrado_por ? 'por ' + p.registrado_por : ''), p.cuando || p.fecha].filter(Boolean).join(' · ');
+      var titulo = ok ? (p.es_efectivo ? 'Cobrado en caja' : 'Pago aprobado') : 'Pago rechazado';
+      cuerpo = '<div class="vf-cuerpo"><div class="vf-final' + (ok ? '' : ' rech') + '"><span class="ic"><svg class="i"><use href="#i-' + (ok ? (p.es_efectivo ? 'efectivo' : 'check') : 'x') + '"/></svg></span><b>' + titulo + '</b><span>' + esc(quien) + '</span>' +
+        (!ok && p.motivo ? '<p><b>Motivo:</b> ' + esc(p.motivo) + '</p>' : '') + '</div>' + montos(p) + datos(p) + '</div>';
+    }
+    det.innerHTML = cab + cuerpo;
     det.setAttribute('data-actual', i);
   }
   mostrar(0);
+
   document.getElementById('p-verificar_pagos').addEventListener('click', function (e) {
     var it = e.target.closest('[data-pago]');
     if (it) { mostrar(+it.getAttribute('data-pago')); verif.classList.add('viendo'); return; }
     if (e.target.closest('#volver-cola')) { verif.classList.remove('viendo'); return; }
+    var copiar = e.target.closest('.vf-copiar');
+    if (copiar) {
+      var listo = function () { copiar.classList.add('hecho'); copiar.setAttribute('aria-label', 'Referencia copiada'); copiar.innerHTML = '<svg class="i"><use href="#i-check"/></svg>'; setTimeout(function () { copiar.classList.remove('hecho'); copiar.setAttribute('aria-label', 'Copiar referencia'); copiar.innerHTML = '<svg class="i"><use href="#i-copiar"/></svg>'; }, 1600); };
+      if (navigator.clipboard) navigator.clipboard.writeText(copiar.getAttribute('data-ref')).then(listo, function () { Panel.avisar('Selecciona la referencia y cópiala con Ctrl+C', 'aviso'); });
+      return;
+    }
     var p = pagos[+det.getAttribute('data-actual')];
     if (e.target.closest('#btn-aprobar')) { document.getElementById('ap-id').value = p.id; document.getElementById('form-aprobar').submit(); return; }
     if (e.target.closest('#btn-rechazar')) { document.getElementById('mr-id').value = p.id; document.getElementById('mr-obs').value = ''; document.getElementById('modal-rechazo').showModal(); }

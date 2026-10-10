@@ -3,7 +3,7 @@ $menu = 'kardex';
 $tituloPagina = 'Movimientos';
 $movimientos = $movimientos ?? [];
 include __DIR__ . '/../admin/_abrir.php';
-$f = ['desde' => $_GET['desde'] ?? date('Y-m-d', strtotime('-7 days')), 'hasta' => $_GET['hasta'] ?? date('Y-m-d'), 'tipo' => $_GET['tipo'] ?? ''];
+$f = ['desde' => $_GET['desde'] ?? '', 'hasta' => $_GET['hasta'] ?? '', 'tipo' => $_GET['tipo'] ?? ''];
 $tipos = ['compra' => ['compra', 'Compra'], 'venta_tienda' => ['venta', 'Venta en tienda'], 'venta_online' => ['venta', 'Venta online'], 'ajuste' => ['ajuste', 'Ajuste por conteo'], 'merma' => ['merma', 'Merma'], 'transferencia' => ['transf', 'Transferencia'], 'anulacion_compra' => ['merma', 'Compra anulada']];
 $pastilla = function ($n, $canal, $min, $afectado) {
     $agotado = (int) $n === 0;
@@ -14,25 +14,29 @@ $pastilla = function ($n, $canal, $min, $afectado) {
 ?>
 <section class="contenido">
   <header class="cab">
-    <div class="cab-txt"><small>Inventario</small><h2>Movimientos</h2><small>Cada entrada y salida de mercancía, con el stock que quedó.</small></div>
+    <div class="cab-txt"><small>Inventario</small><h2>Movimientos</h2></div>
     <div class="cab-acc">
       <a href="index.php?action=ajustes_inventario" class="btn btn-sec"><svg class="i"><use href="#i-ajuste"/></svg>Nuevo ajuste</a>
       <a href="index.php?<?= $e(http_build_query(['action' => 'exportar_excel', 'tipo' => 'kardex', 'desde' => $f['desde'], 'hasta' => $f['hasta']])) ?>" class="btn btn-sec"><svg class="i"><use href="#i-archivo"/></svg>Excel</a>
     </div>
   </header>
-  <form class="herr" method="GET" action="index.php">
+  <form class="filtros" method="GET" action="index.php" aria-label="Filtros">
     <input type="hidden" name="action" value="kardex">
     <label class="buscar"><svg class="i"><use href="#i-buscar"/></svg><input type="search" placeholder="Buscar producto" aria-label="Buscar producto" data-filtro-tabla="tabla-mov" data-filtro-vacio="vacio-mov"></label>
-    <select class="selector" name="tipo" aria-label="Tipo de movimiento">
-      <option value="">Todos los movimientos</option>
-      <?php foreach ($tipos as $k => [, $t]): ?><option value="<?= $k ?>" <?= $f['tipo'] === $k ? 'selected' : '' ?>><?= $t ?></option><?php endforeach; ?>
-    </select>
-    <label class="fecha-rango">Desde <input type="date" name="desde" value="<?= $e($f['desde']) ?>" aria-label="Desde"> hasta <input type="date" name="hasta" value="<?= $e($f['hasta']) ?>" aria-label="Hasta"></label>
-    <button type="submit" class="btn btn-sec">Filtrar</button>
+    <?php $periodoFiltro = ['modo' => 'rango', 'todo' => true]; include __DIR__ . '/../admin/_periodo.php'; ?>
+    <label class="f-select<?= $f['tipo'] !== '' ? ' activo' : '' ?>"><svg class="i"><use href="#i-lista"/></svg>
+      <select name="tipo" aria-label="Tipo de movimiento" data-auto-enviar data-desplegable>
+        <option value="">Todos los movimientos</option>
+        <?php foreach ($tipos as $k => [, $t]): ?><option value="<?= $k ?>"<?= $f['tipo'] === $k ? ' selected' : '' ?>><?= $t ?></option><?php endforeach; ?>
+      </select>
+    </label>
+    <?php if ($f['tipo'] !== '' || isset($_GET['desde']) || isset($_GET['hasta'])): ?>
+    <a href="index.php?action=kardex" class="f-quitar"><svg class="i"><use href="#i-x"/></svg>Quitar filtros</a>
+    <?php endif; ?>
   </form>
   <section class="tabla-caja" aria-label="Movimientos de inventario">
     <div class="tabla-scroll">
-      <table class="tabla-resp" id="tabla-mov">
+      <table class="tabla-resp" id="tabla-mov" data-paginar="10">
         <thead><tr><th>Fecha</th><th>Producto</th><th>Movimiento</th><th class="c-media">Canal</th><th class="num">Cantidad</th><th class="num">Stock que queda</th><th class="c-media">Origen</th><th class="c-media">Usuario</th></tr></thead>
         <tbody>
         <?php foreach ($movimientos as $m):

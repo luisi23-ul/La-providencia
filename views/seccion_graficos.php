@@ -8,7 +8,6 @@ $f = ['desde' => $_GET['desde'] ?? date('Y-m-d', strtotime('-13 days')), 'hasta'
 $tabs = ['ventas' => 'Ventas', 'productos' => 'Productos', 'dinero' => 'Cobros y compras'];
 if (!isset($tabs[$f['tab']])) $f['tab'] = 'ventas';
 $url = fn($cambios) => 'index.php?' . http_build_query(array_merge(['action' => 'seccion_graficos'], $f, $cambios));
-$rapidos = ['7 días' => [date('Y-m-d', strtotime('-6 days')), date('Y-m-d')], '14 días' => [date('Y-m-d', strtotime('-13 days')), date('Y-m-d')], 'Este mes' => [date('Y-m-01'), date('Y-m-d')]];
 $tiendaPct = $r['vendido'] ? round($r['tienda'] / $r['vendido'] * 100) : 0;
 $meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 
@@ -31,15 +30,11 @@ $barras = function ($id, $titulo, $filas, $vacio, $extra = '') { ?>
     <div class="cab-acc"><a href="index.php?<?= $e(http_build_query(['action' => 'exportar_pdf', 'tipo' => 'estadisticas', 'desde' => $f['desde'], 'hasta' => $f['hasta']])) ?>" target="_blank" class="btn btn-sec"><svg class="i"><use href="#i-archivo"/></svg>PDF</a></div>
   </header>
 
-  <form class="herr" method="GET" action="index.php">
+  <form class="filtros" method="GET" action="index.php" aria-label="Filtros">
     <input type="hidden" name="action" value="seccion_graficos">
     <input type="hidden" name="tab" value="<?= $e($f['tab']) ?>">
     <input type="hidden" name="agrupar" value="<?= $e($f['agrupar']) ?>">
-    <label class="fecha-rango">Desde <input type="date" name="desde" value="<?= $e($f['desde']) ?>" aria-label="Desde"> hasta <input type="date" name="hasta" value="<?= $e($f['hasta']) ?>" aria-label="Hasta"></label>
-    <button type="submit" class="btn btn-sec">Filtrar</button>
-    <div class="seg" role="group" aria-label="Periodos rápidos">
-      <?php foreach ($rapidos as $t => [$d, $h]): ?><a href="<?= $e($url(['desde' => $d, 'hasta' => $h])) ?>" class="seg-link" aria-current="<?= $f['desde'] === $d && $f['hasta'] === $h ? 'page' : 'false' ?>"><?= $t ?></a><?php endforeach; ?>
-    </div>
+    <?php $periodoFiltro = ['modo' => 'rango', 'atajos' => ['7 días', '14 días', 'Este mes'], 'defecto' => '14 días']; include __DIR__ . '/admin/_periodo.php'; ?>
   </form>
 
   <nav class="est-tabs" aria-label="Secciones de estadísticas">
@@ -48,15 +43,15 @@ $barras = function ($id, $titulo, $filas, $vacio, $extra = '') { ?>
 
   <?php if ($f['tab'] === 'ventas'): ?>
     <section class="mini-kpis" aria-label="Resumen del periodo">
-      <div><span>Vendido</span><b><?= $usd($r['vendido']) ?></b><small><?= $bs($r['vendido']) ?></small></div>
-      <div><span>Ganancia</span><b><?= $usd($r['ganancia']) ?></b><small>precio menos costo</small></div>
-      <div><span>Tienda / Online</span><b><?= $tiendaPct ?>% / <?= $r['vendido'] ? 100 - $tiendaPct : 0 ?>%</b><small>de lo vendido</small></div>
-      <div><span>Ticket promedio</span><b><?= $usd($r['ventas'] ? $r['vendido'] / $r['ventas'] : 0) ?></b><small><?= (int) $r['ventas'] ?> ventas</small></div>
+      <div><span class="mk-ic"><svg class="i"><use href="#i-dolar"/></svg></span><span>Vendido</span><b><?= $usd($r['vendido']) ?></b><small><?= $bs($r['vendido']) ?></small></div>
+      <div class="mk-oscuro"><span class="mk-ic"><svg class="i"><use href="#i-grafico"/></svg></span><span>Ganancia</span><b><?= $usd($r['ganancia']) ?></b><small>precio menos costo</small></div>
+      <div class="mk-claro"><span class="mk-ic"><svg class="i"><use href="#i-tienda"/></svg></span><span>Tienda / Online</span><b><?= $tiendaPct ?>% / <?= $r['vendido'] ? 100 - $tiendaPct : 0 ?>%</b><small>de lo vendido</small><span class="mk-barra" aria-hidden="true"><i style="width: <?= $tiendaPct ?>%"></i><i style="width: <?= $r['vendido'] ? 100 - $tiendaPct : 0 ?>%"></i></span></div>
+      <div class="mk-ambar"><span class="mk-ic"><svg class="i"><use href="#i-bolsa"/></svg></span><span>Ticket promedio</span><b><?= $usd($r['ventas'] ? $r['vendido'] / $r['ventas'] : 0) ?></b><small><?= (int) $r['ventas'] ?> ventas</small></div>
     </section>
 
     <section class="caja" aria-labelledby="t-graf">
       <header class="caja-cab"><h3 id="t-graf">Ventas por <?= $f['agrupar'] === 'mes' ? 'mes' : 'día' ?></h3>
-        <div class="seg" role="group" aria-label="Agrupar"><a href="<?= $e($url(['agrupar' => 'dia'])) ?>" class="seg-link" aria-current="<?= $f['agrupar'] === 'dia' ? 'page' : 'false' ?>">Por día</a><a href="<?= $e($url(['agrupar' => 'mes'])) ?>" class="seg-link" aria-current="<?= $f['agrupar'] === 'mes' ? 'page' : 'false' ?>">Por mes</a></div>
+        <nav class="f-grupo" aria-label="Agrupar"><a href="<?= $e($url(['agrupar' => 'dia'])) ?>" class="f-op" aria-current="<?= $f['agrupar'] === 'dia' ? 'page' : 'false' ?>">Por día</a><a href="<?= $e($url(['agrupar' => 'mes'])) ?>" class="f-op" aria-current="<?= $f['agrupar'] === 'mes' ? 'page' : 'false' ?>">Por mes</a></nav>
       </header>
       <?php if ($est['dias']):
           $maxDia = max(array_map(fn($d) => $d['tienda'] + $d['online'], $est['dias'])) ?: 1;

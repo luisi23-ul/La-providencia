@@ -3,6 +3,7 @@
     <input type="hidden" name="id">
     <input type="hidden" name="volver" value="<?= $e($_GET['action'] ?? 'proveedores') ?>">
     <header class="modal-cab">
+      <span class="modal-ic"><svg class="i"><use href="#i-camion"/></svg></span>
       <div><h3 id="mp-titulo" data-si-edita="Editar proveedor" data-si-crea="Nuevo proveedor">Nuevo proveedor</h3><p>Los campos con * son obligatorios.</p></div>
       <button type="button" class="ic-btn" data-cerrar aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button>
     </header>

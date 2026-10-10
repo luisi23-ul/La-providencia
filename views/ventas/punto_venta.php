@@ -89,7 +89,7 @@ $categorias = array_values(array_unique(array_filter(array_map(fn($p) => $p->nom
 
 <dialog class="modal chico" id="modal-cliente" aria-labelledby="mcl-titulo">
   <form method="dialog">
-    <header class="modal-cab"><div><h3 id="mcl-titulo">Cliente de la venta</h3><p>Busca por cédula o RIF. Si no está, regístralo aquí mismo.</p></div><button type="button" class="ic-btn" data-cerrar aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button></header>
+    <header class="modal-cab"><span class="modal-ic"><svg class="i"><use href="#i-usuarios"/></svg></span><div><h3 id="mcl-titulo">Cliente de la venta</h3><p>Busca por cédula o RIF. Si no está, regístralo aquí mismo.</p></div><button type="button" class="ic-btn" data-cerrar aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button></header>
     <div class="modal-cuerpo">
       <div class="pv-busca-cli">
         <select id="mcl-tipo" aria-label="Tipo de documento"><option>V</option><option>E</option><option>J</option><option>G</option></select>
@@ -104,7 +104,7 @@ $categorias = array_values(array_unique(array_filter(array_map(fn($p) => $p->nom
 
 <dialog class="modal chico" id="modal-espera" aria-labelledby="mes-titulo">
   <form method="dialog">
-    <header class="modal-cab"><div><h3 id="mes-titulo">Ventas en espera</h3><p>Tickets aparcados mientras atiendes a otro cliente.</p></div><button type="button" class="ic-btn" data-cerrar aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button></header>
+    <header class="modal-cab"><span class="modal-ic"><svg class="i"><use href="#i-historial"/></svg></span><div><h3 id="mes-titulo">Ventas en espera</h3><p>Tickets aparcados mientras atiendes a otro cliente.</p></div><button type="button" class="ic-btn" data-cerrar aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button></header>
     <div class="modal-cuerpo" id="mes-lista" style="display:flex;flex-direction:column;gap:8px"></div>
   </form>
 </dialog>

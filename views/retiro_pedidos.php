@@ -10,19 +10,21 @@ $lista = $tab === 'pendiente' ? $porRetirar : $entregados;
 ?>
 <section class="contenido">
   <header class="cab">
-    <div class="cab-txt"><small>Ventas</small><h2>Retiro de pedidos</h2><small>Pedidos online ya pagados que el cliente viene a buscar a la tienda.</small></div>
+    <div class="cab-txt"><small>Ventas</small><h2>Retiro de pedidos</h2></div>
     <div class="cab-acc">
       <a href="index.php?action=exportar_pdf&tipo=retiros" target="_blank" class="btn btn-sec"><svg class="i"><use href="#i-archivo"/></svg>PDF</a>
       <a href="index.php?action=exportar_excel&tipo=retiros" class="btn btn-sec"><svg class="i"><use href="#i-archivo"/></svg>Excel</a>
     </div>
   </header>
-  <div class="seg" role="group" aria-label="Estado del retiro">
-    <a href="index.php?action=retiro_pedidos" class="seg-link" aria-current="<?= $tab === 'pendiente' ? 'page' : 'false' ?>">Por retirar<?php if ($porRetirar): ?><span><?= count($porRetirar) ?></span><?php endif; ?></a>
-    <a href="index.php?action=retiro_pedidos&tab=entregado" class="seg-link" aria-current="<?= $tab === 'entregado' ? 'page' : 'false' ?>">Entregados</a>
+  <div class="filtros">
+  <nav class="f-grupo" aria-label="Estado del retiro">
+    <a href="index.php?action=retiro_pedidos" class="f-op" aria-current="<?= $tab === 'pendiente' ? 'page' : 'false' ?>">Por retirar<?php if ($porRetirar): ?><span class="f-cuenta"><?= count($porRetirar) ?></span><?php endif; ?></a>
+    <a href="index.php?action=retiro_pedidos&tab=entregado" class="f-op" aria-current="<?= $tab === 'entregado' ? 'page' : 'false' ?>">Entregados</a>
+  </nav>
   </div>
   <section class="tabla-caja" aria-label="Pedidos">
     <div class="tabla-scroll">
-      <table class="tabla-resp">
+      <table class="tabla-resp" data-paginar="10">
         <thead><tr><th>Pedido</th><th>Cliente</th><th class="c-media">Pago</th><th class="num">Total</th><th>Entrega</th></tr></thead>
         <tbody>
         <?php foreach ($lista as $v): $num = '#' . str_pad($v->id, 4, '0', STR_PAD_LEFT); ?>
@@ -51,7 +53,7 @@ $lista = $tab === 'pendiente' ? $porRetirar : $entregados;
   <form method="GET" action="index.php">
     <input type="hidden" name="action" value="procesar_retiro">
     <input type="hidden" name="id">
-    <header class="modal-cab"><div><h3 id="me-titulo">Entregar pedido</h3><p>Confirma quién se lo lleva.</p></div><button type="button" class="ic-btn" data-cerrar aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button></header>
+    <header class="modal-cab"><span class="modal-ic"><svg class="i"><use href="#i-bolsa"/></svg></span><div><h3 id="me-titulo">Entregar pedido</h3><p>Confirma quién se lo lleva.</p></div><button type="button" class="ic-btn" data-cerrar aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button></header>
     <div class="modal-cuerpo" style="display:flex;flex-direction:column;gap:12px">
       <div class="campo"><span class="lbl">¿Quién lo retira?</span>
         <div class="opciones" role="radiogroup" aria-label="Quién retira">

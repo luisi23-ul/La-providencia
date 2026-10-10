@@ -13,15 +13,15 @@ $tabs = ['1' => ['Activos', $activos], '0' => ['Inactivos', count($proveedores) 
     <div class="cab-txt"><small>Compras</small><h2>Proveedores</h2></div>
     <div class="cab-acc"><button type="button" class="btn btn-pri" data-abrir-modal="modal-proveedor"><svg class="i"><use href="#i-mas"/></svg>Nuevo proveedor</button></div>
   </header>
-  <div class="herr">
+  <div class="filtros">
     <label class="buscar"><svg class="i"><use href="#i-buscar"/></svg><input type="search" placeholder="Buscar por RIF, cédula o razón social" aria-label="Buscar proveedor" data-filtro-tabla="tabla-prov" data-filtro-vacio="vacio-prov"></label>
-    <div class="seg" role="group" aria-label="Filtrar por estado">
-      <?php foreach ($tabs as $k => [$t, $n]): ?><a href="index.php?action=proveedores&estado=<?= $k ?>" class="seg-link" aria-current="<?= $est === (string) $k ? 'page' : 'false' ?>"><?= $t ?><span><?= $n ?></span></a><?php endforeach; ?>
-    </div>
+    <nav class="f-grupo" aria-label="Filtrar por estado">
+      <?php foreach ($tabs as $k => [$t, $n]): ?><a href="index.php?action=proveedores&estado=<?= $k ?>" class="f-op" aria-current="<?= $est === (string) $k ? 'page' : 'false' ?>"><?= $t ?><span class="f-cuenta"><?= $n ?></span></a><?php endforeach; ?>
+    </nav>
   </div>
   <section class="tabla-caja" aria-label="Listado de proveedores">
     <div class="tabla-scroll">
-      <table class="tabla-resp" id="tabla-prov">
+      <table class="tabla-resp" id="tabla-prov" data-paginar="10">
         <thead><tr><th>RIF / Cédula</th><th>Razón social</th><th>Teléfono</th><th class="c-media">Correo</th><th class="num c-media">Compras</th><th>Estado</th><th class="num">Acciones</th></tr></thead>
         <tbody>
         <?php foreach ($lista as $p): ?>

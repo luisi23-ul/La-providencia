@@ -7,7 +7,7 @@ include __DIR__ . '/../admin/_abrir.php';
 ?>
 <section class="contenido">
   <header class="cab">
-    <div class="cab-txt"><small>Inventario</small><h2>Categorías</h2><small>Cada categoría define sus atributos. Al crear un producto se llenan los de su categoría.</small></div>
+    <div class="cab-txt"><small>Inventario</small><h2>Categorías</h2></div>
     <div class="cab-acc"><button type="button" class="btn btn-pri" data-categoria><svg class="i"><use href="#i-mas"/></svg>Nueva categoría</button></div>
   </header>
 
@@ -28,7 +28,7 @@ include __DIR__ . '/../admin/_abrir.php';
               <button type="button" class="ic-btn" data-categoria="<?= $e(json_encode(['id' => (int) $c->id, 'nombre' => $c->nombre_categoria, 'atributos' => $atr], JSON_UNESCAPED_UNICODE)) ?>" aria-label="Editar <?= $e($c->nombre_categoria) ?>"><svg class="i"><use href="#i-editar"/></svg></button>
               <form method="POST" action="index.php?action=eliminar_categoria">
                 <input type="hidden" name="id" value="<?= (int) $c->id ?>">
-                <button type="submit" class="ic-btn" aria-label="Eliminar <?= $e($c->nombre_categoria) ?>" <?= $productos ? 'disabled title="Tiene productos"' : 'data-confirmar="¿Eliminar la categoría ' . $e($c->nombre_categoria) . '?" data-confirmar-texto="Esta acción no se puede deshacer." data-confirmar-boton="Eliminar"' ?>><svg class="i"><use href="#i-basura"/></svg></button>
+                <button type="submit" class="ic-btn" aria-label="Eliminar <?= $e($c->nombre_categoria) ?>" <?= $productos ? 'data-bloqueo="No se puede eliminar ' . $e($c->nombre_categoria) . '" data-bloqueo-texto="Tiene ' . $productos . ($productos === 1 ? ' producto' : ' productos') . '. Muévelos a otra categoría antes de eliminarla." data-bloqueo-enlace="index.php?action=listado_productos&amp;categoria=' . (int) $c->id . '"' : 'data-confirmar="¿Eliminar la categoría ' . $e($c->nombre_categoria) . '?" data-confirmar-texto="Esta acción no se puede deshacer." data-confirmar-boton="Eliminar"' ?>><svg class="i"><use href="#i-basura"/></svg></button>
               </form>
             </div></td>
           </tr>
@@ -44,7 +44,7 @@ include __DIR__ . '/../admin/_abrir.php';
 <dialog class="modal" id="modal-categoria" aria-labelledby="mcat-titulo">
   <form method="POST" action="index.php?action=guardar_categoria" id="form-categoria">
     <input type="hidden" name="id" id="mcat-id">
-    <header class="modal-cab"><div><h3 id="mcat-titulo">Nueva categoría</h3></div><button type="button" class="ic-btn" data-cerrar aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button></header>
+    <header class="modal-cab"><span class="modal-ic"><svg class="i"><use href="#i-etiqueta"/></svg></span><div><h3 id="mcat-titulo">Nueva categoría</h3></div><button type="button" class="ic-btn" data-cerrar aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button></header>
     <div class="modal-cuerpo" style="display:flex;flex-direction:column;gap:16px">
       <div class="campo">
         <label for="mcat-nombre">Nombre <span class="ob">*</span></label>
