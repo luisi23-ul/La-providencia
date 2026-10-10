@@ -1,6 +1,7 @@
 <?php
 ob_start();
 session_start(); 
+
 require_once 'config/db.php';
 require_once 'controllers/UsuarioController.php';
 require_once 'controllers/AdminControllers.php'; 
@@ -12,336 +13,171 @@ require_once __DIR__ . '/vendor/autoload.php';
 
 $db = Database::connect(); 
 
-
 $usuarioC = new UsuarioController($db); 
-$adminC = new AdminControllers(); 
-$ventaC = new VentaController($db);
+$adminC   = new AdminControllers(); 
+$ventaC   = new VentaController($db);
 $reporteC = new ReporteController($db);
-$masterC = new MasterController($db);
+$masterC  = new MasterController($db);
 
 $action = $_GET['action'] ?? 'inicio';
 
+// -----------------------------------------------------------------------------
+// LISTA DE ACCIONES POR PANEL
+// -----------------------------------------------------------------------------
 $acciones_master = [
-    'gestionar_admins', 
-    'dashboard_master',
-     'nuevo_admin',
-      'guardar_nuevo_admin', 
-      'editar_admin', 
-      'actualizar_admin',
-       'eliminar_admin',
-        'configuracion_sistema',
-        'listado_administradores',
-       'toggle_admin' ,
-         'actualizar_configuracion',
-    'roles_permisos', 'auditoria'];
-
-         $acciones_admin = [
-    'dashboard', 
-    'admin', 
-    'listado_productos', 
-    'formulario_producto', 
-    'guardar_producto',
-    'editar', 
-    'actualizar_producto',
-    'eliminar_producto',
-    'seccion_graficos', 
-    'grafico_barras', 
-    'grafico_tortas',
-    'metodos_pago',
-    'punto_venta', 'ventas', 'verificar_pagos', 'pagos_banco', 'pagos_pendientes', 'retiro_pedidos', 'detalle_venta', 'ver_reporte',
-    'categorias', 'ajustes_inventario', 'kardex',
-    'proveedores', 'compras', 'nueva_compra', 'detalle_compra',
-    'lista_clientes'
+    'dashboard_master', 'gestionar_admins', 'nuevo_admin', 'guardar_nuevo_admin', 
+    'editar_admin', 'actualizar_admin', 'eliminar_admin', 'listado_administradores',
+    'toggle_admin', 'configuracion_sistema', 'actualizar_configuracion',
+    'roles_permisos', 'guardar_permisos', 'guardar_rol', 'auditoria'
 ];
 
+$acciones_admin = [
+    'dashboard', 'admin', 'listado_productos', 'formulario_producto', 
+    'guardar_producto', 'editar', 'actualizar_producto', 'eliminar_producto',
+    'seccion_graficos', 'grafico_barras', 'grafico_tortas',
+    'metodos_pago', 'guardar_metodo_pago', 'cambiar_estado_metodo',
+    'punto_venta', 'guardar_venta_tienda', 'ventas', 'verificar_pagos', 
+    'aprobar_pago', 'rechazar_pago', 'pagos_banco', 'pagos_pendientes', 
+    'retiro_pedidos', 'procesar_retiro', 'detalle_venta', 'ver_reporte',
+    'categorias', 'guardar_categoria', 'eliminar_categoria', 
+    'ajustes_inventario', 'guardar_ajuste', 'kardex',
+    'proveedores', 'guardar_proveedor', 'cambiar_estado_proveedor',
+    'compras', 'nueva_compra', 'guardar_compra', 'detalle_compra', 'anular_compra',
+    'lista_clientes', 'guardar_cliente', 'cambiarEstadoCliente'
+];
 
-//  Acciones que no requieren Header
-if ($action == 'registrar_cliente') { $usuarioC->guardarCliente(); exit(); }
-if ($action == 'valider_login_registro') { $usuarioC->ingresar(); exit(); }
-if ($action == 'validar_login') { $usuarioC->validarLogin(); exit(); }
+// -----------------------------------------------------------------------------
+// ACCIONES PURAS DE API / PROCESAMIENTO (Sin Header HTML)
+// -----------------------------------------------------------------------------
+if ($action == 'registrar_cliente')       { $usuarioC->guardarCliente(); exit(); }
+if ($action == 'valider_login_registro')  { $usuarioC->ingresar(); exit(); }
+if ($action == 'validar_login')           { $usuarioC->validarLogin(); exit(); }
+if ($action == 'cerrar_sesion')           { $usuarioC->cerrarSesion(); exit(); }
 
-
-
-
-
-// Solo carga el header si NO es la acción de login
-if ($action != 'login') {
-    include 'views/layout/header.php';
-    echo '<main id="app">';
-} else {
-    // Si es login, no incluimos header, solo abrimos el main
-    echo '<main id="app">';
-}
-
-//BLOQUE DE SEGURIDAD MASTER 
+// -----------------------------------------------------------------------------
+// BLOQUE DE SEGURIDAD MASTER (Solo Rol 1 y 2)
+// -----------------------------------------------------------------------------
 if (in_array($action, $acciones_master)) {
     if (isset($_SESSION['rol']) && ($_SESSION['rol'] == 1 || $_SESSION['rol'] == 2)) {
         switch ($action) {
-            case 'dashboard_master':
-                 $masterC->mostrarDashboard_master();
-                  break;
-            case 'gestionar_admins':
-                 $masterC->gestionarAdmins(); 
-                 break;
-            case 'nuevo_admin':
-                 include "views/nuevo_admin.php"; 
-                 break;
-            case 'guardar_nuevo_admin': 
-                $masterC->crearAdmin();
-                 break;
-            case 'editar_admin': 
-                $masterC->editarAdmin(); 
-                break;
-            case 'actualizar_admin':
-                 $masterC->actualizarAdmin();
-                  break;
-            case 'eliminar_admin': 
-                $masterC->eliminarAdmin($_GET['id']);
-                 break;
-
-                case 'listado_administradores':
-            $masterC = new MasterController($db);
-            $masterC->listarAdministradores();
-            break;        
-
-            case 'toggle_admin':
-            $masterC->toggleAdmin();
-            break;
-            case 'configuracion_sistema': 
-                $masterC->vistaConfiguracion(); 
-                break;
-                   
-            case 'actualizar_configuracion':
-                $masterC->actualizarConfiguracion(); // Usa la instancia que ya creaste arriba
-                break;
-            case 'roles_permisos': include 'views/master/roles_permisos.php'; break;
-            case 'auditoria': include 'views/master/auditoria.php'; break;
-                }
-        echo '</main></main>'; // Cerrar etiquetas
-                exit();
-            } else {
-                header("Location: index.php?action=login");
-                exit();
-            }
+            case 'dashboard_master':         $masterC->mostrarDashboard_master(); break;
+            case 'gestionar_admins':          $masterC->gestionarAdmins(); break;
+            case 'nuevo_admin':               include "views/nuevo_admin.php"; break;
+            case 'guardar_nuevo_admin':       $masterC->crearAdmin(); break;
+            case 'editar_admin':              $masterC->editarAdmin(); break;
+            case 'actualizar_admin':          $masterC->actualizarAdmin(); break;
+            case 'eliminar_admin':            $masterC->eliminarAdmin($_GET['id'] ?? null); break;
+            case 'listado_administradores':   $masterC->listarAdministradores(); break;
+            case 'toggle_admin':              $masterC->toggleAdmin(); break;
+            case 'configuracion_sistema':     $masterC->vistaConfiguracion(); break;
+            case 'actualizar_configuracion':  $masterC->actualizarConfiguracion(); break;
+            case 'roles_permisos':            include 'views/master/roles_permisos.php'; break;
+            case 'auditoria':                 include 'views/master/auditoria.php'; break;
         }
-
-$action = $_GET['action'] ?? 'inicio';
-$acciones_admin = [
-    'dashboard', 
-    'admin', 
-    'listado_productos', 
-    'formulario_producto', 
-    'guardar_producto',
-    'editar', 
-    'actualizar_producto',
-    'eliminar_producto',
-    'seccion_graficos', 
-    'grafico_barras', 
-    'grafico_tortas',
-    'metodos_pago' ,
-    'gestionarClientes' ,
-    'cambiarEstadoCliente',
-    'lista_clientes'
-    
-
-];
-
-
-
-//acciones
-if ($action == 'registrar_cliente') {
-    $usuarioC->guardarCliente();
-    exit();
+        ob_end_flush();
+        exit();
+    } else {
+        header("Location: index.php?action=login");
+        exit();
+    }
 }
 
-if ($action == 'valider_login_registro') {
-    $usuarioC->ingresar();
-    exit();
+// -----------------------------------------------------------------------------
+// RENDERIZADO DEL ENCABEZADO TIENDA ONLINE
+// (Solo para vistas de clientes, no interfiere en el panel admin)
+// -----------------------------------------------------------------------------
+$es_panel = in_array($action, $acciones_admin) || in_array($action, $acciones_master);
+
+if (!$es_panel && $action != 'login') {
+    include 'views/layout/header.php';
+    echo '<main id="app">';
 }
 
-if ($action == 'validar_login') {
-    $usuarioC->validarLogin();
-    exit();
-}
-
-//carga vistas
-
-
+// -----------------------------------------------------------------------------
+// ENRUTADOR PRINCIPAL
+// -----------------------------------------------------------------------------
 switch ($action) {
-    // Rutas de Usuario
-    case 'inicio':
-        $usuarioC->mostrarInicio();
-        break;
+    // Tienda Online / Clientes
+    case 'inicio':           $usuarioC->mostrarInicio(); break;
+    case 'login':            $usuarioC->mostrarLogin(); break;
+    case 'login_usuario':    $usuarioC->mostrarLogin_registro(); break;
+    case 'registro':         $usuarioC->mostrarRegistro(); break;
+    case 'ver_catalogo':     $adminC->catalogo(); break;
+    case 'ver_carrito':      $ventaC->mostrarCarrito(); break;
+    case 'agregar_carrito':  $ventaC->añadir(); break;
+    case 'eliminar_item':    $ventaC->eliminarItem(); break;
+    case 'finalizar_compra': $ventaC->finalizarCompra(); break;
 
-    case 'login':
-        $usuarioC->mostrarLogin();
-        break;
+    // Panel Admin: Dashboard
+    case 'dashboard':        $adminC->mostrarDashboard(); break;
+    case 'admin':            $adminC->mostrarPanel(); break;
 
-    case 'login_usuario':
-        $usuarioC->mostrarLogin_registro();
-        break;
+    // Panel Admin: Módulo de Inventario
+    case 'listado_productos':   $adminC->mostrarListado(); break;
+    case 'formulario_producto': $adminC->mostrarPanel(); break;
+    case 'guardar_producto':    $adminC->agregar(); break;
+    case 'editar':              $adminC->editar(); break;
+    case 'actualizar_producto': $adminC->actualizar(); break;
+    case 'eliminar_producto':   $adminC->eliminar(); break;
+    case 'categorias':          $adminC->categorias(); break;
+    case 'guardar_categoria':   $adminC->guardarCategoria(); break;
+    case 'eliminar_categoria':  $adminC->eliminarCategoria(); break;
+    case 'ajustes_inventario':  $adminC->ajustesInventario(); break;
+    case 'guardar_ajuste':      $adminC->guardarAjuste(); break;
+    case 'kardex':              $adminC->kardex(); break;
 
-    case 'registro':
-        $usuarioC->mostrarRegistro(); 
-        break;
+    // Gráficos y Estadísticas
+    case 'seccion_graficos':    include "views/seccion_graficos.php"; break;
+    case 'grafico_barras':      $adminC->grafico_barras(); break;
+    case 'grafico_tortas':      $adminC->grafico_torta(); break;
 
-    // Rutas de Administración / Catálogo
-    case 'ver_catalogo':
-        $adminC->catalogo();
-        break;
-
-    case 'dashboard':
-        $adminC->mostrarDashboard(); 
-        break;
-        
-    case 'admin':
-        $adminC->mostrarPanel();
-        break;
-
-    case 'listado_productos':
-        $adminC->mostrarListado(); 
-        break;
-
-    case 'formulario_producto':
-        include "views/formulario_producto.php";
-        break;
- 
-    case 'seccion_graficos':
-        include "views/seccion_graficos.php";
-        break;
-
-    //graficos
-case 'grafico_barras':
-    if (method_exists($adminC, 'grafico_barras')) {
-        $adminC->grafico_barras();
-    } else {
-        require_once 'views/grafico_barras.php';
-    }
-    break;
-
-case 'grafico_tortas':
-    if (method_exists($adminC, 'grafico_torta')) {
-        $adminC->grafico_torta();
-    } else {
-        require_once 'views/grafico_tortas.php';
-    }
-    break;
-    
-
-    case 'guardar_producto':
-        $adminC->agregar();
-        break;
-
-    case 'eliminar_producto':
-        $adminC->eliminar();
-        break;
-
-    case 'editar':
-        $adminC->editar();
-        break;
-
-    case 'actualizar_producto':
-        $adminC->actualizar();
-        break;
-
-    // Rutas de Ventas / Carrito
-    case 'ver_carrito':
-        $ventaC->mostrarCarrito();
-        break;
-
-    case 'agregar_carrito':
-        $ventaC->añadir();
-        break;
-
-    case 'eliminar_item':
-        $ventaC->eliminarItem();
-        break;
-
-    case 'finalizar_compra':
-        $ventaC->finalizarCompra(); 
-        break;
-
-    
-        case 'api_estadisticas':
-    $adminC->cargarDatosEstadisticosJSON(); 
-    break;
-
-    case 'pagos_pendientes':
-            $ventaC->pagosPendientes(); 
-            break;
-
-        case 'retiro_pedidos':
-            $ventaC->retiroPedidos();  
-            break;
-
-        case 'confirmar_pago':
-            $ventaC->confirmarPago($_GET['id']);
-            break;
-
-        case 'procesar_retiro':
-            $ventaC->procesarRetiro($_GET['id']);
-            break;
-
-        case 'detalle_venta':
-            $ventaC->verDetalle($_GET['id']);
-            break;
-
-        case 'metodos_pago':
-        include "views/metodos_pago.php";
-     break;
-
-    case 'punto_venta': include 'views/ventas/punto_venta.php'; break;
-    case 'ventas': include 'views/ventas/ventas.php'; break;
-    case 'verificar_pagos': include 'views/ventas/verificar_pagos.php'; break;
-    case 'pagos_banco': include 'views/ventas/pagos_banco.php'; break;
-    case 'categorias': include 'views/inventario/categorias.php'; break;
-    case 'ajustes_inventario': include 'views/inventario/ajustes.php'; break;
-    case 'kardex': include 'views/inventario/kardex.php'; break;
-    case 'proveedores': include 'views/compras/proveedores.php'; break;
-    case 'compras': include 'views/compras/compras.php'; break;
-    case 'nueva_compra': include 'views/compras/nueva_compra.php'; break;
-    case 'detalle_compra': include 'views/compras/detalle_compra.php'; break;
-    case 'cerrar_sesion': $usuarioC->cerrarSesion(); break;
-
-
-
-    default:
-        $usuarioC->mostrarInicio();
-        break;
-
-    //  DE REPORTES Y EXPORTACIÓN 
-    case 'exportar_excel':
-        // Limpiamos el tipo: eliminamos caracteres como '$' por si acaso
-        $tipo = isset($_GET['tipo']) ? trim(str_replace('$', '', $_GET['tipo'])) : 'inventario';
-        $reporteC->generarExcel($tipo); 
-        exit;
-
-    case 'exportar_pdf':
-        $tipo = isset($_GET['tipo']) ? trim(str_replace('$', '', $_GET['tipo'])) : 'inventario';
-        $reporteC->generarPDF($tipo);
-        exit;
-
+    // Panel Admin: Ventas, POS y Pagos (Controlador ejecutado)
+    case 'punto_venta':          $ventaC->puntoVenta(); break;
+    case 'guardar_venta_tienda': $ventaC->guardarVentaTienda(); break;
+    case 'ventas':               $ventaC->listarVentas(); break;
+    case 'verificar_pagos':      $ventaC->verificarPagos(); break;
+    case 'aprobar_pago':         $ventaC->aprobarPago(); break;
+    case 'rechazar_pago':        $ventaC->rechazarPago(); break;
+    case 'pagos_banco':          $ventaC->pagosBanco(); break;
+    case 'pagos_pendientes':     $ventaC->pagosPendientes(); break;
+    case 'retiro_pedidos':       $ventaC->retiroPedidos(); break;
+    case 'confirmar_pago':       $ventaC->confirmarPago($_GET['id'] ?? null); break;
+    case 'procesar_retiro':      $ventaC->procesarRetiro($_GET['id'] ?? null); break;
+    case 'detalle_venta':        $ventaC->verDetalle($_GET['id'] ?? null); break;
     case 'ver_reporte':
         $id_metodo = isset($_GET['metodo']) ? intval($_GET['metodo']) : 0;
         $ventaC->manejarReporte($id_metodo);
         break;
 
-       
-    case 'lista_clientes':
-        $usuarioC->listarClientes(); // Usamos la misma variable que usas para editar admins
+    // Panel Admin: Compras y Proveedores
+    case 'proveedores':          include 'views/compras/proveedores.php'; break;
+    case 'compras':              include 'views/compras/compras.php'; break;
+    case 'nueva_compra':         include 'views/compras/nueva_compra.php'; break;
+    case 'detalle_compra':       include 'views/compras/detalle_compra.php'; break;
+
+    // Panel Admin: Clientes y Métodos de Pago
+    case 'metodos_pago':         include "views/metodos_pago.php"; break;
+    case 'lista_clientes':       $usuarioC->listarClientes(); break;
+    case 'cambiarEstadoCliente': $usuarioC->cambiarEstadoCliente(); break;
+
+    // Reportes de Exportación
+    case 'exportar_excel':
+        $tipo = isset($_GET['tipo']) ? trim(str_replace('$', '', $_GET['tipo'])) : 'inventario';
+        $reporteC->generarExcel($tipo); 
+        exit;
+    case 'exportar_pdf':
+        $tipo = isset($_GET['tipo']) ? trim(str_replace('$', '', $_GET['tipo'])) : 'inventario';
+        $reporteC->generarPDF($tipo);
+        exit;
+
+    default:
+        $usuarioC->mostrarInicio();
         break;
-
-    case 'cambiarEstadoCliente':
-        $usuarioC->cambiarEstadoCliente(); // Asegúrate de llamar al controlador correcto
-        break;
-        
-    }
-
-echo '</main>';
-
-
-if (isset($action) && in_array($action, $acciones_admin)) {
-    echo '</section>';
 }
-ob_end_flush(); 
+
+if (!$es_panel && $action != 'login') {
+    echo '</main>';
+}
+
+ob_end_flush();
 ?>

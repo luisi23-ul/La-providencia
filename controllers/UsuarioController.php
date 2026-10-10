@@ -40,14 +40,10 @@ class UsuarioController {
         // aca se verif que si existe el usuario y si la clave coincide
         if ($usuario && password_verify($pass, $usuario["clave"])) {
             
-            // 2. NUEVA VALIDACIÓN: Comprobamos si el estado es 1 (activo)
-            // Asumiendo que tu columna en la base de datos se llama 'estado'
             if (isset($usuario["estado"]) && $usuario["estado"] == 0) {
                 echo "<script>alert('Tu cuenta está desactivada. Contacta al administrador.'); window.location.href='index.php?action=login';</script>";
                 exit();
             }
-
-            //  Si el estado es 1, procedemos a iniciar sesión
             if (session_status() == PHP_SESSION_NONE) session_start();
             
             $_SESSION["id_usuario"] = $usuario["id"];
@@ -143,7 +139,7 @@ public function ingresar() {
         } else {
             echo "<script>
                     alert('Error: El correo o la contraseña no coinciden.');
-                    window.location.href = 'index.php?action=mostrarlogin_registro';
+                    window.location.href = 'index.php?action=inicio';
                   </script>";
         }
     }

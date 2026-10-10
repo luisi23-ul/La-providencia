@@ -4,23 +4,36 @@ $tituloPagina = 'Productos';
 $listaProductos = $listaProductos ?? $productos ?? [];
 $categorias = $categorias ?? array_map(fn($id, $n) => (object) ['id' => $id, 'nombre_categoria' => $n], [1, 2, 3], ['Aluminio', 'Lencería', 'Plástico']);
 include __DIR__ . '/admin/_abrir.php';
+
+// Definición de respaldo de helpers en caso de que _abrir.php no los declare
+$e = $e ?? fn($v) => htmlspecialchars((string)($v ?? ''), ENT_QUOTES, 'UTF-8');
+$usd = $usd ?? fn($n) => '$' . number_format((float)($n ?? 0), 2, '.', ',');
+
 $nombreCat = [];
 foreach ($categorias as $c) $nombreCat[$c->id] = $c->nombre_categoria;
 $filtro = $_GET['stock'] ?? '';
 $catSel = $_GET['categoria'] ?? '';
+
 $estadoDe = function ($p) {
     $total = (int) $p->stock + (int) ($p->stock_online ?? 0);
     if ($total === 0) return 'agot';
     return (int) $p->stock < (int) ($p->stock_minimo ?? 5) ? 'bajo' : 'ok';
 };
+
 $conteo = ['bajo' => 0, 'agot' => 0];
-foreach ($listaProductos as $p) { $s = $estadoDe($p); if ($s !== 'ok') $conteo['bajo']++; if ($s === 'agot') $conteo['agot']++; }
+foreach ($listaProductos as $p) { 
+    $s = $estadoDe($p); 
+    if ($s !== 'ok') $conteo['bajo']++; 
+    if ($s === 'agot') $conteo['agot']++; 
+}
+
 $lista = array_filter($listaProductos, function ($p) use ($filtro, $catSel, $estadoDe) {
     if ($catSel !== '' && (string) $p->id_categoria !== $catSel) return false;
     if ($filtro === 'bajo') return $estadoDe($p) !== 'ok';
     if ($filtro === 'agotado') return $estadoDe($p) === 'agot';
     return true;
 });
+
 $url = fn($stock) => 'index.php?' . http_build_query(array_filter(['action' => 'listado_productos', 'stock' => $stock, 'categoria' => $catSel]));
 ?>
 <section class="contenido" id="p-inventario">
@@ -51,31 +64,64 @@ $url = fn($stock) => 'index.php?' . http_build_query(array_filter(['action' => '
   <section class="tabla-caja" aria-label="Listado de productos">
     <div class="tabla-scroll">
       <table id="tabla-productos">
-        <thead><tr><th class="c-media">Código</th><th>Producto</th><th class="c-media">Categoría</th><th class="num">Precio</th><th class="num">Tienda</th><th class="num">Online</th><th class="num">Acciones</th></tr></thead>
+        <thead>
+          <tr>
+            <th class="c-media">Código</th>
+            <th>Producto</th>
+            <th class="c-media">Categoría</th>
+            <th class="num">Precio</th>
+            <th class="num">Tienda</th>
+            <th class="num">Online</th>
+            <th class="num">Acciones</th>
+          </tr>
+        </thead>
         <tbody>
         <?php foreach ($lista as $p):
             $codigo = $p->codigo ?? ('P-' . str_pad($p->id, 4, '0', STR_PAD_LEFT));
             $cat = $p->nombre_categoria ?? ($nombreCat[$p->id_categoria] ?? 'Sin categoría');
             $costo = (float) ($p->costo_compra ?? 0);
-            $margen = $p->precio > 0 && $costo > 0 ? round(($p->precio - $costo) / $costo * 100) : null;
+            $margen = ($p->precio > 0 && $costo > 0) ? round((($p->precio - $costo) / $costo) * 100) : null;
             $s = $estadoDe($p); ?>
           <tr>
             <td class="cod c-media"><?= $e($codigo) ?></td>
-            <td><div class="prod"><?php if ($p->imagen): ?><img class="foto" src="public/uploads/<?= $e($p->imagen) ?>" alt="" width="44" height="44" loading="lazy"><?php endif; ?><div><b><?= $e($p->nombre_producto) ?></b><span><?= $e($p->descripcion ?? '') ?></span><span class="si-estrecho"><span class="cod"><?= $e($codigo) ?></span>, <?= $e($cat) ?></span></div></div></td>
+            <td>
+              <div class="prod">
+                <?php if ($p->imagen): ?><img class="foto" src="public/uploads/<?= $e($p->imagen) ?>" alt="" width="44" height="44" loading="lazy"><?php endif; ?>
+                <div>
+                  <b><?= $e($p->nombre_producto) ?></b>
+                  <span><?= $e($p->descripcion ?? '') ?></span>
+                  <span class="si-estrecho"><span class="cod"><?= $e($codigo) ?></span>, <?= $e($cat) ?></span>
+                </div>
+              </div>
+            </td>
             <td class="c-media"><span class="chip"><?= $e($cat) ?></span></td>
-            <td class="num"><b><?= $usd($p->precio) ?></b><?php if ($costo): ?><br><span class="margen">costo <?= $usd($costo) ?><?= $margen !== null ? ', +' . $margen . '%' : '' ?></span><?php endif; ?></td>
-            <td class="num"><div class="stk"><b><?= (int) $p->stock ?></b><?php if ($s === 'bajo'): ?><span class="est bajo">Bajo, mín. <?= (int) ($p->stock_minimo ?? 5) ?></span><?php elseif ($s === 'agot'): ?><span class="est agot">Agotado</span><?php endif; ?></div></td>
-            <td class="num"><div class="stk"><b><?= (int) ($p->stock_online ?? 0) ?></b></div></td>
-            <td><div class="acc">
-              <a href="index.php?action=editar&id=<?= (int) $p->id ?>" class="ic-btn" aria-label="Editar <?= $e($p->nombre_producto) ?>"><svg class="i"><use href="#i-editar"/></svg></a>
-              <a href="index.php?action=ajustes_inventario&producto=<?= (int) $p->id ?>" class="ic-btn" aria-label="Ajustar stock de <?= $e($p->nombre_producto) ?>"><svg class="i"><use href="#i-ajuste"/></svg></a>
-              <a href="index.php?action=eliminar_producto&id=<?= (int) $p->id ?>" class="ic-btn" aria-label="Quitar <?= $e($p->nombre_producto) ?> del catálogo" data-confirmar="¿Quitar <?= $e($p->nombre_producto) ?> del catálogo?" data-confirmar-texto="No se borra: deja de mostrarse." data-confirmar-boton="Quitar del catálogo" data-confirmar-tipo="aviso"><svg class="i"><use href="#i-basura"/></svg></a>
-            </div></td>
+            <td class="num">
+              <b><?= $usd($p->precio) ?></b>
+              <?php if ($costo): ?><br><span class="margen">costo <?= $usd($costo) ?><?= $margen !== null ? ', +' . $margen . '%' : '' ?></span><?php endif; ?>
+            </td>
+            <td class="num">
+              <div class="stk">
+                <b><?= (int) $p->stock ?></b>
+                <?php if ($s === 'bajo'): ?><span class="est bajo">Bajo, mín. <?= (int) ($p->stock_minimo ?? 5) ?></span>
+                <?php elseif ($s === 'agot'): ?><span class="est agot">Agotado</span><?php endif; ?>
+              </div>
+            </td>
+            <td class="num">
+              <div class="stk"><b><?= (int) ($p->stock_online ?? 0) ?></b></div>
+            </td>
+            <td>
+              <div class="acc">
+                <a href="index.php?action=editar&id=<?= (int) $p->id ?>" class="ic-btn" aria-label="Editar <?= $e($p->nombre_producto) ?>"><svg class="i"><use href="#i-editar"/></svg></a>
+                <a href="index.php?action=ajustes_inventario&producto=<?= (int) $p->id ?>" class="ic-btn" aria-label="Ajustar stock de <?= $e($p->nombre_producto) ?>"><svg class="i"><use href="#i-ajuste"/></svg></a>
+                <a href="index.php?action=eliminar_producto&id=<?= (int) $p->id ?>" class="ic-btn" aria-label="Quitar <?= $e($p->nombre_producto) ?> del catálogo" data-confirmar="¿Quitar <?= $e($p->nombre_producto) ?> del catálogo?" data-confirmar-texto="No se borra: deja de mostrarse." data-confirmar-boton="Quitar del catálogo" data-confirmar-tipo="aviso"><svg class="i"><use href="#i-basura"/></svg></a>
+              </div>
+            </td>
           </tr>
         <?php endforeach; ?>
         </tbody>
       </table>
     </div>
+
     <ul class="tarjetas-prod">
       <?php foreach ($lista as $p):
           $codigo = $p->codigo ?? ('P-' . str_pad($p->id, 4, '0', STR_PAD_LEFT));
@@ -86,10 +132,14 @@ $url = fn($stock) => 'index.php?' . http_build_query(array_filter(['action' => '
           <div class="t-nom"><b><?= $e($p->nombre_producto) ?></b><span><?= $e($codigo) ?>, <?= $e($cat) ?></span></div>
           <div class="t-precio"><?= $usd($p->precio) ?></div>
           <div class="t-stock">Tienda <b><?= (int) $p->stock ?></b>, online <b><?= (int) ($p->stock_online ?? 0) ?></b> <?php if ($s === 'bajo'): ?><span class="est bajo">Bajo</span><?php elseif ($s === 'agot'): ?><span class="est agot">Agotado</span><?php endif; ?></div>
-          <div class="t-acc"><a href="index.php?action=editar&id=<?= (int) $p->id ?>" class="btn btn-sec btn-peq"><svg class="i"><use href="#i-editar"/></svg>Editar</a><a href="index.php?action=ajustes_inventario&producto=<?= (int) $p->id ?>" class="btn btn-sec btn-peq"><svg class="i"><use href="#i-ajuste"/></svg>Ajustar stock</a></div>
+          <div class="t-acc">
+            <a href="index.php?action=editar&id=<?= (int) $p->id ?>" class="btn btn-sec btn-peq"><svg class="i"><use href="#i-editar"/></svg>Editar</a>
+            <a href="index.php?action=ajustes_inventario&producto=<?= (int) $p->id ?>" class="btn btn-sec btn-peq"><svg class="i"><use href="#i-ajuste"/></svg>Ajustar stock</a>
+          </div>
         </li>
       <?php endforeach; ?>
     </ul>
+
     <div class="vacio-filtro" id="vacio-productos" <?= $lista ? 'hidden' : '' ?>>Ningún producto coincide con la búsqueda.</div>
     <footer class="tabla-pie"><span>Mostrando <?= count($lista) ?> de <?= count($listaProductos) ?> productos</span></footer>
   </section>

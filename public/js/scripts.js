@@ -23,6 +23,10 @@ function confirmarEliminar(id) {
     });
 }
 
+
+
+
+
 document.addEventListener('DOMContentLoaded', function() {
     const btnBuscar = document.getElementById('btn-buscar');
     const inputBusqueda = document.getElementById('input-busqueda');
@@ -124,4 +128,7 @@ window.alert = function(mensaje) {
         confirmButtonColor: '#0052d4',
         confirmButtonText: 'Aceptar'
     });
+
+    
 };
+

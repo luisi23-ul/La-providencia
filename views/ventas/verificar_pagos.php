@@ -31,11 +31,16 @@ $tabs = ['pendiente' => 'Por verificar', 'aprobado' => 'Aprobados', 'rechazado' 
   <div class="verif" id="verif">
     <section class="caja cola-caja" aria-label="Pagos">
       <ul class="cola">
-        <?php foreach ($pagos as $i => $p): ?>
+        <?php foreach ($pagos as $i => $p): 
+          $esEf = stripos($p->metodo ?? '', 'efectivo') !== false || empty($p->requiere_referencia);
+        ?>
           <li><button type="button" class="item-pago" data-pago="<?= $i ?>" aria-current="<?= $i === 0 ? 'true' : 'false' ?>">
             <b><?= $e($p->cliente) ?>, #<?= str_pad($p->id_venta, 4, '0', STR_PAD_LEFT) ?></b>
             <span class="monto-item"><?= ($p->moneda ?? 'Bs') === 'USD' ? $usd($p->monto) : number_format($p->monto, 2) . ' Bs' ?></span>
-            <span class="meta"><span class="chip"><?= $e($p->metodo) ?></span><span class="ref">Ref. <?= $e($p->referencia ?: 'sin referencia') ?></span></span>
+            <span class="meta">
+              <span class="chip"><?= $e($p->metodo) ?></span>
+              <span class="ref"><?= $esEf ? 'No aplica' : 'Ref. ' . $e($p->referencia ?: 'sin referencia') ?></span>
+            </span>
           </button></li>
         <?php endforeach; ?>
       </ul>
@@ -65,17 +70,45 @@ $tabs = ['pendiente' => 'Por verificar', 'aprobado' => 'Aprobados', 'rechazado' 
 
 <form id="form-aprobar" method="POST" action="index.php?action=aprobar_pago" hidden><input type="hidden" name="id" id="ap-id"></form>
 
+<?php if (!empty($_SESSION['alerta'])): 
+  $al = $_SESSION['alerta'];
+  unset($_SESSION['alerta']);
+?>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+Swal.fire({
+  icon: '<?= $al['tipo'] ?>',
+  title: '<?= $al['titulo'] ?>',
+  text: '<?= $al['texto'] ?>',
+  showCancelButton: <?= !empty($al['deshacer_id']) ? 'true' : 'false' ?>,
+  confirmButtonText: 'Aceptar',
+  cancelButtonText: 'Deshacer acción',
+  confirmButtonColor: '#0052d4',
+  cancelButtonColor: '#e02424',
+  reverseButtons: true
+}).then((result) => {
+  if (result.dismiss === Swal.DismissReason.cancel) {
+    window.location.href = 'index.php?action=deshacer_pago&id=<?= (int)($al['deshacer_id'] ?? 0) ?>';
+  }
+});
+</script>
+<?php endif; ?>
+
 <script type="application/json" id="datos-pagos"><?= json_encode(array_map(fn($p) => [
     'id' => (int) $p->id,
     'venta' => (int) $p->id_venta,
     'cliente' => $p->cliente,
+    'cedula' => $p->cliente_cedula ?? '',
+    'telefono' => $p->cliente_telefono ?? '',
     'metodo' => $p->metodo,
     'moneda' => $p->moneda ?? 'Bs',
     'monto' => (float) $p->monto,
     'tasa' => (float) ($p->tasa_cambio ?? $tasa),
-    'ref' => $p->referencia ?? '',
+    'ref' => (stripos($p->metodo ?? '', 'efectivo') !== false || empty($p->requiere_referencia)) ? 'No aplica' : ($p->referencia ?? ''),
+    'es_efectivo' => stripos($p->metodo ?? '', 'efectivo') !== false || empty($p->requiere_referencia),
     'banco' => $p->banco ?? '',
     'origen' => $p->origen ?? '',
+    'registrado_por' => $p->registrado_por_nombre ?? 'Online / Cliente',
     'img' => !empty($p->comprobante_img) ? 'public/uploads/' . $p->comprobante_img : '',
     'fecha' => !empty($p->fecha_pago) ? date('d/m/Y, g:i a', strtotime($p->fecha_pago)) : '',
     'estado' => $p->estado_verificacion,

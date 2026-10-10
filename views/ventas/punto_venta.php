@@ -109,6 +109,44 @@ $categorias = array_values(array_unique(array_filter(array_map(fn($p) => $p->nom
   </form>
 </dialog>
 
+<script>
+document.addEventListener('input', function(e) {
+  if (e.target.matches('input[name*="referencia"], input[placeholder*="referencia"], input[placeholder*="Referencia"]')) {
+    const contenedor = e.target.closest('.fila-pago, .pv-pago-item, tr, div');
+    if (contenedor) {
+      const selectMetodo = contenedor.querySelector('select');
+      if (selectMetodo) {
+        const texto = selectMetodo.options[selectMetodo.selectedIndex]?.text.toLowerCase() || '';
+        if (texto.includes('efectivo')) {
+          e.target.value = '';
+          e.target.placeholder = 'No aplica (Efectivo)';
+          e.target.disabled = true;
+        }
+      }
+    }
+  }
+});
+document.addEventListener('change', function(e) {
+  if (e.target.matches('select[name*="metodo"], .selector-metodo, select')) {
+    const texto = e.target.options[e.target.selectedIndex]?.text.toLowerCase() || '';
+    const contenedor = e.target.closest('.fila-pago, .pv-pago-item, tr, div');
+    if (contenedor) {
+      const inputRef = contenedor.querySelector('input[name*="referencia"], input[placeholder*="referencia"], input[placeholder*="Referencia"]');
+      if (inputRef) {
+        if (texto.includes('efectivo')) {
+          inputRef.value = '';
+          inputRef.placeholder = 'No aplica (Efectivo)';
+          inputRef.disabled = true;
+        } else {
+          inputRef.disabled = false;
+          inputRef.placeholder = 'N.º de referencia';
+        }
+      }
+    }
+  }
+});
+</script>
+
 <script type="application/json" id="datos-pos"><?= json_encode([
     'productos' => array_map(fn($p) => [
         'id' => (int) $p->id,
@@ -125,6 +163,8 @@ $categorias = array_values(array_unique(array_filter(array_map(fn($p) => $p->nom
         'n' => $m->nombre,
         'mon' => ($m->moneda ?? 'Bs') === 'USD' ? '$' : 'Bs',
         'ref' => !empty($m->requiere_referencia) ? 'Referencia' : '',
+        'requiere_referencia' => (bool) ($m->requiere_referencia ?? 0),
+        'es_efectivo' => stripos($m->nombre ?? '', 'efectivo') !== false,
     ], array_filter($metodos, fn($m) => ($m->activo ?? 1) && ($m->en_tienda ?? 1)))),
     'clientes' => array_map(fn($c) => [
         'id' => (int) $c->id,

@@ -11,6 +11,12 @@
   var cantEn = function (id) { var l = pv.lineas.filter(function (x) { return x.id === id; })[0]; return l ? l.q : 0; };
   var iniciales = function (n) { return n.split(' ').map(function (w) { return w[0]; }).slice(0, 2).join('').toUpperCase(); };
 
+  var BANCOS_VZLA = [
+    'Banesco', 'Banco de Venezuela', 'Mercantil', 'BBVA Provincial',
+    'BNC Nacional de Crédito', 'Bancaribe', 'Banco Exterior', 'Banco Plaza',
+    'Banco del Tesoro', 'Banco Bicentenario', 'Banplus', '100% Banco'
+  ];
+
   function guardarActual() {
     try {
       if (pv.lineas.length || pv.cliente) localStorage.setItem('pv-actual', JSON.stringify({ lineas: pv.lineas, cliente: pv.cliente, nuevoCliente: pv.nuevoCliente }));
@@ -214,12 +220,35 @@
   var fmtMon = function (v, mon) { return mon === '$' ? usd(v) : Panel.fmtBs(v) + ' Bs'; };
   var enMoneda = function (vUsd, mon) { return mon === '$' ? Math.ceil(vUsd * 100 - 0.0001) / 100 : r2(vUsd * TASA); };
   var icono = function (m) { return /m[oó]vil/i.test(m.n) ? 'movil' : m.ref ? 'banco' : 'efectivo'; };
+  
   var cobro;
   function pagado() { return cobro.pagos.reduce(function (s, p) { return s + pUsd(p); }, 0); }
   function falta() { return Math.max(0, r2(totalPV() - pagado())); }
   function actualUsd() { return met(cobro.m).mon === '$' ? cobro.monto : cobro.monto / TASA; }
-  function nuevoCobro() { cobro = { pagos: [], m: metodoInicial(), monto: 0, ref: '', vueltoEn: '$' }; cobro.monto = enMoneda(falta(), met(cobro.m).mon); }
-  function elegir(id) { cobro.m = id; cobro.ref = ''; cobro.monto = enMoneda(falta(), met(id).mon); }
+  
+  function nuevoCobro() {
+    cobro = {
+      pagos: [],
+      m: metodoInicial(),
+      monto: 0,
+      ref: '',
+      banco: '',
+      titular_cedula: pv.cliente ? (pv.cliente.doc || '') : '',
+      titular_telefono: pv.cliente ? (pv.cliente.tel || '') : '',
+      vueltoEn: '$'
+    };
+    cobro.monto = enMoneda(falta(), met(cobro.m).mon);
+  }
+
+  function elegir(id) {
+    cobro.m = id;
+    cobro.ref = '';
+    cobro.banco = '';
+    cobro.titular_cedula = pv.cliente ? (pv.cliente.doc || '') : '';
+    cobro.titular_telefono = pv.cliente ? (pv.cliente.tel || '') : '';
+    cobro.monto = enMoneda(falta(), met(id).mon);
+  }
+
   function rapidos(m) {
     var f = falta(), exacto = enMoneda(f, m.mon);
     if (m.mon !== '$') return [[exacto, m.ref ? 'Todo: ' + fmtMon(exacto, m.mon) : 'Exacto']];
@@ -236,23 +265,56 @@
     var cab = hayPagos
       ? '<div class="pc-cab"><span>Falta por cobrar</span><b>' + usd(f) + '</b><small>' + bs(f) + '</small><p>Total ' + usd(tot) + ', ya recibido ' + usd(Math.min(pagado(), tot)) + '</p></div>'
       : '<div class="pc-cab"><span>Cobrar</span><b>' + usd(tot) + '</b><small>' + bs(tot) + '</small></div>';
+    
     var recibidos = hayPagos ? '<div class="pc-recibidos"><h4>Pagos recibidos</h4>' + cobro.pagos.map(function (p, i) {
       var mp = met(p.m);
-      return '<div class="pc-recibido"><span class="pc-ok"><svg class="i"><use href="#i-check"/></svg></span><div><b>' + esc(mp.n) + '</b><small>' + (p.ref ? 'Ref. ' + esc(p.ref) + ', ' : '') + (mp.mon === '$' ? '= ' + bs(p.monto) : '= ' + usd(p.monto / TASA)) + '</small></div><span class="pc-m">' + fmtMon(p.monto, mp.mon) + '</span><button type="button" class="ic-btn" data-quitar-pago="' + i + '" aria-label="Quitar pago de ' + esc(mp.n) + '"><svg class="i"><use href="#i-x"/></svg></button></div>';
+      var detExtra = p.banco ? ' (' + esc(p.banco) + ')' : '';
+      return '<div class="pc-recibido"><span class="pc-ok"><svg class="i"><use href="#i-check"/></svg></span><div><b>' + esc(mp.n) + detExtra + '</b><small>' + (p.ref ? 'Ref. ' + esc(p.ref) + ', ' : '') + (mp.mon === '$' ? '= ' + bs(p.monto) : '= ' + usd(p.monto / TASA)) + '</small></div><span class="pc-m">' + fmtMon(p.monto, mp.mon) + '</span><button type="button" class="ic-btn" data-quitar-pago="' + i + '" aria-label="Quitar pago de ' + esc(mp.n) + '"><svg class="i"><use href="#i-x"/></svg></button></div>';
     }).join('') + '</div>' : '';
+
     var tabs = '<div class="pc-tabs" role="radiogroup" aria-label="Método de pago">' + metodos.map(function (x) {
       return '<button type="button" role="radio" class="pc-tab" data-tab="' + x.id + '" aria-checked="' + (x.id === cobro.m) + '"><svg class="i"><use href="#i-' + icono(x) + '"/></svg>' + esc(x.n) + '</button>';
     }).join('') + '</div>';
+
     var recibe = '<div class="pc-recibe"><label for="pc-monto">' + (m.ref ? '¿Cuánto paga por ' + esc(m.n) + '?' : '¿Cuánto te da el cliente?') + '</label>' +
       (m.mon === '$' ? '<div class="pc-monto"><span>$</span><input id="pc-monto" type="text" inputmode="decimal" autocomplete="off" value="' + cobro.monto.toFixed(2) + '"></div>'
         : '<div class="pc-montos"><div class="pc-monto"><span>Bs</span><input id="pc-monto" type="text" inputmode="decimal" autocomplete="off" value="' + cobro.monto.toFixed(2) + '"></div>' +
           '<div class="pc-monto pc-usd"><span>$</span><input id="pc-monto-usd" type="text" inputmode="decimal" autocomplete="off" aria-label="El mismo monto en dólares" value="' + (cobro.monto / TASA).toFixed(2) + '"></div></div>' +
           '<p class="pc-conv">Si el cliente te dice el monto en dólares, escríbelo a la derecha y se convierte a tasa ' + TASA.toFixed(2) + '.</p>') +
       '<div class="pc-rapidos" id="pc-rapidos">' + rapidos(m).map(function (r) { return '<button type="button" data-rapido="' + r[0] + '" aria-pressed="' + (Math.abs(r[0] - cobro.monto) < 0.004) + '">' + r[1] + '</button>'; }).join('') + '</div></div>';
-    var ref = m.ref ? '<div class="campo pc-ref"><label for="pc-ref">Referencia del pago <span class="ob">*</span></label><input id="pc-ref" inputmode="numeric" autocomplete="off" value="' + esc(cobro.ref) + '" placeholder="La que aparece en el comprobante del cliente"></div>' : '';
-    $('pc-cuerpo').innerHTML = cab + recibidos + tabs + recibe + ref;
+
+    var camposBancarios = '';
+    if (m.ref) {
+      var opcionesBancos = BANCOS_VZLA.map(function (b) {
+        return '<option value="' + esc(b) + '"' + (cobro.banco === b ? ' selected' : '') + '>' + esc(b) + '</option>';
+      }).join('');
+
+      camposBancarios = '<div class="pv-bancarios-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px;">' +
+        '<div class="campo" style="grid-column: span 2;">' +
+          '<label for="pc-banco">Banco de la operación <span class="ob">*</span></label>' +
+          '<select id="pc-banco" class="selector" style="width:100%; height:40px; background:#fff;">' +
+            '<option value="">Selecciona el banco</option>' + opcionesBancos + '<option value="Otro"' + (cobro.banco === 'Otro' ? ' selected' : '') + '>Otro banco</option>' +
+          '</select>' +
+        '</div>' +
+        '<div class="campo">' +
+          '<label for="pc-cedula">Cédula del titular <span class="ob">*</span></label>' +
+          '<input id="pc-cedula" autocomplete="off" placeholder="V-12345678" value="' + esc(cobro.titular_cedula) + '">' +
+        '</div>' +
+        '<div class="campo">' +
+          '<label for="pc-telefono">Teléfono del titular <span class="ob">*</span></label>' +
+          '<input id="pc-telefono" type="tel" autocomplete="off" placeholder="0414-0000000" value="' + esc(cobro.titular_telefono) + '">' +
+        '</div>' +
+        '<div class="campo" style="grid-column: span 2;">' +
+          '<label for="pc-ref">Referencia del pago <span class="ob">*</span></label>' +
+          '<input id="pc-ref" inputmode="numeric" autocomplete="off" value="' + esc(cobro.ref) + '" placeholder="La que aparece en el comprobante del cliente">' +
+        '</div>' +
+      '</div>';
+    }
+
+    $('pc-cuerpo').innerHTML = cab + recibidos + tabs + recibe + camposBancarios;
     pintarPie();
   }
+
   function pintarPie() {
     var m = met(cobro.m), f = falta(), a = actualUsd(), cubre = a + 0.004 >= f, sobra = r2(a - f), html = '';
     if (cubre && sobra > 0.004) {
@@ -260,12 +322,19 @@
       html += '<div class="pc-vuelto"><div><span>Vuelto para el cliente' + (v === 'pago_movil' ? ', por pago móvil' : '') + '</span><b>' + (v === '$' ? usd(sobra) : bs(sobra)) + '</b><small>' + (v === '$' ? '= ' + bs(sobra) : '= ' + usd(sobra)) + '</small></div>' +
         '<div class="pc-vuelto-en" role="group" aria-label="Dar el vuelto">' + [['$', 'En $'], ['Bs', 'En Bs'], ['pago_movil', 'Pago móvil']].map(function (o) { return '<button type="button" data-vuelto="' + o[0] + '" aria-pressed="' + (v === o[0]) + '">' + o[1] + '</button>'; }).join('') + '</div></div>';
     }
-    var sinRef = m.ref && !cobro.ref.trim() && cobro.monto > 0, motivo = '';
+
+    var faltanDatosBancarios = false, motivo = '';
+    if (m.ref && cobro.monto > 0) {
+      if (!cobro.banco) { faltanDatosBancarios = true; motivo = 'Selecciona el banco de ' + m.n + '.'; }
+      else if (!cobro.titular_cedula.trim()) { faltanDatosBancarios = true; motivo = 'Escribe la cédula del titular.'; }
+      else if (!cobro.titular_telefono.trim()) { faltanDatosBancarios = true; motivo = 'Escribe el teléfono del titular.'; }
+      else if (!cobro.ref.trim()) { faltanDatosBancarios = true; motivo = 'Falta la referencia de ' + m.n + '.'; }
+    }
+
     if (cubre) {
-      if (sinRef) motivo = 'Falta la referencia de ' + m.n + '.';
       html += '<button type="button" class="pv-accion" id="pc-registrar"' + (motivo ? ' disabled' : '') + '><svg class="i"><use href="#i-check"/></svg>Registrar venta</button>';
     } else {
-      if (!(cobro.monto > 0)) motivo = 'Escribe cuánto paga el cliente.'; else if (sinRef) motivo = 'Falta la referencia de ' + m.n + '.';
+      if (!(cobro.monto > 0)) motivo = 'Escribe cuánto paga el cliente.';
       html += '<button type="button" class="pv-accion parcial" id="pc-agregar"' + (motivo ? ' disabled' : '') + '><svg class="i"><use href="#i-mas"/></svg>Agregar este pago (' + usd(a) + ')</button>';
       if (!motivo) motivo = 'Después de agregarlo te queda por cobrar ' + usd(f - a) + '.';
     }
@@ -290,7 +359,14 @@
     if ((b = t('[data-vuelto]'))) { cobro.vueltoEn = b.getAttribute('data-vuelto'); pintarPie(); return; }
     if ((b = t('[data-quitar-pago]'))) { cobro.pagos.splice(+b.getAttribute('data-quitar-pago'), 1); elegir(cobro.m); pintarCobro(); return; }
     if (t('#pc-agregar')) {
-      cobro.pagos.push({ m: cobro.m, monto: r2(cobro.monto), ref: cobro.ref.trim() });
+      cobro.pagos.push({
+        m: cobro.m,
+        monto: r2(cobro.monto),
+        ref: cobro.ref.trim(),
+        banco: cobro.banco,
+        titular_cedula: cobro.titular_cedula.trim(),
+        titular_telefono: cobro.titular_telefono.trim()
+      });
       avisar('Pago de ' + met(cobro.m).n + ' agregado', 'ok');
       elegir(metodoInicial()); pintarCobro(); enfocarMonto(); return;
     }
@@ -306,21 +382,43 @@
       pintarPie();
     }
     if (e.target.id === 'pc-ref') { cobro.ref = e.target.value; pintarPie(); }
+    if (e.target.id === 'pc-cedula') { cobro.titular_cedula = e.target.value; pintarPie(); }
+    if (e.target.id === 'pc-telefono') { cobro.titular_telefono = e.target.value; pintarPie(); }
+  });
+  $('pv-cobro').addEventListener('change', function (e) {
+    if (e.target.id === 'pc-banco') { cobro.banco = e.target.value; pintarPie(); }
   });
   $('pv-cobro').addEventListener('keydown', function (e) {
-    if (e.key !== 'Enter' || !e.target.matches('#pc-monto, #pc-monto-usd, #pc-ref')) return;
+    if (e.key !== 'Enter' || !e.target.matches('#pc-monto, #pc-monto-usd, #pc-ref, #pc-cedula, #pc-telefono')) return;
     e.preventDefault();
     var b = $('pc-registrar') || $('pc-agregar'); if (b && !b.disabled) b.click();
   });
 
   function registrar() {
-    if (cobro.monto > 0) cobro.pagos.push({ m: cobro.m, monto: r2(cobro.monto), ref: cobro.ref.trim() });
+    if (cobro.monto > 0) {
+      cobro.pagos.push({
+        m: cobro.m,
+        monto: r2(cobro.monto),
+        ref: cobro.ref.trim(),
+        banco: cobro.banco,
+        titular_cedula: cobro.titular_cedula.trim(),
+        titular_telefono: cobro.titular_telefono.trim()
+      });
+    }
     var f = $('form-venta'), campos = [];
     var add = function (n, v) { campos.push('<input type="hidden" name="' + n + '" value="' + esc(v) + '">'); };
     if (pv.cliente && pv.cliente.id) add('id_usuario', pv.cliente.id);
     if (pv.nuevoCliente) Object.keys(pv.nuevoCliente).forEach(function (k) { add('nuevo_cliente[' + k + ']', pv.nuevoCliente[k]); });
     pv.lineas.forEach(function (l) { add('id_producto[]', l.id); add('cantidad[]', l.q); add('precio_unitario[]', precioL(l)); add('descuento[]', l.d); });
-    cobro.pagos.forEach(function (p) { add('id_metodo_pago[]', p.m); add('monto[]', p.monto); add('tasa_cambio[]', TASA); add('referencia[]', p.ref); });
+    cobro.pagos.forEach(function (p) {
+      add('id_metodo_pago[]', p.m);
+      add('monto[]', p.monto);
+      add('tasa_cambio[]', TASA);
+      add('referencia[]', p.ref || '');
+      add('banco[]', p.banco || '');
+      add('titular_cedula[]', p.titular_cedula || '');
+      add('titular_telefono[]', p.titular_telefono || '');
+    });
     var dif = r2(pagado() - totalPV());
     add('total', totalPV());
     add('vuelto', dif > 0.004 ? dif : 0);
@@ -430,7 +528,7 @@
     $('pv-tk-meta').textContent = (v.fecha || '').replace(/\.$/, '') + ((v.atendio || D.cajero) ? '. Atendió ' + (v.atendio || D.cajero) : '');
     $('pv-cliente').classList.add('con-cliente');
     $('pv-cliente').innerHTML = '<span class="avatar">' + esc(v.cliente ? iniciales(v.cliente) : 'CF') + '</span><span><b>' + esc(v.cliente || 'Consumidor final') + '</b><span class="cifra">' + esc(v.documento || (v.cliente ? '' : 'Sin cédula ni RIF')) + '</span></span>';
-    $('pv-lineas').innerHTML = (v.lineas || []).map(function (l) { return '<li class="pv-linea-r"><span class="cifra">' + l.cantidad + '×</span><span>' + esc(l.nombre) + (+l.descuento ? ' <span class="desc">−' + (+l.descuento) + '%</span>' : '') + '</span><b class="cifra">' + usd(l.subtotal) + '</b></li>'; }).join('');
+    $('pv-lineas').innerHTML = (v.lineas || []).map(function (l) { return '<li class="pv-linea-r"><span class="cifra">' + l.cantidad + '×</span><span>' + esc(l.nombre) + (+l.descuento ? ' <span class="desc">−' + (+l.descuento) + '%' : '') + '</span><b class="cifra">' + usd(l.subtotal) + '</b></li>'; }).join('');
     $('pv-art').textContent = (v.lineas || []).reduce(function (s, l) { return s + +l.cantidad; }, 0);
     $('pv-fila-desc').hidden = true;
     $('pv-total').textContent = usd(v.total); $('pv-bs').textContent = bs(v.total);
