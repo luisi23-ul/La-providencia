@@ -32,7 +32,8 @@ $acciones_master = [
         'configuracion_sistema',
         'listado_administradores',
        'toggle_admin' ,
-         'actualizar_configuracion'];
+         'actualizar_configuracion',
+    'roles_permisos', 'auditoria'];
 
          $acciones_admin = [
     'dashboard', 
@@ -113,6 +114,8 @@ if (in_array($action, $acciones_master)) {
             case 'actualizar_configuracion':
                 $masterC->actualizarConfiguracion(); // Usa la instancia que ya creaste arriba
                 break;
+            case 'roles_permisos': include 'views/master/roles_permisos.php'; break;
+            case 'auditoria': include 'views/master/auditoria.php'; break;
                 }
         echo '</main></main>'; // Cerrar etiquetas
                 exit();

@@ -36,10 +36,10 @@ $grupos = $panelMaster ? [
 $contadores = $contadores ?? [];
 $nombreUsuario = $_SESSION['nombre'] ?? 'Usuario';
 $iniciales = strtoupper(implode('', array_map(fn($p) => mb_substr($p, 0, 1), array_slice(preg_split('/\s+/', trim($nombreUsuario)), 0, 2))));
-$roles = [1 => 'Master', 2 => 'Administrador', 4 => 'Vendedor', 5 => 'Cajero'];
+$nombresRol = [1 => 'Master', 2 => 'Administrador', 4 => 'Vendedor', 5 => 'Cajero'];
 ?>
 <aside class="lateral" aria-label="Menú del panel">
-  <div class="marca"><span class="marca-logo">P</span><div><strong>La Providencia</strong><span><?= $panelMaster ? 'Master Panel' : 'Admin Panel' ?></span></div></div>
+  <div class="marca"><span class="marca-logo">P</span><div><strong>La Providencia</strong><span><?= $panelMaster ? 'Panel Master' : 'Panel Admin' ?></span></div></div>
   <nav class="nav">
     <a href="index.php?action=<?= $inicio[0] ?>" class="<?= ($menu ?? '') === $inicio[0] ? 'activo' : '' ?>"><svg class="i"><use href="#i-<?= $inicio[2] ?>"/></svg><?= $inicio[1] ?></a>
     <?php foreach ($grupos as $grupo => $sec):
@@ -59,15 +59,15 @@ $roles = [1 => 'Master', 2 => 'Administrador', 4 => 'Vendedor', 5 => 'Cajero'];
     <?php endforeach; ?>
   </nav>
   <div class="lateral-pie">
-    <div class="usuario"><span class="avatar"><?= htmlspecialchars($iniciales) ?></span><div><b><?= htmlspecialchars($nombreUsuario) ?></b><span><?= $roles[$rol] ?? '' ?></span></div></div>
+    <div class="usuario"><span class="avatar"><?= htmlspecialchars($iniciales) ?></span><div><b><?= htmlspecialchars($nombreUsuario) ?></b><span><?= $nombresRol[$rol] ?? '' ?></span></div></div>
     <nav class="nav">
       <?php if ($panelMaster): ?>
-        <a href="index.php?action=dashboard" class="master" style="color:#93c5fd"><svg class="i"><use href="#i-inicio"/></svg>Ir al Panel Admin</a>
+        <a href="index.php?action=dashboard" class="master"><svg class="i"><use href="#i-panel"/></svg>Panel Admin</a>
       <?php elseif ($rol == 1): ?>
-        <a href="index.php?action=dashboard_master" class="master"><svg class="i"><use href="#i-escudo"/></svg>Ir al Panel Master</a>
+        <a href="index.php?action=dashboard_master" class="master"><svg class="i"><use href="#i-escudo"/></svg>Panel Master</a>
       <?php endif; ?>
       <a href="index.php?action=inicio"><svg class="i"><use href="#i-tienda"/></svg>Ver tienda</a>
-      <a href="index.php?action=cerrar_sesion" class="salir"><svg class="i"><use href="#i-salir"/></svg>Cerrar sesión</a>
+      <a href="index.php?action=cerrar_sesion" class="salir">Cerrar sesión</a>
     </nav>
   </div>
 </aside>

@@ -36,7 +36,7 @@ $tabs = ['1' => ['Activos', $activos], '0' => ['Inactivos', count($proveedores) 
               <button type="button" class="ic-btn" data-abrir-modal="modal-proveedor" data-registro="<?= $e(json_encode(['id' => $p->id, 'rif_cedula' => $p->rif_cedula, 'razon_social' => $p->razon_social, 'telefono' => $p->telefono, 'correo' => $p->correo, 'direccion' => $p->direccion], JSON_UNESCAPED_UNICODE)) ?>" aria-label="Editar <?= $e($p->razon_social) ?>"><svg class="i"><use href="#i-editar"/></svg></button>
               <form method="POST" action="index.php?action=cambiar_estado_proveedor">
                 <input type="hidden" name="id" value="<?= (int) $p->id ?>"><input type="hidden" name="estado" value="<?= $p->estado ? 0 : 1 ?>">
-                <button type="submit" class="ic-btn" aria-label="<?= $p->estado ? 'Desactivar' : 'Activar' ?> <?= $e($p->razon_social) ?>" <?= $p->estado ? 'data-confirmar="¿Desactivar a ' . $e($p->razon_social) . '? Ya no saldrá al registrar compras."' : '' ?>><svg class="i"><use href="#i-power"/></svg></button>
+                <button type="submit" class="ic-btn" aria-label="<?= $p->estado ? 'Desactivar' : 'Activar' ?> <?= $e($p->razon_social) ?>" <?= $p->estado ? 'data-confirmar="¿Desactivar a ' . $e($p->razon_social) . '?" data-confirmar-texto="Ya no saldrá al registrar compras. Puedes activarlo de nuevo cuando quieras." data-confirmar-boton="Desactivar" data-confirmar-tipo="aviso"' : '' ?>><svg class="i"><use href="#i-power"/></svg></button>
               </form>
             </div></td>
           </tr>

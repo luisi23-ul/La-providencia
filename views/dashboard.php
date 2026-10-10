@@ -26,11 +26,28 @@ $semanaTienda = array_sum(array_column($ventasSemana, 'tienda'));
     </div>
   </header>
 
-  <section class="kpis" aria-label="Indicadores de hoy">
-    <a href="index.php?action=ventas" class="kpi"><span class="kpi-cab">Ventas de hoy<span class="kpi-ic az"><svg class="i"><use href="#i-dolar"/></svg></span></span><span class="kpi-val"><?= $usd($k['ventas_hoy']) ?></span><span class="kpi-sub"><?= $bs($k['ventas_hoy']) ?></span><span class="kpi-pie"><?php if ($variacion !== null): ?><span class="sube"><?= $variacion >= 0 ? '+' : '' ?><?= $variacion ?>%</span> que ayer, <?php endif; ?><?= (int) $k['ventas_hoy_n'] ?> ventas</span></a>
-    <a href="index.php?action=verificar_pagos" class="kpi"><span class="kpi-cab">Pagos por verificar<span class="kpi-ic am"><svg class="i"><use href="#i-check"/></svg></span></span><span class="kpi-val"><?= (int) $k['pagos_pendientes'] ?></span><span class="kpi-sub"><?= $usd($k['pagos_pendientes_monto']) ?></span></a>
-    <a href="index.php?action=retiro_pedidos" class="kpi"><span class="kpi-cab">Por retirar<span class="kpi-ic vi"><svg class="i"><use href="#i-bolsa"/></svg></span></span><span class="kpi-val"><?= (int) $k['por_retirar'] ?></span><span class="kpi-sub">pedidos pagados</span><span class="kpi-pie">Esperando al cliente en tienda</span></a>
-    <a href="index.php?action=listado_productos&stock=bajo" class="kpi"><span class="kpi-cab">Stock bajo<span class="kpi-ic ro"><svg class="i"><use href="#i-alerta"/></svg></span></span><span class="kpi-val"><?= (int) $k['stock_bajo'] ?></span><span class="kpi-sub">productos bajo el mínimo</span><?php if ($k['agotados']): ?><span class="kpi-pie"><span class="est agot"><?= (int) $k['agotados'] ?> agotado<?= $k['agotados'] > 1 ? 's' : '' ?></span></span><?php endif; ?></a>
+  <?php
+  $tareas = [
+      ['verificar_pagos', 'Pagos por verificar', 'check', (int) $k['pagos_pendientes'], $k['pagos_pendientes'] ? $usd($k['pagos_pendientes_monto']) . ' en espera' : 'ninguno en espera', 'Revisar pagos', $k['pagos_pendientes'] ? 'pend' : 'ok'],
+      ['retiro_pedidos', 'Por retirar', 'bolsa', (int) $k['por_retirar'], 'pedidos pagados', 'Entregar pedidos', $k['por_retirar'] ? 'pend' : 'ok'],
+      ['listado_productos&stock=bajo', 'Stock bajo', 'alerta', (int) $k['stock_bajo'], $k['agotados'] ? $k['agotados'] . ($k['agotados'] > 1 ? ' agotados' : ' agotado') : ($k['stock_bajo'] ? 'productos bajo el mínimo' : 'todo sobre el mínimo'), 'Ver productos', $k['agotados'] ? 'urg' : ($k['stock_bajo'] ? 'pend' : 'ok')],
+  ];
+  ?>
+  <section class="kpis kpis-inicio" aria-label="Indicadores de hoy">
+    <a href="index.php?action=ventas" class="kpi-hero">
+      <span class="kh-eti"><svg class="i"><use href="#i-dolar"/></svg>Ventas de hoy</span>
+      <span class="kh-val"><?= $usd($k['ventas_hoy']) ?></span>
+      <span class="kh-bs"><?= $bs($k['ventas_hoy']) ?></span>
+      <span class="kh-pie"><?php if (!$k['ventas_hoy_n']): ?>Todavía no hay ventas hoy<?php else: ?><?php if ($variacion !== null): ?><span class="kh-var"><?= $variacion >= 0 ? '+' : '' ?><?= $variacion ?>%</span>que ayer, <?php endif; ?><?= (int) $k['ventas_hoy_n'] ?> <?= $k['ventas_hoy_n'] == 1 ? 'venta' : 'ventas' ?><?php endif; ?></span>
+    </a>
+    <?php foreach ($tareas as [$accion, $titulo, $icono, $valor, $detalle, $accionTexto, $estado]): ?>
+      <a href="index.php?action=<?= $accion ?>" class="kpi-tarea <?= $estado ?>">
+        <span class="kt-eti"><?= $titulo ?><span class="kt-ic"><svg class="i"><use href="#i-<?= $icono ?>"/></svg></span></span>
+        <span class="kt-val"><?= $valor ?></span>
+        <span class="kt-det"><?= $e($detalle) ?></span>
+        <span class="kt-acc"><?php if ($estado === 'ok'): ?>Al día<?php else: ?><?= $accionTexto ?><svg class="i"><use href="#i-chevron"/></svg><?php endif; ?></span>
+      </a>
+    <?php endforeach; ?>
   </section>
 
   <div class="rejilla-2">

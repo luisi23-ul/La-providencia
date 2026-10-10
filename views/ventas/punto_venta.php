@@ -25,14 +25,17 @@ $categorias = array_values(array_unique(array_filter(array_map(fn($p) => $p->nom
 
   <div class="pv-cuerpo" id="pv-cuerpo" data-vista="productos">
     <section class="pv-ticket" aria-label="Ticket de venta">
+      <header class="pv-tk-cab"><div><b id="pv-tk-titulo">Ticket</b><small id="pv-tk-meta"></small></div><button type="button" class="pv-seguir" id="pv-seguir"><svg class="i"><use href="#i-mas"/></svg>Agregar productos</button></header>
       <button type="button" class="pv-cliente" id="pv-cliente"></button>
       <ol class="pv-lineas" id="pv-lineas"></ol>
+      <div class="pv-vaciar-fila"><button type="button" class="pv-vaciar" id="pv-vaciar" hidden><svg class="i"><use href="#i-basura"/></svg>Vaciar ticket</button></div>
       <div class="pv-totales">
         <div class="fila-total"><span>Artículos</span><b id="pv-art">0</b></div>
         <div class="fila-total" id="pv-fila-desc" hidden><span>Descuentos</span><b id="pv-desc"></b></div>
         <div class="fila-total grande"><span>Total</span><b id="pv-total">$0.00</b></div>
-        <div class="fila-total"><span>En bolívares</span><b id="pv-bs">0.00 Bs</b></div>
+        <div class="fila-total pv-fila-bs"><span>En bolívares <small class="pv-tasa-movil">a <?= number_format($tasa, 2) ?> Bs/$</small></span><b id="pv-bs">0.00 Bs</b></div>
       </div>
+      <div class="pv-pagos-r" id="pv-pagos-r"></div>
       <div class="pv-acciones">
         <button type="button" class="btn btn-sec" id="pv-espera">En espera</button>
         <button type="button" class="btn btn-pri pv-cobrar" id="pv-cobrar" disabled>Cobrar</button>
@@ -51,49 +54,34 @@ $categorias = array_values(array_unique(array_filter(array_map(fn($p) => $p->nom
       <p class="vacio-filtro" id="pv-sin-productos" hidden>No hay productos con stock en tienda.</p>
       <div class="pv-barra"><span>Ticket · <span id="pv-barra-art">0</span> artículos<b id="pv-barra-total">$0.00</b></span><button type="button" class="btn btn-pri" data-pv-vista="ticket">Ver ticket</button></div>
     </section>
-  </div>
 
-  <div class="pv-cobro" id="pv-cobro" hidden>
-    <div class="pc-col">
-      <button type="button" class="volver pc-volver" id="pc-volver"><svg class="i"><use href="#i-volver"/></svg>Volver al ticket</button>
-      <header class="pc-cab">
-        <div class="pc-total"><span>Total a cobrar</span><b id="pc-total"></b><small id="pc-bs"></small></div>
-        <div class="pc-cli" id="pc-cli"></div>
-      </header>
-      <div class="pc-prog-caja"><div class="pc-progreso"><i id="pc-prog"></i></div><span id="pc-prog-txt"></span></div>
-      <section id="pc-pagos" class="pc-pagos" aria-label="Pagos de esta venta"></section>
-      <section class="pc-elegir" aria-labelledby="pc-elegir-t">
-        <h3 id="pc-elegir-t"></h3>
-        <div class="pc-metodos" id="pc-metodos"></div>
-      </section>
-    </div>
-    <footer class="pc-pie">
-      <div class="pc-pie-in">
-        <div class="pc-saldo" id="pc-saldo" aria-live="polite"></div>
-        <div class="pc-validar-caja">
-          <button type="button" class="btn btn-ok pv-validar" id="pc-validar">Validar venta</button>
-          <p class="pc-motivo" id="pc-aviso"></p>
-        </div>
-      </div>
-    </footer>
-  </div>
-
-  <div class="pv-listo" id="pv-listo" hidden>
-    <span class="ok-ic"><svg class="i"><use href="#i-check"/></svg></span>
-    <h2 id="pl-titulo"></h2>
-    <p id="pl-detalle"></p>
-    <p class="vuelto-grande" id="pl-vuelto"></p>
-    <section class="pl-wa" aria-labelledby="pl-wa-t">
-      <h3 id="pl-wa-t">Enviar comprobante por WhatsApp</h3>
-      <div class="campo">
-        <label for="pl-tel">Teléfono del cliente</label>
-        <input id="pl-tel" type="tel" inputmode="tel" autocomplete="off" placeholder="0414-0000000">
-        <span class="ayuda" id="pl-tel-ayuda"></span>
-      </div>
-      <details class="pl-wa-prev"><summary>Ver el mensaje que se envía</summary><p class="pl-wa-msg" id="pl-wa-msg"></p></details>
-      <a class="btn btn-wa" id="pl-wa" href="#" target="_blank" rel="noopener"><svg class="i"><use href="#i-wa"/></svg><span id="pl-wa-txt">Enviar por WhatsApp</span></a>
+    <section class="pv-reg" id="pv-cobro" aria-labelledby="pc-titulo" hidden>
+      <header class="pv-reg-cab"><b id="pc-titulo">Cobro</b></header>
+      <div class="pv-reg-cuerpo" id="pc-cuerpo"></div>
+      <div class="pv-reg-pie" id="pc-pie" aria-live="polite"></div>
     </section>
-    <div class="acciones-pago"><a href="index.php?action=punto_venta" class="btn btn-pri">Nueva venta</a></div>
+
+    <section class="pv-reg" id="pv-listo" aria-labelledby="pl-cab" hidden>
+      <header class="pv-reg-cab"><b id="pl-cab">Cobro</b></header>
+      <div class="pv-reg-cuerpo">
+        <div class="pl-ok"><span class="pl-ok-ic"><svg class="i"><use href="#i-check"/></svg></span><div><h2 id="pl-titulo"></h2><small>Se descontó del inventario de la tienda.</small></div></div>
+        <div class="pl-entrega" id="pl-entrega" hidden><span>Entrega el vuelto</span><b id="pl-vuelto"></b><small id="pl-vuelto-det"></small></div>
+        <section class="pl-wa" aria-labelledby="pl-wa-t">
+          <h3 id="pl-wa-t">Comprobante para el cliente</h3>
+          <div class="campo">
+            <label for="pl-tel">WhatsApp del cliente</label>
+            <input id="pl-tel" type="tel" inputmode="tel" autocomplete="off" placeholder="0414-0000000">
+            <span class="ayuda" id="pl-tel-ayuda"></span>
+          </div>
+          <div class="pl-wa-acc">
+            <button type="button" class="btn btn-wa" id="pl-compartir"><svg class="i"><use href="#i-wa"/></svg><span id="pl-compartir-txt">Enviar comprobante</span></button>
+            <a class="btn btn-sec" id="pl-texto" href="#" target="_blank" rel="noopener">Enviar solo texto</a>
+          </div>
+          <details class="pl-wa-prev"><summary>Ver el comprobante</summary><img id="pl-img" alt="Comprobante de la venta"></details>
+        </section>
+      </div>
+      <div class="pv-reg-pie"><a href="index.php?action=punto_venta" class="pv-accion" id="pl-nueva"><svg class="i"><use href="#i-mas"/></svg>Nueva venta</a><p class="pv-nota">o presiona <kbd>Enter</kbd></p></div>
+    </section>
   </div>
 
   <form id="form-venta" action="index.php?action=guardar_venta_tienda" method="POST" hidden></form>
@@ -110,7 +98,7 @@ $categorias = array_values(array_unique(array_filter(array_map(fn($p) => $p->nom
       </div>
       <div class="pv-cli-res" id="mcl-res"></div>
     </div>
-    <footer class="modal-pie"><button type="button" class="btn btn-sec" id="mcl-final">Usar Consumidor final</button></footer>
+    <footer class="modal-pie"><button type="button" class="btn btn-cf" id="mcl-final"><svg class="i"><use href="#i-usuarios"/></svg>Usar Consumidor final</button></footer>
   </form>
 </dialog>
 
@@ -145,5 +133,14 @@ $categorias = array_values(array_unique(array_filter(array_map(fn($p) => $p->nom
         'tel' => $c->telefono ?? '',
     ], $clientes),
     'venta' => $ventaRegistrada ?? null,
+    'puedeDescuento' => $puede('descuentos_pos'),
+    'cajero' => $_SESSION['nombre'] ?? '',
+    'tienda' => [
+        'nombre' => $config->nombre_empresa ?? 'La Providencia',
+        'rif' => $config->rif ?? '',
+        'direccion' => $config->direccion ?? '',
+        'telefono' => $config->telefono ?? '',
+        'logo' => !empty($config->logo_path) ? $config->logo_path : 'public/img/logo-removebg.png',
+    ],
 ], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?></script>
 <?php include __DIR__ . '/../admin/_cerrar.php'; ?>

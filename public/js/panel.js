@@ -10,13 +10,68 @@
     bs: function (v) { return fmt((+v || 0) * TASA) + ' Bs'; },
     fmtBs: function (v) { return fmt(+v || 0); },
     esc: function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); },
-    avisar: function (txt) {
-      var t = document.getElementById('toast');
-      t.textContent = txt; t.hidden = false;
-      clearTimeout(t._t); t._t = setTimeout(function () { t.hidden = true; }, 2600);
-    },
+    avisar: function (txt, tipo, segundos) { avisar(txt, tipo, segundos); },
+    confirmar: function (op) { return confirmar(op); },
     datos: function (id) { var el = document.getElementById(id); return el ? JSON.parse(el.textContent) : null; }
   };
+
+  var ICONO = { ok: 'check', error: 'error', aviso: 'alerta', info: 'info' };
+  var TITULO = { ok: 'Listo', error: 'No se pudo', aviso: 'Atención', info: 'Aviso' };
+  var pila = document.createElement('section');
+  pila.className = 'toasts'; pila.setAttribute('aria-live', 'polite'); pila.setAttribute('aria-label', 'Avisos');
+  document.body.appendChild(pila);
+
+  function avisar(txt, tipo, segundos) {
+    tipo = ICONO[tipo] ? tipo : 'info';
+    var total = segundos || (tipo === 'error' ? 6 : 4), queda = total * 1000, ultimo = Date.now(), pausa = false, reloj;
+    var t = document.createElement('div');
+    t.className = 'toast-item ' + tipo; t.setAttribute('role', tipo === 'error' ? 'alert' : 'status');
+    t.innerHTML = '<span class="toast-ic"><svg class="i"><use href="#i-' + ICONO[tipo] + '"/></svg></span>' +
+      '<div class="toast-txt"><b>' + TITULO[tipo] + '</b><span></span></div>' +
+      '<span class="toast-seg" aria-hidden="true">' + total + 's</span>' +
+      '<button type="button" class="toast-x" aria-label="Cerrar aviso"><svg class="i"><use href="#i-x"/></svg></button>' +
+      '<i class="toast-barra" style="animation-duration:' + total + 's"></i>';
+    t.querySelector('.toast-txt span').textContent = txt;
+    var cerrar = function () { clearInterval(reloj); t.classList.add('sale'); setTimeout(function () { t.remove(); }, 200); };
+    t.querySelector('.toast-x').addEventListener('click', cerrar);
+    t.addEventListener('mouseenter', function () { pausa = true; t.classList.add('pausa'); });
+    t.addEventListener('mouseleave', function () { pausa = false; ultimo = Date.now(); t.classList.remove('pausa'); });
+    reloj = setInterval(function () {
+      var ahora = Date.now();
+      if (!pausa) queda -= ahora - ultimo;
+      ultimo = ahora;
+      t.querySelector('.toast-seg').textContent = Math.max(1, Math.ceil(queda / 1000)) + 's';
+      if (queda <= 0) cerrar();
+    }, 200);
+    pila.appendChild(t);
+    while (pila.children.length > 3) pila.firstChild.remove();
+  }
+
+  var dlg = document.createElement('dialog');
+  dlg.className = 'modal chico modal-confirmar';
+  dlg.innerHTML = '<div class="mc-cuerpo"><span class="mc-ic"><svg class="i"><use href="#i-alerta"/></svg></span><div><h3 id="mc-titulo"></h3><p id="mc-texto"></p></div></div>' +
+    '<footer class="modal-pie"><button type="button" class="btn btn-sec" data-mc="no">Cancelar</button><button type="button" class="btn" data-mc="si"></button></footer>';
+  dlg.setAttribute('aria-labelledby', 'mc-titulo'); dlg.setAttribute('aria-describedby', 'mc-texto');
+  document.body.appendChild(dlg);
+  var resolver = null;
+  function confirmar(op) {
+    op = op || {};
+    var peligro = op.tipo !== 'aviso';
+    dlg.classList.toggle('peligro', peligro);
+    dlg.querySelector('.mc-ic use').setAttribute('href', '#i-' + (peligro ? 'basura' : 'alerta'));
+    dlg.querySelector('#mc-titulo').textContent = op.titulo || '¿Seguro?';
+    dlg.querySelector('#mc-texto').textContent = op.texto || 'Esta acción no se puede deshacer.';
+    var si = dlg.querySelector('[data-mc="si"]');
+    si.textContent = op.aceptar || 'Aceptar'; si.className = 'btn ' + (peligro ? 'btn-peligro-lleno' : 'btn-pri');
+    dlg.showModal(); dlg.querySelector('[data-mc="no"]').focus();
+    return new Promise(function (ok) { resolver = ok; });
+  }
+  dlg.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-mc]');
+    if (b) { dlg.close(b.getAttribute('data-mc')); return; }
+    if (e.target === dlg) dlg.close('no');
+  });
+  dlg.addEventListener('close', function () { if (resolver) { resolver(dlg.returnValue === 'si'); resolver = null; } dlg.returnValue = ''; });
 
   var abrir = document.getElementById('abrir-menu'), velo = document.getElementById('velo');
   if (abrir) abrir.addEventListener('click', function () { panel.classList.add('abierto'); });
@@ -49,14 +104,23 @@
       return;
     }
 
-    var confirmar = e.target.closest('[data-confirmar]');
-    if (confirmar && !window.confirm(confirmar.getAttribute('data-confirmar'))) { e.preventDefault(); return; }
+    var pide = e.target.closest('[data-confirmar]');
+    if (pide && pide.dataset.confirmado !== '1') {
+      e.preventDefault();
+      confirmar({ titulo: pide.getAttribute('data-confirmar'), texto: pide.getAttribute('data-confirmar-texto'), aceptar: pide.getAttribute('data-confirmar-boton'), tipo: pide.getAttribute('data-confirmar-tipo') }).then(function (si) {
+        if (!si) return;
+        if (pide.tagName === 'A') { location.href = pide.href; return; }
+        var form = pide.form || pide.closest('form');
+        if (form) { pide.dataset.confirmado = '1'; form.requestSubmit(pide.type === 'submit' ? pide : undefined); delete pide.dataset.confirmado; }
+      });
+      return;
+    }
 
     var copiar = e.target.closest('[data-copiar]');
     if (copiar) {
       var texto = copiar.getAttribute('data-copiar');
       var listo = function () { copiar.textContent = 'Copiada'; setTimeout(function () { copiar.textContent = 'Copiar'; }, 1800); };
-      if (navigator.clipboard) navigator.clipboard.writeText(texto).then(listo, function () { Panel.avisar('Selecciona el texto y cópialo con Ctrl+C'); });
+      if (navigator.clipboard) navigator.clipboard.writeText(texto).then(listo, function () { Panel.avisar('Selecciona el texto y cópialo con Ctrl+C', 'aviso'); });
       return;
     }
 
@@ -83,5 +147,5 @@
   });
 
   var aviso = panel.getAttribute('data-aviso');
-  if (aviso) Panel.avisar(aviso);
+  if (aviso) Panel.avisar(aviso, panel.getAttribute('data-aviso-tipo') || 'ok');
 })();

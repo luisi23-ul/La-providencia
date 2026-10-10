@@ -28,7 +28,7 @@ include __DIR__ . '/../admin/_abrir.php';
               <button type="button" class="ic-btn" data-categoria="<?= $e(json_encode(['id' => (int) $c->id, 'nombre' => $c->nombre_categoria, 'atributos' => $atr], JSON_UNESCAPED_UNICODE)) ?>" aria-label="Editar <?= $e($c->nombre_categoria) ?>"><svg class="i"><use href="#i-editar"/></svg></button>
               <form method="POST" action="index.php?action=eliminar_categoria">
                 <input type="hidden" name="id" value="<?= (int) $c->id ?>">
-                <button type="submit" class="ic-btn" aria-label="Eliminar <?= $e($c->nombre_categoria) ?>" <?= $productos ? 'disabled title="Tiene productos"' : 'data-confirmar="¿Eliminar la categoría ' . $e($c->nombre_categoria) . '?"' ?>><svg class="i"><use href="#i-basura"/></svg></button>
+                <button type="submit" class="ic-btn" aria-label="Eliminar <?= $e($c->nombre_categoria) ?>" <?= $productos ? 'disabled title="Tiene productos"' : 'data-confirmar="¿Eliminar la categoría ' . $e($c->nombre_categoria) . '?" data-confirmar-texto="Esta acción no se puede deshacer." data-confirmar-boton="Eliminar"' ?>><svg class="i"><use href="#i-basura"/></svg></button>
               </form>
             </div></td>
           </tr>
