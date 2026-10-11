@@ -39,7 +39,7 @@ $iniciales = strtoupper(implode('', array_map(fn($p) => mb_substr($p, 0, 1), arr
 $nombresRol = [1 => 'Master', 2 => 'Administrador', 4 => 'Vendedor', 5 => 'Cajero'];
 ?>
 <aside class="lateral" aria-label="Menú del panel">
-  <div class="marca"><span class="marca-logo">P</span><div><strong>La Providencia</strong><span><?= $panelMaster ? 'Panel Master' : 'Panel Admin' ?></span></div></div>
+  <div class="marca"><span class="marca-logo"><?= $e($inicialTienda) ?></span><div><strong><?= $e($nombreTienda) ?></strong><span><?= $panelMaster ? 'Panel Master' : 'Panel Admin' ?></span></div></div>
   <nav class="nav">
     <a href="index.php?action=<?= $inicio[0] ?>" class="<?= ($menu ?? '') === $inicio[0] ? 'activo' : '' ?>"><svg class="i"><use href="#i-<?= $inicio[2] ?>"/></svg><?= $inicio[1] ?></a>
     <?php foreach ($grupos as $grupo => $sec):

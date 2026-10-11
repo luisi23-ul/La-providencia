@@ -43,7 +43,7 @@ foreach ($pagos as $p) {
 uasort($porBanco, fn($a, $b) => $b['usd'] <=> $a['usd']);
 $mayor = $porBanco ? max(array_column($porBanco, 'usd')) : 0;
 
-$bancosLista = ['Banesco', 'Banco de Venezuela', 'Mercantil', 'BBVA Provincial', 'BNC Nacional de Crédito', 'Bancaribe', 'Banco Exterior', 'Banco Plaza', 'Banco del Tesoro', 'Banco Bicentenario', 'Banplus', '100% Banco'];
+$bancosLista = ['Banesco', 'Banco de Venezuela', 'Mercantil', 'Banco Provincial', 'BNC Nacional de Crédito', 'Bancaribe', 'Banco Exterior', 'Banco Plaza', 'Banco del Tesoro', 'Banco Bicentenario', 'Banplus', '100% Banco'];
 foreach (array_merge(array_keys($porBanco), [$f['banco']]) as $b) {
     if ($b !== '' && $b !== 'Sin banco' && !in_array($b, $bancosLista, true)) $bancosLista[] = $b;
 }
@@ -205,7 +205,7 @@ $titular = function ($p) {
               <td data-label="Referencia">
                 <span class="pb-ref">
                   <span class="cod"><?= $e($ref ?: 'Sin referencia') ?></span>
-                  <?php if ($ref !== ''): ?><button type="button" class="pb-copiar" data-copiar="<?= $e($ref) ?>" aria-label="Copiar referencia <?= $e($ref) ?>">Copiar</button><?php endif; ?>
+                  <?php if ($ref !== ''): ?><button type="button" class="vf-copiar" data-tip="Copiar" data-copiar="<?= $e($ref) ?>" aria-label="Copiar referencia <?= $e($ref) ?>"><svg class="i"><use href="#i-copiar"/></svg></button><?php endif; ?>
                 </span>
                 <?php if ($repetida): ?><span class="pb-aviso"><svg class="i"><use href="#i-alerta"/></svg>Referencia repetida</span><?php endif; ?>
               </td>

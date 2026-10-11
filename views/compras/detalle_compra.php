@@ -10,9 +10,8 @@ $unidades = array_sum(array_map(fn($d) => $d->cantidad, $detalles));
 $totalGananciaProyectada = array_sum(array_map(fn($d) => (float)($d->ganancia_total_linea ?? 0), $detalles));
 ?>
 <section class="contenido">
-  <a href="index.php?action=compras" class="volver"><svg class="i"><use href="#i-volver"/></svg>Compras</a>
   <header class="cab">
-    <div class="cab-txt"><small>Compra</small><div class="titulo-est"><h2><?= $num ?></h2><span class="est <?= $anulada ? 'agot' : 'ok' ?>"><?= $anulada ? 'Anulada' : 'Recibida' ?></span></div></div>
+    <div class="cab-txt"><small>Compra</small><div class="titulo-est"><a href="index.php?action=compras" class="atras" aria-label="Volver a Compras"><svg class="i"><use href="#i-volver"/></svg></a><h2><?= $num ?></h2><span class="est <?= $anulada ? 'agot' : 'ok' ?>"><?= $anulada ? 'Anulada' : 'Recibida' ?></span></div></div>
     <div class="cab-acc">
       <a href="index.php?action=exportar_pdf&tipo=compra&id=<?= (int) $compra->id ?>" target="_blank" class="btn btn-sec"><svg class="i"><use href="#i-archivo"/></svg>PDF</a>
       <?php if (!$anulada): ?><button type="button" class="btn btn-peligro" data-abrir-modal="modal-anular"><svg class="i"><use href="#i-x"/></svg>Anular compra</button><?php endif; ?>

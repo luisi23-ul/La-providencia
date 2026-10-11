@@ -1,105 +1,44 @@
-
-<link class="estilo-carrito" rel="stylesheet" href="public/css/Carrito.css?v=<?php echo time(); ?>">
 <?php
-// views/carrito.php
+include __DIR__ . '/tienda/_comun.php';
+$clienteCarrito = !empty($_SESSION['id_usuario']);
 ?>
+  <section class="carro" id="carro" data-sesion="<?= $clienteCarrito ? '1' : '0' ?>">
+    <h1 class="sec-tit">Tu pedido</h1>
 
-<section class="contenedor-carrito">
-    <header>
-        <h2 class="titulo-carrito">Tu Pedido en La Providencia</h2>
-    </header>
-    
-
-    <?php if (isset($_SESSION["carrito"]) && !empty($_SESSION["carrito"])): ?>
-       
-       <div class="tabla-wrapper"> <table class="tabla-carrito">
-            <thead>
-                <tr class="fila-cabecera">
-                    <th class="celda-cabecera">Producto</th>
-                    <th class="celda-cabecera">Precio</th>
-                    <th class="celda-cabecera">Cantidad</th>
-                    <th class="celda-cabecera">Subtotal</th>
-                    <th class="celda-cabecera">Acción</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php 
-                $totalFinal = 0;
-                foreach ($_SESSION["carrito"] as $item): 
-                    $subtotal = $item["precio"] * $item["cantidad"];
-                    $totalFinal += $subtotal;
-                    
-                    // CALCULOS EN BOLÍVARES POR PRODUCTO (Usando la tasa del controlador)
-                    $precioBsUnitario = $item["precio"] * $tasaCambio;
-                    $subtotalBs = $subtotal * $tasaCambio;
-                ?>
-                    <tr class="fila-producto">
-                        <td class="celda-producto">
-                            <?php echo htmlspecialchars($item["nombre"]); ?>
-                        </td>
-                        
-                        <td class="celda-producto">
-                            <span>$<?php echo number_format($item["precio"], 2); ?></span>
-                            <span>Bs. <?php echo number_format($precioBsUnitario, 2, ',', '.'); ?></span>
-                        </td>
-                        
-                        <td class="celda-producto"><?php echo $item["cantidad"]; ?></td>
-                        
-                        <td class="celda-producto">
-                            <span>$<?php echo number_format($subtotal, 2); ?></span>
-                            <span>Bs. <?php echo number_format($subtotalBs, 2, ',', '.'); ?></span>
-                        </td>
-                        
-                        <td class="celda-producto">
-                            <a href="index.php?action=eliminar_item&id=<?php echo $item['id_producto']; ?>" class="boton-quitar">Quitar</a>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-        </div>      
-<div class="contenedor-inferior">
-        <div class="resumen-total">
-        <p class="tasa-bcv">
-            Tasa Oficial BCV: <strong>Bs. <?php echo number_format($tasaCambio, 2, ',', '.'); ?> / USD</strong>
-        </p>
-
-            <p>
-                Total en Dólares: <span>$<?php echo number_format($totalFinal, 2); ?></span>
-            </p>
-            
-            <p>
-                Total en Bs: <span>Bs. <?php echo number_format($totalBolivares, 2, ',', '.'); ?></span>
-            </p>
-        </div>
-
-    <div class="acciones-carrito">
-    
-
-    <div class="caja-derecha">
-        <form action="index.php?action=finalizar_compra" method="POST" class="formulario-pago">
-            <label for="metodo_pago" class="label-pago">Método de pago:</label>
-            <div class="selector-container">
-                <select name="metodo_pago" id="metodo_pago" required>
-                    <option value="">-- Seleccione una opción --</option>
-                    <?php foreach ($metodos as $metodo): ?>
-                        <option value="<?php echo $metodo->id; ?>"><?php echo htmlspecialchars($metodo->nombre); ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-            <button type="submit" class="boton-finalizar">
-                Finalizar Compra por WhatsApp
-            </button>
-        </form>
+    <div class="carro-vacio" data-vista="vacio" hidden>
+      <i class="ti ti-shopping-bag" aria-hidden="true"></i>
+      <h2>Todavía no elegiste nada</h2>
+      <p>Agrega las prendas que te gusten y aquí verás el total antes de enviarlo por WhatsApp.</p>
+      <a class="btn" href="index.php?action=ver_catalogo">Ver el catálogo</a>
     </div>
-                    </div>
-</div>
-    <?php else: ?>
-        <aside class="carrito-vacio">
-            <p class="texto-vacio">El carrito está vacío actualmente.</p>
-            <p class="p-ir-catalogo">
-                <a href="index.php?action=ver_catalogo" class="boton-catalogo">Ir al Catálogo</a>
-            </p>
-        </aside>
-    <?php endif; ?>
-</section>
+
+    <div class="enviado" data-vista="enviado" hidden>
+      <i class="ti ti-circle-check" aria-hidden="true"></i>
+      <h2>¡Pedido enviado!</h2>
+      <p data-enviado-txt>Te confirmamos disponibilidad y forma de pago por WhatsApp.</p>
+      <a class="btn sec" href="#" data-wa-otra target="_blank" rel="noopener"><i class="ti ti-brand-whatsapp" aria-hidden="true"></i>Abrir WhatsApp otra vez</a>
+      <a class="carro-seguir" href="index.php?action=ver_catalogo">Seguir viendo prendas</a>
+    </div>
+
+    <div class="carro-grid" data-vista="lista" hidden>
+      <ul class="carro-lista" id="carro-lista"></ul>
+      <aside class="carro-res" aria-label="Resumen">
+        <dl>
+          <div><dt>Prendas</dt><dd data-prendas>0</dd></div>
+          <div class="carro-total"><dt>Total</dt><dd><b data-total>$0.00</b><small data-total-bs>0,00 Bs</small></dd></div>
+        </dl>
+        <?php if (!$clienteCarrito): ?>
+        <p class="carro-nota"><i class="ti ti-info-circle" aria-hidden="true"></i>Para enviarlo te pediremos entrar con tu cuenta. Tu pedido no se pierde.</p>
+        <?php endif; ?>
+        <p class="aviso-form" data-error hidden><i class="ti ti-alert-circle" aria-hidden="true"></i><span></span></p>
+        <button class="wa" type="button" data-pedir><i class="ti ti-brand-whatsapp"></i>Pedir por WhatsApp</button>
+        <a class="carro-seguir" href="index.php?action=ver_catalogo">Seguir viendo prendas</a>
+      </aside>
+    </div>
+  </section>
+
+  <div class="barra-comprar barra-pedido" data-barra-pedido hidden>
+    <div><b data-total>$0.00</b><span data-total-bs>0,00 Bs</span></div>
+    <button class="wa" type="button" data-pedir><i class="ti ti-brand-whatsapp"></i>Pedir</button>
+  </div>
+<?php $seccionPie = 'pedido'; include __DIR__ . '/tienda/_pie.php'; ?>

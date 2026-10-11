@@ -12,7 +12,7 @@
   var iniciales = function (n) { return n.split(' ').map(function (w) { return w[0]; }).slice(0, 2).join('').toUpperCase(); };
 
   var BANCOS_VZLA = [
-    'Banesco', 'Banco de Venezuela', 'Mercantil', 'BBVA Provincial',
+    'Banesco', 'Banco de Venezuela', 'Mercantil', 'Banco Provincial',
     'BNC Nacional de Crédito', 'Bancaribe', 'Banco Exterior', 'Banco Plaza',
     'Banco del Tesoro', 'Banco Bicentenario', 'Banplus', '100% Banco'
   ];

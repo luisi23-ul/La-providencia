@@ -1,97 +1,43 @@
 <?php
-// Asegúrate de incluir la conexión
-require_once 'config/db.php'; 
-$db = Database::connect();
-
-// Obtenemos la configuración de la base de datos
-$stmt = $db->query("SELECT * FROM sistema WHERE id = 1");
-$config = $stmt->fetch(PDO::FETCH_OBJ);
-
-// Si no hay datos, definimos valores por defecto para que no falle
-if (!$config) {
-    $config = (object) ['nombre_empresa' => 'La Providencia', 'color_primario' => '#2c3e50'];
-}
+include __DIR__ . '/../_sistema.php';
+$e = fn($v) => htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8');
+$tasaTienda = (float) ($sistema->tasa_manual ?? 0) ?: 526.87;
+$waTienda = preg_replace('/\D/', '', (string) ($sistema->whatsapp ?? ''));
+$accionActual = $action ?? 'inicio';
+$seccionTienda = [
+    'inicio' => 'inicio', 'ver_catalogo' => 'catalogo', 'ver_producto' => 'catalogo',
+    'ver_carrito' => 'pedido', 'login_usuario' => 'cuenta', 'registro' => 'cuenta', 'mis_pedidos' => 'cuenta',
+][$accionActual] ?? 'inicio';
+$clienteSesion = !empty($_SESSION['id_usuario']);
+$enlaceCuenta = $clienteSesion ? 'index.php?action=mis_pedidos' : 'index.php?action=login_usuario';
 ?>
-
-<?php
-// Esto verifica si estamos en una vista de Admin o Master
-$esAdminO_Master = in_array($action, $acciones_master) || in_array($action, $acciones_admin);
-?>
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   <title><?php echo htmlspecialchars($config->titulo_principal); ?></title>
-
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <link rel="stylesheet" href="public/css/styles.css?v=<?php echo time(); ?>">
-    <link rel="stylesheet" href="public/css/header.css?v=<?php echo time(); ?>">
-
-    <?php if ($action == 'inicio' || $action == ''): ?>
-        <link rel="stylesheet" href="public/css/home-style.css?v=<?php echo time(); ?>">
-    <?php endif; ?>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title><?= $e($tituloTienda ?? $nombreTienda) ?></title>
+<meta name="description" content="<?= $e($sistema->footer_texto ?? 'Catálogo de la tienda') ?>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,600&family=Jost:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="public/vendor/tabler/tabler-icons.min.css">
+<link rel="stylesheet" href="public/css/tienda.css?v=<?= filemtime(__DIR__ . '/../../public/css/tienda.css') ?>">
 </head>
-<body class="<?php echo ($action == 'nosotros') ? 'page-about' : ''; ?>">
-
-<?php if (!$esAdminO_Master && $action != 'login'): ?>
-<header class="main-header">
-    <nav class="nav-container">
-        <section class="nav-brand">
-            <a href="index.php?action=inicio">
-                <img src="public/img/logo-removebg.png" alt="La Providencia" class="brand-logo">
-            </a>
-        </section>
-        
-        <ul class="nav-menu">
-            <li><a href="index.php?action=inicio" class="nav-link">Inicio</a></li>
-            <li><a href="index.php?action=ver_catalogo" class="nav-link">Catálogo</a></li>
-            <li><a href="index.php?action=inicio#nosotros" class="nav-link">Nosotros</a></li>
-            <li><a href="index.php?action=inicio#contacto" class="nav-link">Contacto</a></li>
-        </ul>
-
-        <section class="nav-actions">
-            <?php 
-            // Lógica del Carrito MANTENIDA
-            $cantidadTotal = 0;
-            if (isset($_SESSION["carrito"])) {
-                foreach ($_SESSION["carrito"] as $item) {
-                    $cantidadTotal += $item["cantidad"];
-                }
-            }
-            $claseCarrito = ($cantidadTotal > 0) ? 'con-productos' : '';
-            ?>
-
-            <a href="index.php?action=ver_carrito" class="nav-carrito <?php echo $claseCarrito; ?>">
-                <i class="fas fa-shopping-cart"></i>
-                <span class="contador-carrito"><?php echo $cantidadTotal; ?></span>
-            </a>
-
-            <a href="index.php?action=login_usuario" class="action-link login-btn"><i class="fas fa-user"></i> Sesión</a>
-            <a href="index.php?action=registro" class="register-cta-btn"><i class="fas fa-user-plus"></i> Registro</a>
-        </section>
+<body class="tienda" id="tienda" data-tasa="<?= $e($tasaTienda) ?>" data-wa="<?= $e($waTienda) ?>" data-tienda="<?= $e($nombreTienda) ?>" data-sesion="<?= $clienteSesion ? '1' : '0' ?>">
+  <div class="franja"><i class="ti ti-brand-whatsapp" aria-hidden="true"></i>Arma tu pedido y lo confirmamos por WhatsApp</div>
+  <header class="cab">
+    <nav aria-label="Principal">
+      <a href="index.php?action=inicio"<?= $seccionTienda === 'inicio' ? ' aria-current="page"' : '' ?>>Inicio</a>
+      <a href="index.php?action=ver_catalogo"<?= $seccionTienda === 'catalogo' ? ' aria-current="page"' : '' ?>>Catálogo</a>
+      <a href="#contacto">Contacto</a>
     </nav>
-</header>
-<?php endif; ?>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script>
-    function mostrarAlerta(icono, titulo, mensaje, redireccion = null) {
-        Swal.fire({
-            icon: icono, // 'success', 'error', 'warning', 'info'
-            title: titulo,
-            text: mensaje,
-            confirmButtonColor: '#0052d4',
-            confirmButtonText: 'Aceptar'
-        }).then((result) => {
-            if (redireccion) {
-                window.location.href = redireccion;
-            }
-        });
-    }
-</script>
-
- 
-
+    <a class="logo" href="index.php?action=inicio" aria-label="<?= $e($nombreTienda) ?>, inicio"><?php
+      $partesNombre = explode(' ', $nombreTienda, 2);
+      ?><b><?= $e($partesNombre[0]) ?></b><?php if (!empty($partesNombre[1])): ?><small><?= $e($partesNombre[1]) ?></small><?php endif; ?></a>
+    <div class="cab-acc">
+      <a class="ic oculta-m" href="index.php?action=ver_catalogo#buscar" aria-label="Buscar"><i class="ti ti-search"></i></a>
+      <a class="ic oculta-m" href="<?= $enlaceCuenta ?>" aria-label="<?= $clienteSesion ? 'Mis pedidos' : 'Entrar a mi cuenta' ?>"><i class="ti ti-user"></i></a>
+      <a class="ic" href="index.php?action=ver_carrito" aria-label="Ver mi pedido" data-contador><i class="ti ti-shopping-bag"></i><span class="cuenta" hidden>0</span></a>
+    </div>
+  </header>

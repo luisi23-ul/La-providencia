@@ -41,6 +41,7 @@
     if (abrir) {
       var c = abrir.getAttribute('data-categoria') ? JSON.parse(abrir.getAttribute('data-categoria')) : null;
       document.getElementById('mcat-titulo').textContent = c ? 'Editar ' + c.nombre : 'Nueva categoría';
+      document.getElementById('mcat-guardar').textContent = c ? 'Guardar cambios' : 'Guardar categoría';
       document.getElementById('mcat-id').value = c ? c.id : '';
       document.getElementById('mcat-nombre').value = c ? c.nombre : '';
       

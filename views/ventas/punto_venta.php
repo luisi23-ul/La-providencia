@@ -176,7 +176,7 @@ document.addEventListener('change', function(e) {
     'puedeDescuento' => $puede('descuentos_pos'),
     'cajero' => $_SESSION['nombre'] ?? '',
     'tienda' => [
-        'nombre' => $config->nombre_empresa ?? 'La Providencia',
+        'nombre' => $config->nombre_empresa ?? $nombreTienda,
         'rif' => $config->rif ?? '',
         'direccion' => $config->direccion ?? '',
         'telefono' => $config->telefono ?? '',

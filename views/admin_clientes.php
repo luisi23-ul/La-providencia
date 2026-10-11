@@ -22,7 +22,7 @@ $tabs = ['1' => ['Activos', $activos], '0' => ['Desactivados', count($clientes) 
   <section class="tabla-caja" aria-label="Listado de clientes">
     <div class="tabla-scroll">
       <table class="tabla-resp" id="tabla-cli" data-paginar="10">
-        <thead><tr><th>Cliente</th><th>Teléfono</th><th class="c-media">Correo</th><th class="num">Compras</th><th>Cuenta</th><th class="num"></th></tr></thead>
+        <thead><tr><th>Cliente</th><th>Teléfono</th><th class="c-media">Correo</th><th class="num">Compras</th><th class="centro">Cuenta</th><th class="centro"><span class="sr-only">Acciones</span></th></tr></thead>
         <tbody>
         <?php foreach ($lista as $c):
             $nombre = trim(($c->nombre ?? '') . ' ' . ($c->apellido ?? '')) ?: 'Sin nombre';
@@ -32,10 +32,10 @@ $tabs = ['1' => ['Activos', $activos], '0' => ['Desactivados', count($clientes) 
             <td data-label="Teléfono" class="tel-cli"><?= $e(!empty($c->telefono) ? $c->telefono : 'Sin teléfono') ?></td>
             <td data-label="Correo" class="c-media"><?= $e(!empty($c->correo) ? $c->correo : 'Sin correo') ?></td>
             <td class="num" data-label="Compras"><b><?= (int) ($c->compras ?? 0) ?></b><?php if (!empty($c->total_compras)): ?><br><span class="muted"><?= $usd($c->total_compras) ?></span><?php endif; ?></td>
-            <td data-label="Cuenta">
-              <label class="interruptor"><input type="checkbox" <?= $c->estado == 1 ? 'checked' : '' ?> onchange="location.href='index.php?action=cambiarEstadoCliente&id=<?= (int) $c->id ?>&estado=' + (this.checked ? 1 : 0)" aria-label="Cuenta de <?= $e($nombre) ?>"><span><?= $c->estado == 1 ? 'Activa' : 'Desactivada' ?></span></label>
+            <td data-label="Cuenta" class="centro">
+              <label class="interruptor"><input type="checkbox" <?= $c->estado == 1 ? 'checked' : '' ?> data-estado-url="index.php?action=cambiarEstadoCliente&amp;id=<?= (int) $c->id ?>&amp;estado=" data-estado-nombre="<?= $e($nombre) ?>" aria-label="Cuenta de <?= $e($nombre) ?>"><span><?= $c->estado == 1 ? 'Activa' : 'Desactivada' ?></span></label>
             </td>
-            <td class="t-acc"><div class="acc">
+            <td class="t-acc centro"><div class="acc">
               <?php if (!empty($c->telefono)): ?><a href="https://wa.me/58<?= $e(ltrim(preg_replace('/\D/', '', $c->telefono), '0')) ?>" target="_blank" rel="noopener" class="ic-btn" aria-label="Escribir a <?= $e($nombre) ?> por WhatsApp"><svg class="i"><use href="#i-wa"/></svg></a><?php endif; ?>
               <button type="button" class="ic-btn" data-abrir-modal="modal-cliente" data-registro="<?= $e(json_encode(['id' => $c->id, 'cedula' => $c->cedula ?? '', 'nombre' => $c->nombre ?? '', 'apellido' => $c->apellido ?? '', 'telefono' => $c->telefono ?? '', 'correo' => $c->correo ?? '', 'direccion' => $c->direccion ?? ''], JSON_UNESCAPED_UNICODE)) ?>" aria-label="Editar <?= $e($nombre) ?>"><svg class="i"><use href="#i-editar"/></svg></button>
             </div></td>
@@ -61,7 +61,7 @@ $tabs = ['1' => ['Activos', $activos], '0' => ['Desactivados', count($clientes) 
       <div class="campo ancho"><label for="mcl-correo">Correo</label><input id="mcl-correo" name="correo" type="email"><span class="ayuda">Solo si va a comprar en la tienda online.</span></div>
       <div class="campo ancho"><label for="mcl-dir">Dirección</label><textarea id="mcl-dir" name="direccion" rows="2"></textarea></div>
     </div>
-    <footer class="modal-pie"><button type="button" class="btn btn-sec" data-cerrar>Cancelar</button><button type="submit" class="btn btn-pri">Guardar cliente</button></footer>
+    <footer class="modal-pie"><button type="button" class="btn btn-sec" data-cerrar>Cancelar</button><button type="submit" class="btn btn-pri" data-si-crea="Guardar cliente" data-si-edita="Guardar cambios">Guardar cliente</button></footer>
   </form>
 </dialog>
 <?php include __DIR__ . '/admin/_cerrar.php'; ?>

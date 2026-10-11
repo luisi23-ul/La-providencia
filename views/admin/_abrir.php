@@ -7,11 +7,18 @@ $e = fn($v) => htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8');
 $usd = fn($v) => '$' . number_format((float) $v, 2);
 $tasa = $tasa ?? 526.8694;
 $bs = fn($v) => number_format((float) $v * $tasa, 2) . ' Bs';
+if (empty($aviso) && !empty($_SESSION['aviso'])) {
+    $avisoSesion = $_SESSION['aviso'];
+    unset($_SESSION['aviso']);
+    $aviso = is_array($avisoSesion) ? ($avisoSesion[0] ?? '') : (string) $avisoSesion;
+    $avisoTipo = is_array($avisoSesion) ? ($avisoSesion[1] ?? 'ok') : 'ok';
+}
 ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Open+Sans:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="public/css/panel.css?v=<?= filemtime(__DIR__ . '/../../public/css/panel.css') ?>">
+<?php include __DIR__ . '/../_sistema.php'; ?>
 <?php include __DIR__ . '/_iconos.php'; ?>
 <section class="panel<?= $panelMaster ? ' modo-master' : '' ?><?= !empty($modoPantalla) ? ' modo-' . $modoPantalla : '' ?>" id="panel" data-tasa="<?= $e($tasa) ?>" data-aviso="<?= $e($aviso ?? '') ?>" data-aviso-tipo="<?= $e($avisoTipo ?? 'ok') ?>">
 <?php include __DIR__ . '/_menu.php'; ?>

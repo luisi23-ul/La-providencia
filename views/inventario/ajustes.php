@@ -6,54 +6,79 @@ $productos = $productos ?? $listaProductos ?? [];
 $ultimosAjustes = $ultimosAjustes ?? [];
 include __DIR__ . '/../admin/_abrir.php';
 $elegido = (int) ($_GET['producto'] ?? 0);
-$tipos = ['ajuste' => ['ajuste', 'Conteo'], 'merma' => ['merma', 'Merma'], 'transferencia' => ['transf', 'Transferencia']];
+$desde = null;
+foreach ($productos as $p) if ($elegido && (int) $p->id === $elegido) $desde = $p;
+$tipos = ['ajuste' => ['lista', 'Conteo'], 'merma' => ['basura', 'Merma'], 'transferencia' => ['camion', 'Entre canales']];
 ?>
 <section class="contenido">
   <header class="cab">
-    <div class="cab-txt"><small>Inventario</small><h2>Ajustes de stock</h2></div>
+    <div class="cab-txt"><small>Inventario</small>
+      <?php if ($desde): ?>
+      <div class="titulo-atras"><a href="index.php?action=editar&amp;id=<?= (int) $desde->id ?>" class="atras" aria-label="Volver a <?= $e($desde->nombre_producto) ?>"><svg class="i"><use href="#i-volver"/></svg></a><h2>Ajustes de stock</h2></div>
+      <?php else: ?>
+      <h2>Ajustes de stock</h2>
+      <?php endif; ?>
+    </div>
   </header>
-  <form class="ajuste-layout" id="form-ajuste" action="index.php?action=guardar_ajuste" method="POST">
-    <section class="caja" aria-labelledby="t-ajuste">
-      <header class="caja-cab"><h3 id="t-ajuste">Nuevo ajuste</h3></header>
-      <div class="caja-cuerpo" style="display:flex;flex-direction:column;gap:16px">
-        <div class="campo">
-          <span class="lbl" id="l-tipo">¿Qué quieres hacer?</span>
-          <div class="opciones" role="radiogroup" aria-labelledby="l-tipo">
-            <label class="opcion"><input type="radio" name="tipo_movimiento" value="ajuste" checked><span>Corregir por conteo<small>Contaste y no cuadra</small></span></label>
-            <label class="opcion"><input type="radio" name="tipo_movimiento" value="merma"><span>Registrar merma<small>Dañado, vencido, perdido</small></span></label>
-            <label class="opcion"><input type="radio" name="tipo_movimiento" value="transferencia"><span>Pasar entre canales<small>Tienda ↔ online</small></span></label>
+
+  <form class="fpx" id="form-ajuste" action="index.php?action=guardar_ajuste" method="POST">
+    <?php if ($desde): ?><input type="hidden" name="volver_producto" value="<?= (int) $desde->id ?>"><?php endif; ?>
+    <div class="fpx-col">
+      <section class="fpx-sec" aria-labelledby="aj-t-tipo">
+        <header><span class="fpx-ic"><svg class="i"><use href="#i-ajuste"/></svg></span><div><h3 id="aj-t-tipo">¿Qué quieres hacer?</h3><p>Cada ajuste queda en Movimientos con quién y por qué.</p></div></header>
+        <div class="fpx-cuerpo">
+          <div class="ajx-tipos ancho" role="radiogroup" aria-labelledby="aj-t-tipo">
+            <label class="ajx-tipo"><input type="radio" name="tipo_movimiento" value="ajuste" checked><span class="ic"><svg class="i"><use href="#i-lista"/></svg></span><b>Corregir por conteo</b><small>Contaste y no cuadra</small></label>
+            <label class="ajx-tipo"><input type="radio" name="tipo_movimiento" value="merma"><span class="ic"><svg class="i"><use href="#i-basura"/></svg></span><b>Registrar merma</b><small>Dañado, vencido, perdido</small></label>
+            <label class="ajx-tipo"><input type="radio" name="tipo_movimiento" value="transferencia"><span class="ic"><svg class="i"><use href="#i-camion"/></svg></span><b>Pasar entre canales</b><small>Tienda ↔ online</small></label>
           </div>
         </div>
-        <div class="campo">
-          <label for="aj-prod">Producto <span class="ob">*</span></label>
-          <select id="aj-prod" name="id_producto" required>
-            <?php foreach ($productos as $p): ?><option value="<?= (int) $p->id ?>" <?= $elegido === (int) $p->id ? 'selected' : '' ?>><?= $e(($p->codigo ?? 'P-' . str_pad($p->id, 4, '0', STR_PAD_LEFT)) . ' · ' . $p->nombre_producto) ?></option><?php endforeach; ?>
-          </select>
+      </section>
+
+      <section class="fpx-sec" aria-labelledby="aj-t-prod">
+        <header><span class="fpx-ic"><svg class="i"><use href="#i-caja"/></svg></span><div><h3 id="aj-t-prod">Producto y cantidad</h3><p id="aj-t-prod-sub">Lo que hay de verdad en el estante.</p></div></header>
+        <div class="fpx-cuerpo">
+          <div class="campo ancho"><label for="aj-prod">Producto <span class="ob">*</span></label>
+            <select id="aj-prod" name="id_producto" required data-buscar="Buscar producto">
+              <?php foreach ($productos as $p): ?><option value="<?= (int) $p->id ?>"<?= $elegido === (int) $p->id ? ' selected' : '' ?>><?= $e(($p->codigo ?? 'P-' . str_pad($p->id, 4, '0', STR_PAD_LEFT)) . ' · ' . $p->nombre_producto) ?></option><?php endforeach; ?>
+            </select>
+          </div>
+          <div class="ajx-prod ancho" id="aj-elegido"></div>
+          <div class="ajx-campos ancho" id="aj-campos"></div>
+          <div class="campo ancho"><label for="aj-obs">Observación</label><textarea id="aj-obs" name="observacion" rows="2" maxlength="255" placeholder="Ej.: Conteo del viernes, faltaban 2 en el estante."></textarea></div>
         </div>
-        <div class="prod-elegido" id="aj-elegido"></div>
-        <div class="form-grid" id="aj-campos"></div>
-        <div class="campo">
-          <label for="aj-obs">Observación</label>
-          <textarea id="aj-obs" name="observacion" rows="2" maxlength="255" placeholder="Ej.: Conteo del viernes, faltaban 2 en el estante."></textarea>
+      </section>
+
+      <section class="fpx-sec" aria-labelledby="aj-t-queda">
+        <header><span class="fpx-ic"><svg class="i"><use href="#i-grafico"/></svg></span><div><h3 id="aj-t-queda">Así queda el stock</h3><p>Revísalo antes de registrar.</p></div></header>
+        <div class="fpx-cuerpo">
+          <div class="ajx-queda ancho" id="aj-queda" aria-live="polite"></div>
+          <div class="ajx-acc ancho">
+            <a href="<?= $desde ? 'index.php?action=editar&amp;id=' . (int) $desde->id : 'index.php?action=listado_productos' ?>" class="btn btn-sec">Cancelar</a>
+            <button type="submit" class="btn btn-pri" id="aj-guardar"><svg class="i"><use href="#i-check"/></svg>Registrar ajuste</button>
+          </div>
         </div>
-        <div>
-          <span class="lbl" style="font-size:12.5px;font-weight:500;color:var(--texto-2)">Así queda el stock</span>
-          <div class="queda" id="aj-queda"></div>
-        </div>
-        <div class="acciones-pago">
-          <a href="index.php?action=listado_productos" class="btn btn-sec">Cancelar</a>
-          <button type="submit" class="btn btn-pri" id="aj-guardar">Registrar ajuste</button>
-        </div>
-      </div>
-    </section>
-    <aside class="caja" aria-labelledby="t-ult">
-      <header class="caja-cab"><h3 id="t-ult">Últimos ajustes</h3><a href="index.php?action=kardex">Ver movimientos</a></header>
-      <ul class="lista ult-ajustes">
-        <?php foreach ($ultimosAjustes as $a): $t = $tipos[$a->tipo_movimiento] ?? ['ajuste', $a->tipo_movimiento]; ?>
-          <li><div class="quien"><b><?= $e($a->nombre_producto) ?></b><span><span class="mov <?= $t[0] ?>"><?= $t[1] ?></span> <?= $e(trim(($a->observacion ? $a->observacion . ', ' : '') . date('d/m g:i a', strtotime($a->fecha)) . ', ' . ($a->usuario ?? ''), ', ')) ?></span></div><span class="cifra<?= $a->cantidad < 0 ? ' cant-menos' : '' ?>"><?= $a->cantidad < 0 ? '−' . abs($a->cantidad) : (int) $a->cantidad ?></span></li>
-        <?php endforeach; ?>
-        <?php if (!$ultimosAjustes): ?><li class="vacio-filtro" style="display:block">Todavía no hay ajustes.</li><?php endif; ?>
-      </ul>
+      </section>
+    </div>
+
+    <aside class="fpx-col">
+      <section class="fpx-sec" aria-labelledby="aj-t-ult">
+        <header><span class="fpx-ic"><svg class="i"><use href="#i-historial"/></svg></span><div><h3 id="aj-t-ult">Últimos ajustes</h3><p><a href="index.php?action=kardex" class="enlace">Ver movimientos</a></p></div></header>
+        <ul class="ajx-ult">
+          <?php foreach ($ultimosAjustes as $a):
+            $t = $tipos[$a->tipo_movimiento] ?? ['ajuste', $a->tipo_movimiento];
+            $cant = (int) $a->cantidad;
+          ?>
+          <li>
+            <span class="ic"><svg class="i"><use href="#i-<?= $t[0] ?>"/></svg></span>
+            <b><?= $e($a->nombre_producto) ?></b>
+            <span class="n<?= $cant < 0 ? ' neg' : ($cant > 0 ? ' pos' : '') ?>"><?= $cant < 0 ? '−' . abs($cant) : ($cant > 0 ? '+' . $cant : '0') ?></span>
+            <small><?= $e(implode(' · ', array_filter([$t[1], $a->observacion ?? '', date('d/m g:i a', strtotime($a->fecha)), $a->usuario ?? '']))) ?></small>
+          </li>
+          <?php endforeach; ?>
+          <?php if (!$ultimosAjustes): ?><li class="ajx-vacio">Todavía no hay ajustes.</li><?php endif; ?>
+        </ul>
+      </section>
     </aside>
   </form>
 </section>
