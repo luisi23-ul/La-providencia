@@ -59,7 +59,7 @@ include __DIR__ . '/../admin/_abrir.php';
     </div>
     <footer class="modal-pie">
       <button type="button" class="btn btn-sec" data-cerrar>Cancelar</button>
-      <button type="submit" class="btn btn-pri">Guardar</button>
+      <button type="submit" class="btn btn-pri" id="mcat-guardar">Guardar categoría</button>
     </footer>
   </form>
 </dialog>

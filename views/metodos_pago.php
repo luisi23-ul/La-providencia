@@ -53,7 +53,7 @@ include __DIR__ . '/admin/_abrir.php';
       <label class="interruptor"><input type="checkbox" name="requiere_referencia" value="1"><span>Pedir número de referencia al cobrar</span></label>
       <div class="campo"><label for="mm-datos">Datos para el cliente</label><textarea id="mm-datos" name="datos" rows="3" placeholder="Banco, teléfono, cédula o número de cuenta"></textarea><span class="ayuda">Se muestran al cliente cuando elige este método en la tienda online.</span></div>
     </div>
-    <footer class="modal-pie"><button type="button" class="btn btn-sec" data-cerrar>Cancelar</button><button type="submit" class="btn btn-pri">Guardar método</button></footer>
+    <footer class="modal-pie"><button type="button" class="btn btn-sec" data-cerrar>Cancelar</button><button type="submit" class="btn btn-pri" data-si-crea="Guardar método" data-si-edita="Guardar cambios">Guardar método</button></footer>
   </form>
 </dialog>
 <?php include __DIR__ . '/admin/_cerrar.php'; ?>
