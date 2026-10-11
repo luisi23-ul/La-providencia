@@ -43,7 +43,7 @@ foreach ($pagos as $p) {
 uasort($porBanco, fn($a, $b) => $b['usd'] <=> $a['usd']);
 $mayor = $porBanco ? max(array_column($porBanco, 'usd')) : 0;
 
-$bancosLista = ['Banesco', 'Banco de Venezuela', 'Mercantil', 'BBVA Provincial', 'BNC Nacional de Crédito', 'Bancaribe', 'Banco Exterior', 'Banco Plaza', 'Banco del Tesoro', 'Banco Bicentenario', 'Banplus', '100% Banco'];
+$bancosLista = ['Banesco', 'Banco de Venezuela', 'Mercantil', 'Banco Provincial', 'BNC Nacional de Crédito', 'Bancaribe', 'Banco Exterior', 'Banco Plaza', 'Banco del Tesoro', 'Banco Bicentenario', 'Banplus', '100% Banco'];
 foreach (array_merge(array_keys($porBanco), [$f['banco']]) as $b) {
     if ($b !== '' && $b !== 'Sin banco' && !in_array($b, $bancosLista, true)) $bancosLista[] = $b;
 }
