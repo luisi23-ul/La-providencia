@@ -13,12 +13,20 @@ if (empty($aviso) && !empty($_SESSION['aviso'])) {
     $aviso = is_array($avisoSesion) ? ($avisoSesion[0] ?? '') : (string) $avisoSesion;
     $avisoTipo = is_array($avisoSesion) ? ($avisoSesion[1] ?? 'ok') : 'ok';
 }
+include __DIR__ . '/../_sistema.php';
 ?>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title><?= $e(implode(' · ', array_filter([$tituloPagina ?? '', $nombreTienda]))) ?></title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Open+Sans:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="public/css/panel.css?v=<?= filemtime(__DIR__ . '/../../public/css/panel.css') ?>">
-<?php include __DIR__ . '/../_sistema.php'; ?>
+</head>
+<body>
 <?php include __DIR__ . '/_iconos.php'; ?>
 <section class="panel<?= $panelMaster ? ' modo-master' : '' ?><?= !empty($modoPantalla) ? ' modo-' . $modoPantalla : '' ?>" id="panel" data-tasa="<?= $e($tasa) ?>" data-aviso="<?= $e($aviso ?? '') ?>" data-aviso-tipo="<?= $e($avisoTipo ?? 'ok') ?>">
 <?php include __DIR__ . '/_menu.php'; ?>
