@@ -8,80 +8,108 @@ include __DIR__ . '/admin/_abrir.php';
 $valores = $editando ? (array) ($p->atributos ?? []) : [];
 $codigo = $editando ? ($p->codigo ?? ('P-' . str_pad($p->id, 4, '0', STR_PAD_LEFT))) : '';
 $campo = fn($crear, $editar) => $editando ? $editar : $crear;
+$visible = (int) ($p->estado ?? 1) === 1;
+$nombreCategoria = '';
+foreach ($categorias as $c) if ($editando && (string) $c->id === (string) ($p->id_categoria ?? '')) $nombreCategoria = $c->nombre_categoria;
 ?>
 <section class="contenido">
-  <a href="index.php?action=listado_productos" class="volver"><svg class="i"><use href="#i-volver"/></svg>Productos</a>
   <header class="cab">
-    <div class="cab-txt"><h2><?= $editando ? 'Editar ' . $e($p->nombre_producto) : 'Nuevo producto' ?></h2><small><?= $editando ? $e($codigo) . ', los cambios se ven al momento en la tienda online.' : 'Al guardarlo aparece en el catálogo de la tienda online.' ?></small></div>
+    <div class="cab-txt"><small>Inventario</small>
+      <div class="titulo-atras"><a href="index.php?action=listado_productos" class="atras" aria-label="Volver a Productos"><svg class="i"><use href="#i-volver"/></svg></a><h2><?= $editando ? 'Editar ' . $e($p->nombre_producto) : 'Nuevo producto' ?></h2></div>
+      <?php if ($editando): ?>
+      <div class="fpx-chips">
+        <span class="dv-chip neutro"><svg class="i"><use href="#i-etiqueta"/></svg><?= $e($codigo) ?></span>
+        <?php if ($nombreCategoria): ?><span class="dv-chip neutro"><?= $e($nombreCategoria) ?></span><?php endif; ?>
+        <span class="dv-chip<?= $visible ? '' : ' pend' ?>" id="fp-chip-vis"><?= $visible ? 'Visible en la tienda' : 'Oculto en la tienda' ?></span>
+      </div>
+      <?php endif; ?>
+    </div>
   </header>
-  <form class="compra-layout" id="form-producto" action="index.php?action=<?= $editando ? 'actualizar_producto' : 'guardar_producto' ?>" method="POST" enctype="multipart/form-data">
+
+  <form class="fpx" id="form-producto" action="index.php?action=<?= $editando ? 'actualizar_producto' : 'guardar_producto' ?>" method="POST" enctype="multipart/form-data">
     <?php if ($editando): ?><input type="hidden" name="id" value="<?= (int) $p->id ?>"><?php endif; ?>
-    <div class="compra-col">
-      <section class="caja" aria-labelledby="fp-t-info">
-        <header class="caja-cab"><h3 id="fp-t-info">Información</h3></header>
-        <div class="caja-cuerpo form-grid">
+    <div class="fpx-col">
+      <section class="fpx-sec" aria-labelledby="fp-t-info">
+        <header><span class="fpx-ic"><svg class="i"><use href="#i-caja"/></svg></span><div><h3 id="fp-t-info">Información</h3><p>Lo que ve el cliente en la tienda online.</p></div></header>
+        <div class="fpx-cuerpo">
           <div class="campo ancho"><label for="fp-nombre">Nombre <span class="ob">*</span></label><input id="fp-nombre" name="<?= $campo('nombre_producto', 'nombre') ?>" value="<?= $e($p->nombre_producto ?? '') ?>" required placeholder="Ej.: Cesta de ropa con tapa"></div>
           <div class="campo"><label for="fp-codigo">Código</label><input id="fp-codigo" name="codigo" value="<?= $e($codigo) ?>" autocomplete="off" placeholder="P-0013"><span class="ayuda">Si lo dejas vacío se asigna uno solo.</span></div>
           <div class="campo"><label for="fp-cat">Categoría <span class="ob">*</span></label>
             <select id="fp-cat" name="id_categoria" required>
               <option value="">Elige una categoría</option>
-              <?php foreach ($categorias as $c): ?><option value="<?= (int) $c->id ?>" <?= ($p->id_categoria ?? '') == $c->id ? 'selected' : '' ?>><?= $e($c->nombre_categoria) ?></option><?php endforeach; ?>
+              <?php foreach ($categorias as $c): ?><option value="<?= (int) $c->id ?>"<?= (string) ($p->id_categoria ?? '') === (string) $c->id ? ' selected' : '' ?>><?= $e($c->nombre_categoria) ?></option><?php endforeach; ?>
             </select>
           </div>
           <div class="campo ancho"><label for="fp-desc">Descripción</label><textarea id="fp-desc" name="<?= $campo('descripcion', 'desc') ?>" rows="3" placeholder="Medidas, color, material. Es lo que lee el cliente en la tienda online."><?= $e($p->descripcion ?? '') ?></textarea></div>
         </div>
       </section>
 
-      <section class="caja" aria-labelledby="fp-t-atr" id="fp-atributos-caja" hidden>
-        <header class="caja-cab"><h3 id="fp-t-atr">Atributos de la categoría</h3><a href="index.php?action=categorias" class="enlace" style="font-size:13px">Editar atributos</a></header>
-        <div class="caja-cuerpo form-grid" id="fp-atributos"></div>
+      <section class="fpx-sec" aria-labelledby="fp-t-atr" id="fp-atributos-caja" hidden>
+        <header><span class="fpx-ic"><svg class="i"><use href="#i-etiqueta"/></svg></span><div><h3 id="fp-t-atr">Atributos de la categoría</h3><p>Datos propios de esta categoría, como color o medidas.</p></div><a href="index.php?action=categorias" class="enlace">Editar atributos</a></header>
+        <div class="fpx-cuerpo" id="fp-atributos"></div>
       </section>
 
-      <section class="caja" aria-labelledby="fp-t-precio">
-        <header class="caja-cab"><h3 id="fp-t-precio">Precio</h3></header>
-        <div class="caja-cuerpo form-grid fp-3">
-          <div class="campo"><label for="fp-costo">Costo de compra ($)</label><input id="fp-costo" name="costo_compra" type="number" min="0" step="0.01" inputmode="decimal" value="<?= $e($p->costo_compra ?? '') ?>" placeholder="0.00"><span class="ayuda">Lo que te cuesta a ti. No lo ve el cliente.</span></div>
-          <div class="campo"><label for="fp-margen-pct">Ganancia (%)</label><input id="fp-margen-pct" type="number" min="0" step="1" inputmode="numeric" placeholder="30"><span class="ayuda">Calcula el precio sobre el costo.</span></div>
-          <div class="campo"><label for="fp-precio">Precio de venta ($) <span class="ob">*</span></label><input id="fp-precio" name="precio" type="number" min="0" step="0.01" inputmode="decimal" required value="<?= $e($p->precio ?? '') ?>" placeholder="0.00"><span class="ayuda" id="fp-precio-bs"></span></div>
-          <p class="fp-margen ancho" id="fp-margen" aria-live="polite"></p>
+      <section class="fpx-sec" aria-labelledby="fp-t-precio">
+        <header><span class="fpx-ic"><svg class="i"><use href="#i-dolar"/></svg></span><div><h3 id="fp-t-precio">Precio y ganancia</h3><p>El costo no lo ve el cliente.</p></div></header>
+        <div class="fpx-cuerpo fpx-precios">
+          <div class="campo"><label for="fp-costo">Costo de compra</label><div class="fpx-pre"><span aria-hidden="true">$</span><input id="fp-costo" name="costo_compra" type="number" min="0" step="0.01" inputmode="decimal" value="<?= $e($p->costo_compra ?? '') ?>" placeholder="0.00"></div></div>
+          <div class="campo"><label for="fp-margen-pct">Ganancia sobre el costo</label><div class="fpx-pre pct"><span aria-hidden="true">%</span><input id="fp-margen-pct" type="number" min="0" step="0.1" inputmode="decimal" placeholder="30"></div><span class="ayuda">Escríbela y calculo el precio.</span></div>
+          <div class="campo"><label for="fp-precio">Precio de venta <span class="ob">*</span></label><div class="fpx-pre"><span aria-hidden="true">$</span><input id="fp-precio" name="precio" type="number" min="0" step="0.01" inputmode="decimal" required value="<?= $e($p->precio ?? '') ?>" placeholder="0.00"></div><span class="ayuda" id="fp-precio-bs"></span></div>
+          <dl class="fpx-gana" id="fp-gana" aria-live="polite" hidden>
+            <div><dt id="fp-g-tit">Ganas por unidad</dt><dd id="fp-g-usd"></dd></div>
+            <div><dt>Sobre el costo</dt><dd id="fp-g-costo"></dd><small>lo que le sumas al costo</small></div>
+            <div><dt>Del precio de venta</dt><dd id="fp-g-precio"></dd><small>lo que te queda de cada venta</small></div>
+          </dl>
         </div>
       </section>
 
-      <section class="caja" aria-labelledby="fp-t-stock">
-        <header class="caja-cab"><h3 id="fp-t-stock">Stock</h3></header>
-        <div class="caja-cuerpo">
-          <?php if ($editando): ?><p class="fp-nota-stock">Para cambiar el stock usa <a href="index.php?action=ajustes_inventario&producto=<?= (int) $p->id ?>" class="enlace">Ajustes de stock</a>: así queda registrado en Movimientos quién lo cambió y por qué.</p><?php endif; ?>
-          <div class="form-grid fp-3">
-            <div class="campo"><label for="fp-st">Stock en tienda</label><input id="fp-st" name="stock" type="number" min="0" inputmode="numeric" value="<?= (int) ($p->stock ?? 0) ?>" <?= $editando ? 'readonly' : '' ?>></div>
-            <div class="campo"><label for="fp-so">Stock online</label><input id="fp-so" name="stock_online" type="number" min="0" inputmode="numeric" value="<?= (int) ($p->stock_online ?? 0) ?>" <?= $editando ? 'readonly' : '' ?>></div>
-            <div class="campo"><label for="fp-sm">Stock mínimo</label><input id="fp-sm" name="stock_minimo" type="number" min="0" inputmode="numeric" value="<?= (int) ($p->stock_minimo ?? 5) ?>"><span class="ayuda">Te avisamos cuando la tienda baje de aquí.</span></div>
-          </div>
+      <section class="fpx-sec" aria-labelledby="fp-t-stock">
+        <header><span class="fpx-ic"><svg class="i"><use href="#i-caja"/></svg></span><div><h3 id="fp-t-stock">Stock</h3><p><?= $editando ? 'Se cambia en Ajustes de stock para que quede en Movimientos.' : 'Con cuántas unidades empieza.' ?></p></div></header>
+        <div class="fpx-cuerpo fpx-stock">
+          <?php if ($editando): ?>
+          <div class="fpx-st"><span class="ic"><svg class="i"><use href="#i-tienda"/></svg></span><span>En tienda</span><b><?= (int) ($p->stock ?? 0) ?> <small>unid.</small></b></div>
+          <div class="fpx-st"><span class="ic"><svg class="i"><use href="#i-globo"/></svg></span><span>Online</span><b><?= (int) ($p->stock_online ?? 0) ?> <small>unid.</small></b></div>
+          <?php else: ?>
+          <div class="fpx-st"><span class="ic"><svg class="i"><use href="#i-tienda"/></svg></span><label for="fp-st">En tienda</label><input id="fp-st" name="stock" type="number" min="0" inputmode="numeric" value="0"></div>
+          <div class="fpx-st"><span class="ic"><svg class="i"><use href="#i-globo"/></svg></span><label for="fp-so">Online</label><input id="fp-so" name="stock_online" type="number" min="0" inputmode="numeric" value="0"></div>
+          <?php endif; ?>
+          <div class="fpx-st min"><span class="ic"><svg class="i"><use href="#i-alerta"/></svg></span><label for="fp-sm">Avisar cuando baje de</label><input id="fp-sm" name="stock_minimo" type="number" min="0" inputmode="numeric" value="<?= (int) ($p->stock_minimo ?? 5) ?>"></div>
+          <?php if ($editando): ?>
+          <div class="fpx-ajuste"><span>¿Contaste y no cuadra? Corrígelo con un ajuste.</span><a href="index.php?action=ajustes_inventario&amp;producto=<?= (int) $p->id ?>" class="btn btn-sec"><svg class="i"><use href="#i-ajuste"/></svg>Ajustar stock</a></div>
+          <?php endif; ?>
         </div>
       </section>
     </div>
 
-    <aside class="compra-col">
-      <section class="caja" aria-labelledby="fp-t-foto">
-        <header class="caja-cab"><h3 id="fp-t-foto">Foto</h3></header>
-        <div class="caja-cuerpo">
-          <label class="fp-foto<?= !empty($p->imagen) ? ' con-foto' : '' ?>" for="fp-img" id="fp-foto"><?php if (!empty($p->imagen)): ?><img src="public/uploads/<?= $e($p->imagen) ?>" alt="Foto del producto"><?php else: ?><span class="fp-foto-vacia"><svg class="i"><use href="#i-mas"/></svg>Elegir foto</span><?php endif; ?></label>
-          <input id="fp-img" name="imagen" type="file" accept="image/*" class="fp-file" <?= $editando ? '' : 'required' ?>>
-          <p class="ayuda" style="margin-top:8px">JPG o PNG. Las fotos cuadradas se ven mejor en el catálogo.</p>
-        </div>
+    <aside class="fpx-col">
+      <section class="fpx-sec" aria-labelledby="fp-t-foto">
+        <header><span class="fpx-ic"><svg class="i"><use href="#i-archivo"/></svg></span><div><h3 id="fp-t-foto">Foto</h3><p>Cuadrada se ve mejor.</p></div></header>
+        <input id="fp-img" name="imagen" type="file" accept="image/jpeg,image/png,image/webp" class="fp-file"<?= $editando ? '' : ' required' ?>>
+        <label class="fpx-foto<?= !empty($p->imagen) ? ' con-foto' : '' ?>" for="fp-img" id="fp-foto"><?php if (!empty($p->imagen)): ?><img src="public/uploads/<?= $e($p->imagen) ?>" alt="Foto del producto"><?php else: ?><span class="fpx-foto-vacia"><svg class="i"><use href="#i-mas"/></svg>Elegir foto</span><?php endif; ?></label>
+        <div class="fpx-foto-pie"><span>JPG, PNG o WEBP</span><label for="fp-img" class="btn btn-sec" id="fp-foto-btn"><?= !empty($p->imagen) ? 'Cambiar foto' : 'Elegir foto' ?></label></div>
       </section>
-      <section class="caja" aria-labelledby="fp-t-estado">
-        <header class="caja-cab"><h3 id="fp-t-estado">Visibilidad</h3></header>
-        <div class="caja-cuerpo">
-          <label class="interruptor"><input type="checkbox" name="estado" value="1" <?= ($p->estado ?? 1) ? 'checked' : '' ?>><span>Visible en la tienda online</span></label>
-          <p class="ayuda" style="margin-top:8px">Si lo apagas no se borra: solo deja de mostrarse a los clientes.</p>
-        </div>
+
+      <section class="fpx-sec" aria-labelledby="fp-t-vis">
+        <header><span class="fpx-ic"><svg class="i"><use href="#i-globo"/></svg></span><div><h3 id="fp-t-vis">Visibilidad</h3><p>Ocultarlo no lo borra.</p></div></header>
+        <input type="hidden" name="estado" value="0">
+        <label class="fpx-vis<?= $visible ? '' : ' oculto' ?>" id="fp-vis">
+          <input type="checkbox" name="estado" value="1"<?= $visible ? ' checked' : '' ?>>
+          <span><b id="fp-vis-t"><?= $visible ? 'Visible en la tienda' : 'Oculto en la tienda' ?></b><small id="fp-vis-s"><?= $visible ? 'Los clientes lo ven y lo pueden comprar.' : 'Los clientes no lo ven.' ?></small></span>
+        </label>
       </section>
-      <div class="acciones-col">
-        <button type="submit" class="btn btn-pri btn-bloque"><?= $editando ? 'Guardar cambios' : 'Guardar producto' ?></button>
-        <a href="index.php?action=listado_productos" class="btn btn-sec btn-bloque">Cancelar</a>
+
+      <div class="fpx-guardar">
+        <button type="submit" class="btn btn-pri"><svg class="i"><use href="#i-check"/></svg><?= $editando ? 'Guardar cambios' : 'Guardar producto' ?></button>
+        <a href="index.php?action=listado_productos" class="btn btn-sec">Cancelar</a>
+        <small><?= $editando ? 'Los cambios se ven al momento en la tienda online.' : 'Al guardarlo aparece en el catálogo de la tienda online.' ?></small>
       </div>
     </aside>
   </form>
+  <div class="fpx-barra" id="fp-barra" role="region" aria-label="Cambios sin guardar" hidden>
+    <b>Tienes cambios sin guardar</b>
+    <button type="button" class="btn btn-sec" id="fp-descartar">Descartar</button>
+    <button type="submit" form="form-producto" class="btn btn-pri"><svg class="i"><use href="#i-check"/></svg><?= $editando ? 'Guardar cambios' : 'Guardar producto' ?></button>
+  </div>
 </section>
 <script type="application/json" id="datos-atributos"><?= json_encode([
     'categorias' => array_map(fn($c) => ['id' => (int) $c->id, 'atributos' => array_map(fn($a) => ['id' => (int) $a->id, 'nombre' => $a->nombre, 'opciones' => array_values(array_filter(array_map('trim', explode(',', $a->opciones ?? ''))))], $c->atributos ?? [])], $categorias),
