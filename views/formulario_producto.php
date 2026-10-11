@@ -83,7 +83,7 @@ foreach ($categorias as $c) if ($editando && (string) $c->id === (string) ($p->i
 
     <aside class="fpx-col">
       <section class="fpx-sec" aria-labelledby="fp-t-foto">
-        <header><span class="fpx-ic"><svg class="i"><use href="#i-archivo"/></svg></span><div><h3 id="fp-t-foto">Foto</h3><p>Cuadrada se ve mejor.</p></div></header>
+        <header><span class="fpx-ic"><svg class="i"><use href="#i-archivo"/></svg></span><div><h3 id="fp-t-foto">Foto</h3><p>Vertical se ve mejor, como el teléfono parado.</p></div></header>
         <input id="fp-img" name="imagen" type="file" accept="image/jpeg,image/png,image/webp" class="fp-file"<?= $editando ? '' : ' required' ?>>
         <label class="fpx-foto<?= !empty($p->imagen) ? ' con-foto' : '' ?>" for="fp-img" id="fp-foto"><?php if (!empty($p->imagen)): ?><img src="public/uploads/<?= $e($p->imagen) ?>" alt="Foto del producto"><?php else: ?><span class="fpx-foto-vacia"><svg class="i"><use href="#i-mas"/></svg>Elegir foto</span><?php endif; ?></label>
         <div class="fpx-foto-pie"><span>JPG, PNG o WEBP</span><label for="fp-img" class="btn btn-sec" id="fp-foto-btn"><?= !empty($p->imagen) ? 'Cambiar foto' : 'Elegir foto' ?></label></div>

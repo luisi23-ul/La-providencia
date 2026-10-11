@@ -171,7 +171,11 @@
     var copiar = e.target.closest('[data-copiar]');
     if (copiar) {
       var texto = copiar.getAttribute('data-copiar');
-      var listo = function () { copiar.textContent = 'Copiada'; setTimeout(function () { copiar.textContent = 'Copiar'; }, 1800); };
+      var etiqueta = copiar.getAttribute('aria-label'), icono = copiar.innerHTML;
+      var listo = function () {
+        copiar.classList.add('hecho'); copiar.setAttribute('aria-label', 'Referencia copiada'); copiar.setAttribute('data-tip', 'Copiada'); copiar.innerHTML = '<svg class="i"><use href="#i-check"/></svg>';
+        setTimeout(function () { copiar.classList.remove('hecho'); copiar.setAttribute('aria-label', etiqueta); copiar.setAttribute('data-tip', 'Copiar'); copiar.innerHTML = icono; }, 1800);
+      };
       if (navigator.clipboard) navigator.clipboard.writeText(texto).then(listo, function () { Panel.avisar('Selecciona el texto y cópialo con Ctrl+C', 'aviso'); });
       return;
     }

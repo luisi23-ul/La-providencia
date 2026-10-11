@@ -22,7 +22,7 @@
     if (p.es_efectivo) return '';
     var t = p.titular || {}, html = '<dl class="vf-datos">';
     html += '<div class="vf-dato"><span class="ic"><svg class="i"><use href="#i-recibo"/></svg></span><dt>Referencia' +
-      (p.ref ? '<button type="button" class="vf-copiar" data-ref="' + esc(p.ref) + '" aria-label="Copiar referencia"><svg class="i"><use href="#i-copiar"/></svg></button>' : '') +
+      (p.ref ? '<button type="button" class="vf-copiar" data-tip="Copiar" data-ref="' + esc(p.ref) + '" aria-label="Copiar referencia"><svg class="i"><use href="#i-copiar"/></svg></button>' : '') +
       '</dt><dd class="vf-ref">' + esc(p.ref || 'Sin referencia') + '</dd></div>';
     html += '<div class="vf-dato"><span class="ic"><svg class="i"><use href="#i-banco"/></svg></span><dt>Banco</dt><dd>' + esc(p.banco || 'No indicado') + (p.origen ? '<small>' + esc(p.origen) + '</small>' : '') + '</dd></div>';
     var principal = t.nombre || t.doc || 'Sin datos', detalle = [t.nombre ? t.doc : '', t.tel].filter(Boolean).join(' · ');
@@ -68,7 +68,7 @@
     if (e.target.closest('#volver-cola')) { verif.classList.remove('viendo'); return; }
     var copiar = e.target.closest('.vf-copiar');
     if (copiar) {
-      var listo = function () { copiar.classList.add('hecho'); copiar.setAttribute('aria-label', 'Referencia copiada'); copiar.innerHTML = '<svg class="i"><use href="#i-check"/></svg>'; setTimeout(function () { copiar.classList.remove('hecho'); copiar.setAttribute('aria-label', 'Copiar referencia'); copiar.innerHTML = '<svg class="i"><use href="#i-copiar"/></svg>'; }, 1600); };
+      var listo = function () { copiar.classList.add('hecho'); copiar.setAttribute('aria-label', 'Referencia copiada'); copiar.setAttribute('data-tip', 'Copiada'); copiar.innerHTML = '<svg class="i"><use href="#i-check"/></svg>'; setTimeout(function () { copiar.classList.remove('hecho'); copiar.setAttribute('aria-label', 'Copiar referencia'); copiar.setAttribute('data-tip', 'Copiar'); copiar.innerHTML = '<svg class="i"><use href="#i-copiar"/></svg>'; }, 1600); };
       if (navigator.clipboard) navigator.clipboard.writeText(copiar.getAttribute('data-ref')).then(listo, function () { Panel.avisar('Selecciona la referencia y cópiala con Ctrl+C', 'aviso'); });
       return;
     }
