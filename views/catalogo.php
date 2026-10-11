@@ -1,89 +1,44 @@
-<link rel="stylesheet" href="public/css/catalogo.css?v=<?php echo time(); ?>">
-
-<header class="hero-catalogo">
-    <nav class="hero-top-bar">
-        <span><i class="fas fa-truck"></i> Envío rápido</span>
-        <span><i class="fas fa-shield-alt"></i> Calidad Providencia</span>
-        <span><i class="fas fa-credit-card"></i> Pagos seguros</span>
-    </nav>
-
-    <section class="hero-content">
-        <div class="hero-text">
-            <h1>Nuestros Productos</h1>
-            <p>La excelencia en soluciones para el hogar, ahora a un clic de distancia.</p>
-        </div>
-
-        <form id="form-busqueda" action="index.php" method="GET" class="hero-search-bar">
-            <input type="hidden" name="action" value="ver_catalogo">
-            
-            <input type="text" name="busqueda" id="input-busqueda" 
-                   placeholder="¿Qué estás buscando para tu hogar?" 
-                   value="<?php echo htmlspecialchars($_GET['busqueda'] ?? ''); ?>">
-
-            <select name="id_categoria" onchange="this.form.submit()">
-                <option value="">Todas las categorías</option>
-                <?php if (!empty($categorias)): foreach ($categorias as $cat): ?>
-                    <option value="<?php echo $cat->id; ?>" 
-                        <?php echo (isset($_GET['id_categoria']) && $_GET['id_categoria'] == $cat->id) ? 'selected' : ''; ?>>
-                        <?php echo htmlspecialchars($cat->nombre_categoria); ?>
-                    </option>
-                <?php endforeach; endif; ?>
-            </select>
+<?php
+include __DIR__ . '/tienda/_comun.php';
+$listaProductos = $listaProductos ?? [];
+$categorias = $categorias ?? [];
+$tallas = $tallas ?? [];
+$busqueda = trim((string) ($_GET['busqueda'] ?? ''));
+$catActual = (int) ($_GET['id_categoria'] ?? 0);
+$tallaActual = (string) ($_GET['talla'] ?? '');
+$titulo = $catActual && isset($nombresCategoria[$catActual]) ? $nombresCategoria[$catActual] : 'Catálogo';
+$enlace = function ($cambios) use ($busqueda, $catActual, $tallaActual) {
+    $q = array_filter(array_merge(['action' => 'ver_catalogo', 'busqueda' => $busqueda, 'id_categoria' => $catActual ?: '', 'talla' => $tallaActual], $cambios), fn($v) => $v !== '' && $v !== null);
+    return 'index.php?' . htmlspecialchars(http_build_query($q), ENT_QUOTES);
+};
+$total = count($listaProductos);
+?>
+  <section class="lista" aria-labelledby="t-cat" style="padding-top:40px">
+    <div class="filtros-cat">
+      <div class="filtros-fila">
+        <h1 class="sec-tit" id="t-cat"><?= $e($titulo) ?></h1>
+        <form class="buscador" id="buscar" action="index.php" method="get" role="search">
+          <input type="hidden" name="action" value="ver_catalogo">
+          <?php if ($catActual): ?><input type="hidden" name="id_categoria" value="<?= $catActual ?>"><?php endif; ?>
+          <i class="ti ti-search" aria-hidden="true"></i>
+          <input type="search" name="busqueda" value="<?= $e($busqueda) ?>" placeholder="Busca una prenda" aria-label="Buscar en el catálogo">
         </form>
-    </section>
-</header>
-
-<main class="contenedor-catalogo">
-    <article class="grid-productos">
-        <?php if (!empty($listaProductos)): ?>
-            <?php foreach ($listaProductos as $p): ?>
-                <figure class="card-producto producto-item">
-                    <picture class="imagen-container">
-                        <?php 
-                        $ruta_archivo = "public/uploads/" . $p->imagen;
-                        // Ajuste de ruta según tu estructura física
-                        if (!empty($p->imagen) && file_exists($_SERVER['DOCUMENT_ROOT'] . '/La-providencia/' . $ruta_archivo)): ?>
-                            <img src="<?php echo htmlspecialchars($ruta_archivo); ?>" 
-                                 alt="<?php echo htmlspecialchars($p->nombre_producto, ENT_QUOTES, 'UTF-8'); ?>">
-                        <?php else: ?>
-                            <img src="public/img/uploads.png" alt="Imagen no disponible">
-                        <?php endif; ?>
-                    </picture>
-                    
-                    <figcaption class="cuerpo-producto">
-                        <h3><?php echo htmlspecialchars($p->nombre_producto, ENT_QUOTES, 'UTF-8'); ?></h3>
-                        <p class="calidad">Calidad garantizada Providencia</p>
-                        
-                        <p class="stock">
-                            <span>Disponibilidad:</span>
-                            <strong><?php echo $p->stock; ?> unidades</strong>
-                        </p>
-                        
-                        <span class="precio">$<?php echo number_format($p->precio, 2); ?></span>
-                        
-                        <?php if (isset($_SESSION["id_usuario"])): ?>
-                            <form action="index.php" method="GET" class="formulario-pedido">
-    <input type="hidden" name="action" value="agregar_carrito">
-    <input type="hidden" name="id" value="<?php echo $p->id; ?>">
-    
-    <input type="hidden" name="nombre" value="<?php echo htmlspecialchars($p->nombre_producto); ?>">
-    <input type="hidden" name="precio" value="<?php echo $p->precio; ?>">
-    
-    <input type="number" name="cantidad" value="1" min="1" max="<?php echo $p->stock; ?>" class="input-cantidad">
-    <button type="submit" class="btn-agregar">
-        <i class="fas fa-shopping-cart"></i> <span>Agregar</span>
-    </button>
-</form>
-                        <?php else: ?>
-                            <a href="index.php?action=login_usuario" class="btn-login-comprar">
-                                <i class="fas fa-sign-in-alt"></i> Iniciar sesión para comprar
-                            </a>
-                        <?php endif; ?>
-                    </figcaption>
-                </figure>
-            <?php endforeach; ?>
-        <?php else: ?>
-            <p style="text-align: center; width: 100%; margin-top: 20px;">No se encontraron productos.</p>
-        <?php endif; ?>
-    </article>
-</main>
+      </div>
+      <nav class="chips" aria-label="Categorías">
+        <a href="<?= $enlace(['id_categoria' => '']) ?>"<?= !$catActual ? ' aria-current="true"' : '' ?>>Todo</a>
+        <?php foreach ($categorias as $c): ?><a href="<?= $enlace(['id_categoria' => (int) $c->id]) ?>"<?= $catActual === (int) $c->id ? ' aria-current="true"' : '' ?>><?= $e($c->nombre_categoria) ?></a><?php endforeach; ?>
+      </nav>
+      <?php if ($tallas): ?>
+      <nav class="chips" aria-label="Tallas">
+        <a href="<?= $enlace(['talla' => '']) ?>"<?= $tallaActual === '' ? ' aria-current="true"' : '' ?>>Todas las tallas</a>
+        <?php foreach ($tallas as $t): ?><a href="<?= $enlace(['talla' => $t]) ?>"<?= $tallaActual === (string) $t ? ' aria-current="true"' : '' ?>><?= $e($t) ?></a><?php endforeach; ?>
+      </nav>
+      <?php endif; ?>
+      <p class="ped-hola" style="margin:0"><?= $total ?> <?= $total === 1 ? 'prenda' : 'prendas' ?><?= $busqueda !== '' ? ' para «' . $e($busqueda) . '»' : '' ?></p>
+    </div>
+    <ul class="rejilla">
+      <?php foreach ($listaProductos as $p) echo tarjetaProducto($p, $e, $usd, $bs, $foto, $nombresCategoria); ?>
+      <?php if (!$listaProductos): ?><li class="vacio-lista">No encontramos prendas con esos filtros. <a href="index.php?action=ver_catalogo">Ver todo el catálogo</a></li><?php endif; ?>
+    </ul>
+  </section>
+<?php $seccionPie = 'catalogo'; include __DIR__ . '/tienda/_pie.php'; ?>
