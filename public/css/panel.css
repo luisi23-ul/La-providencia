@@ -2131,3 +2131,35 @@ body:has(.panel.modo-pos) .avisos { top: 76px; }
 .vr-matriz thead th:last-child { border-radius: 0 10px 10px 0; }
 .vr-matriz tbody th, .vr-matriz td { padding: 8px 14px; }
 .panel table.vr-matriz thead th:not(:last-child)::after { content: none; }
+.tabla-cat td.t-tit { min-width: 240px; }
+.cat-nom { display: flex; align-items: center; gap: 12px; }
+.cat-nom b { display: block; font-size: 15.5px; font-weight: 600; color: var(--texto); }
+.cat-nom small { display: block; font-size: 13px; color: var(--texto-2); }
+.cat-ic { width: 34px; height: 34px; flex: none; border-radius: 10px; display: grid; place-items: center; background: var(--marca-suave); color: var(--marca); }
+.cat-ic svg.i { width: 17px; height: 17px; }
+.cat-sub .cat-nom { padding-left: 16px; }
+.cat-sub .cat-nom b { font-weight: 500; }
+.cat-rama { position: relative; width: 18px; height: 34px; flex: none; }
+.cat-rama::before { content: ""; position: absolute; left: 0; top: -12px; height: 29px; width: 12px; border-left: 2px solid var(--marca-borde); border-bottom: 2px solid var(--marca-borde); border-bottom-left-radius: 8px; }
+.cat-rama::after { content: ""; position: absolute; left: 12px; top: 13px; width: 6px; height: 6px; border-radius: 50%; background: var(--marca-claro); }
+.cat-incl { display: block; font-size: 12.5px; color: var(--texto-2); font-weight: 500; }
+.tabla-cat tbody tr.cat-padre td { border-top: 1px solid var(--linea); }
+.tabla-cat tbody tr.cat-sub td { border-top-color: transparent; }
+@container tabla (max-width: 600px) {
+  .tabla-cat td.t-tit { min-width: 0; }
+  .tabla-cat tr.cat-sub { padding-left: 30px; }
+  .tabla-cat .cat-incl { display: inline; margin-left: 4px; }
+}
+.panel .tabla-cat tbody tr:nth-child(n) td { background: var(--tarjeta); }
+.panel .tabla-cat tbody tr.cat-sub td { background: #f1f8f4; }
+.panel .tabla-cat tbody tr:hover td { background: var(--marca-tenue); }
+.panel .tabla-cat tbody tr.cat-sub:hover td { background: #e6f2ec; }
+.cat-sub .cat-nom { padding-left: 26px; }
+.cat-rama::before { border-color: var(--marca-claro); }
+.cat-de { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cat-de { color: #2f6b52 !important; }
+@container tabla (max-width: 600px) {
+  .tabla-cat tr.cat-sub { padding-left: 14px; background: #f1f8f4; }
+  .tabla-cat tr.cat-sub .cat-nom { padding-left: 10px; }
+}
+.cat-mas { font-weight: 700; color: var(--marca); background: var(--marca-tenue); border-color: var(--marca-borde); cursor: default; }
