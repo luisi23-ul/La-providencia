@@ -51,6 +51,14 @@ $lista = array_filter($listaProductos, function ($p) use ($filtro, $catSel, $est
 $url = fn($stock) => 'index.php?' . http_build_query(array_filter(['action' => 'listado_productos', 'stock' => $stock, 'categoria' => $catSel]));
 ?>
 <section class="contenido" id="p-inventario">
+
+  <!-- PUNTO 5: AVISO EN VERDE DE CONFIRMACIÓN -->
+  <?php if (!empty($aviso)): ?>
+    <div class="aviso-exito" style="background:#dcfce7; color:#166534; padding:12px 16px; border-radius:8px; margin-bottom:1rem; font-weight:500;">
+      <?= $e($aviso) ?>
+    </div>
+  <?php endif; ?>
+
   <header class="cab">
     <div class="cab-txt"><small>Inventario</small><h2>Productos</h2></div>
     <div class="cab-acc">

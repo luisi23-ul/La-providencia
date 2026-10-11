@@ -21,10 +21,14 @@ class AdminControllers {
         } catch (Exception $e) {}
     }
 
-    // Helper de seguridad: validación y procesamiento de imágenes (Punto 1)
+    // Punto 1: Helper de seguridad para validación y procesamiento de imágenes
     private function procesarImagenUpload($file, $imagenAnterior = null) {
         if (empty($file['tmp_name']) || $file['error'] !== UPLOAD_ERR_OK) {
             return $imagenAnterior;
+        }
+
+        if ($file['size'] > 3 * 1024 * 1024) {
+            throw new Exception("La imagen supera el límite permitido de 3 MB.");
         }
 
         // Validar tipo real
@@ -120,7 +124,7 @@ class AdminControllers {
         return $cats;
     }
 
-   public function agregar() {
+    public function agregar() {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             try {
                 $nombre = trim($_POST['nombre_producto'] ?? $_POST['nombre'] ?? '');
@@ -134,16 +138,14 @@ class AdminControllers {
                 $catId  = !empty($_POST['id_categoria']) ? (int)$_POST['id_categoria'] : (!empty($_POST['categoria']) ? (int)$_POST['categoria'] : null);
                 $estado = isset($_POST['estado']) ? (int)$_POST['estado'] : 1;
                 $atributos = $_POST['atributo'] ?? [];
-                $variantes = $_POST['variantes'] ?? []; // <-- Recibir variantes
+                $variantes = $_POST['variantes'] ?? [];
 
-                if (!empty($codigo)) {
-                    $stmtChk = $this->db->prepare("SELECT id FROM productos WHERE codigo = ? AND deleted_at IS NULL LIMIT 1");
-                    $stmtChk->execute([$codigo]);
-                    if ($stmtChk->fetch()) {
-                        throw new Exception("El código '{$codigo}' ya está registrado en otro producto.");
-                    }
+                // Punto 3: Validar que el código no exista
+                if (!empty($codigo) && $this->productoModelo->existeCodigo($codigo)) {
+                    throw new Exception("El código '{$codigo}' ya está registrado en otro producto.");
                 }
 
+                // Punto 1: Procesar imagen
                 $nombreImagen = null;
                 if (!empty($_FILES['imagen']['tmp_name'])) {
                     $nombreImagen = $this->procesarImagenUpload($_FILES['imagen']);
@@ -166,6 +168,7 @@ class AdminControllers {
                 $nuevoId = $this->productoModelo->guardarCompleto($datos, $atributos, $variantes);
                 $this->log('Inventario', 'INSERT', "Creó producto: {$nombre} (ID: {$nuevoId})");
 
+                // Punto 5: Aviso al guardar
                 $_SESSION['aviso'] = 'Producto creado exitosamente.';
                 header("Location: index.php?action=listado_productos");
                 exit();
@@ -181,13 +184,15 @@ class AdminControllers {
         $id = (int)($_GET['id'] ?? 0);
         $p = $this->productoModelo->obtenerPorId($id);
 
+        // Punto 4: Si el producto no existe, redirigir a la lista
         if (!$p) {
+            $_SESSION['aviso'] = 'El producto solicitado no existe.';
             header("Location: index.php?action=listado_productos");
             exit();
         }
 
         $p->atributos = $this->productoModelo->obtenerAtributosProducto($id);
-        $p->variantes = $this->productoModelo->obtenerVariantesProducto($id); // <-- Cargar variantes
+        $p->variantes = $this->productoModelo->obtenerVariantesProducto($id);
         $categorias = $this->obtenerCategoriasConAtributos();
         
         $aviso = $_SESSION['aviso'] ?? null;
@@ -203,20 +208,19 @@ class AdminControllers {
                 $pActual = $this->productoModelo->obtenerPorId($id);
 
                 if (!$pActual) {
+                    $_SESSION['aviso'] = 'El producto no existe.';
                     header("Location: index.php?action=listado_productos");
                     exit();
                 }
 
                 $codigo = trim($_POST['codigo'] ?? $pActual->codigo);
 
-                if (!empty($codigo)) {
-                    $stmtChk = $this->db->prepare("SELECT id FROM productos WHERE codigo = ? AND id != ? AND deleted_at IS NULL LIMIT 1");
-                    $stmtChk->execute([$codigo, $id]);
-                    if ($stmtChk->fetch()) {
-                        throw new Exception("El código '{$codigo}' ya está asignado a otro producto.");
-                    }
+                // Punto 3: Validar que el código no pertenezca a otro producto
+                if (!empty($codigo) && $this->productoModelo->existeCodigo($codigo, $id)) {
+                    throw new Exception("El código '{$codigo}' ya está asignado a otro producto.");
                 }
 
+                // Punto 1: Procesar imagen y borrar la vieja
                 $nombreImagen = $pActual->imagen;
                 if (!empty($_FILES['imagen']['tmp_name'])) {
                     $nombreImagen = $this->procesarImagenUpload($_FILES['imagen'], $pActual->imagen);
@@ -227,26 +231,22 @@ class AdminControllers {
                 $precio = isset($_POST['precio']) && $_POST['precio'] !== '' ? (float)$_POST['precio'] : (float)$pActual->precio;
                 $costo  = isset($_POST['costo_compra']) && $_POST['costo_compra'] !== '' ? (float)$_POST['costo_compra'] : (float)$pActual->costo_compra;
                 
-                $stock       = (int)$pActual->stock;
-                $stockOnline = (int)$pActual->stock_online;
-
                 $stockMinimo = isset($_POST['stock_minimo']) && $_POST['stock_minimo'] !== '' 
                                 ? (int)$_POST['stock_minimo'] 
                                 : (int)$pActual->stock_minimo;
 
                 $catId  = !empty($_POST['id_categoria']) ? (int)$_POST['id_categoria'] : (!empty($_POST['categoria']) ? (int)$_POST['categoria'] : $pActual->id_categoria);
-                $estado = isset($_POST['estado']) ? (int)$_POST['estado'] : (int)$pActual->estado;
+                $estado = isset($_POST['estado']) ? (int)$_POST['estado'] : 0;
                 $atributos = $_POST['atributo'] ?? [];
-                $variantes = $_POST['variantes'] ?? []; // <-- Recibir variantes
+                $variantes = $_POST['variantes'] ?? [];
 
+                // Punto 2: No se envían ni stock ni stock_online para no alterarlos desde edición
                 $datos = [
                     'codigo'          => $codigo,
                     'nombre_producto' => $nombre,
                     'descripcion'     => $desc,
                     'precio'          => $precio,
                     'costo_compra'    => $costo,
-                    'stock'           => $stock,
-                    'stock_online'    => $stockOnline,
                     'stock_minimo'    => $stockMinimo,
                     'id_categoria'    => $catId,
                     'estado'          => $estado,
@@ -256,6 +256,7 @@ class AdminControllers {
                 $this->productoModelo->actualizarCompleto($id, $datos, $atributos, $variantes);
                 $this->log('Inventario', 'UPDATE', "Actualizó producto y variantes: {$nombre} (ID: {$id})");
 
+                // Punto 5: Aviso verde
                 $_SESSION['aviso'] = 'Producto actualizado correctamente.';
                 header("Location: index.php?action=listado_productos");
                 exit();
@@ -272,6 +273,7 @@ class AdminControllers {
         if ($id) {
             $this->productoModelo->borrarProducto($id);
             $this->log('Inventario', 'DELETE', "Eliminó producto (borrado lógico) ID: {$id}");
+            $_SESSION['aviso'] = 'Producto eliminado correctamente.';
         }
         header("Location: index.php?action=listado_productos");
         exit();
@@ -301,7 +303,6 @@ class AdminControllers {
             $cat->atributos = $stmtAtr->fetchAll(PDO::FETCH_OBJ);
         }
 
-        // Cargar vista soportando ambas rutas para evitar errores de ruta
         if (file_exists('views/categorias.php')) {
             require_once 'views/categorias.php';
         } elseif (file_exists('views/inventario/categorias.php')) {
@@ -317,7 +318,6 @@ class AdminControllers {
             $nuevaPadre = trim($_POST['nueva_categoria_padre'] ?? '');
             $idPadre = null;
 
-            // Si el usuario eligió crear una categoría padre en el momento
             if ($rawPadre === 'nueva_padre' && !empty($nuevaPadre)) {
                 $stmtNP = $this->db->prepare("INSERT INTO categorias (nombre_categoria, id_padre) VALUES (?, NULL)");
                 $stmtNP->execute([$nuevaPadre]);
@@ -333,7 +333,7 @@ class AdminControllers {
 
             if (!empty($nombre)) {
                 if ($id) {
-                    if ($idPadre === $id) $idPadre = null; // Evitar asignarse a sí misma como padre
+                    if ($idPadre === $id) $idPadre = null;
                     $stmt = $this->db->prepare("UPDATE categorias SET nombre_categoria = ?, id_padre = ? WHERE id = ?");
                     $stmt->execute([$nombre, $idPadre, $id]);
                     $this->log('Inventario', 'UPDATE', "Editó categoría: {$nombre}");
@@ -415,8 +415,8 @@ class AdminControllers {
 
     public function guardarAjuste() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $idProducto = (int)$_POST['id_producto'];
-            $tipo = $_POST['tipo_movimiento'];
+            $idProducto = (int)($_POST['id_producto'] ?? 0);
+            $tipo = $_POST['tipo_movimiento'] ?? '';
             $observacion = trim($_POST['observacion'] ?? '');
             $idUsuario = $_SESSION['id_usuario'] ?? 1;
 
@@ -425,8 +425,8 @@ class AdminControllers {
             $prod = $stmtP->fetch(PDO::FETCH_OBJ);
 
             if ($prod) {
-                $stockTienda = $prod->stock;
-                $stockOnline = $prod->stock_online;
+                $stockTienda = (int)$prod->stock;
+                $stockOnline = (int)$prod->stock_online;
                 $cantidadMov = 0;
                 $canal = 'tienda_fisica';
 
@@ -452,7 +452,7 @@ class AdminControllers {
                         $stockOnline = max(0, $stockOnline - $cant);
                     }
                 } elseif ($tipo === 'transferencia') {
-                    $dir = $_POST['direccion'];
+                    $dir = $_POST['direccion'] ?? '';
                     $cant = abs((int)$_POST['cantidad']);
                     if ($dir === 'a_online') {
                         $stockTienda = max(0, $stockTienda - $cant);
@@ -481,7 +481,7 @@ class AdminControllers {
                 $this->log('Inventario', 'UPDATE', "Ajuste de inventario ({$tipo}) producto ID: {$idProducto}");
             }
 
-            // Punto 6: Volver al producto si viene el campo oculto
+            // Punto 6: Aviso verde y redirección si viene volver_producto
             $_SESSION['aviso'] = 'Ajuste de stock registrado.';
             $volverId = (int)($_POST['volver_producto'] ?? 0);
             if ($volverId > 0) {

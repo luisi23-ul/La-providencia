@@ -7,6 +7,17 @@ class ProductoModel {
         $this->db = Database::connect();
     }
 
+    /**
+     * Punto 3: Verifica si un código ya pertenece a otro producto activo
+     */
+    public function existeCodigo($codigo, $idIgnorar = 0) {
+        if (empty($codigo)) return false;
+        $sql = "SELECT id FROM productos WHERE codigo = ? AND id != ? AND deleted_at IS NULL LIMIT 1";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$codigo, (int)$idIgnorar]);
+        return (bool)$stmt->fetch();
+    }
+
     public function obtenerTodos() {
         $sql = "SELECT p.*, 
                        c.nombre_categoria, 
@@ -137,14 +148,13 @@ class ProductoModel {
     }
 
     public function actualizarCompleto($id, $datos, $atributos = [], $variantes = []) {
+        // Punto 2: Se removieron stock y stock_online de este UPDATE para proteger el kardex
         $sql = "UPDATE productos SET 
                     codigo = ?, 
                     nombre_producto = ?, 
                     descripcion = ?, 
                     precio = ?, 
                     costo_compra = ?, 
-                    stock = ?, 
-                    stock_online = ?, 
                     stock_minimo = ?, 
                     id_categoria = ?, 
                     estado = ?, 
@@ -157,28 +167,26 @@ class ProductoModel {
             $datos['descripcion'],
             $datos['precio'],
             $datos['costo_compra'],
-            $datos['stock'],
-            $datos['stock_online'],
             $datos['stock_minimo'],
             $datos['id_categoria'],
             $datos['estado'],
             $datos['imagen'],
-            $id
+            (int)$id
         ]);
 
-        $this->db->prepare("DELETE FROM producto_atributos WHERE id_producto = ?")->execute([$id]);
+        $this->db->prepare("DELETE FROM producto_atributos WHERE id_producto = ?")->execute([(int)$id]);
 
         if (!empty($atributos) && is_array($atributos)) {
             $stmtAtr = $this->db->prepare("INSERT INTO producto_atributos (id_producto, id_atributo, valor) VALUES (?, ?, ?)");
             foreach ($atributos as $idAtr => $valor) {
                 if (trim($valor) !== '') {
-                    $stmtAtr->execute([$id, $idAtr, trim($valor)]);
+                    $stmtAtr->execute([(int)$id, (int)$idAtr, trim($valor)]);
                 }
             }
         }
 
         if (!empty($variantes) && is_array($variantes)) {
-            $this->sincronizarVariantes($id, $variantes);
+            $this->sincronizarVariantes((int)$id, $variantes);
         }
 
         return true;
