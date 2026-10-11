@@ -738,3 +738,23 @@
     });
   });
 })();
+
+(function () {
+  document.addEventListener('toggle', function (e) {
+    var pop = e.target;
+    if (!pop.classList || !pop.classList.contains('vr-pop')) return;
+    var btn = document.querySelector('[popovertarget="' + pop.id + '"]');
+    if (!btn) return;
+    var abierto = e.newState === 'open';
+    btn.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+    if (!abierto) return;
+    var r = btn.getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight;
+    var izq = Math.max(12, Math.min(r.left, innerWidth - w - 12));
+    var arriba = r.bottom + 6 + h > innerHeight - 12 ? Math.max(12, r.top - h - 6) : r.bottom + 6;
+    pop.style.left = izq + 'px';
+    pop.style.top = arriba + 'px';
+  }, true);
+  addEventListener('scroll', function () {
+    document.querySelectorAll('.vr-pop:popover-open').forEach(function (p) { p.hidePopover(); });
+  }, { passive: true, capture: true });
+})();

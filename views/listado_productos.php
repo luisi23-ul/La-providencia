@@ -4,6 +4,46 @@ $tituloPagina = 'Productos';
 $listaProductos = $listaProductos ?? $productos ?? [];
 $categorias = $categorias ?? array_map(fn($id, $n) => (object) ['id' => $id, 'nombre_categoria' => $n], [1, 2, 3], ['Aluminio', 'Lencería', 'Plástico']);
 include __DIR__ . '/admin/_abrir.php';
+$tallasDe = function ($p, $donde = 't') use ($e) {
+    if (empty($p->resumen_variantes)) return '';
+    $porTalla = []; $colores = []; $matriz = [];
+    foreach (explode('|', $p->resumen_variantes) as $iv) {
+        $partes = explode(':', $iv);
+        if (count($partes) < 3) continue;
+        $on = (int) array_pop($partes); $st = (int) array_pop($partes);
+        $talla = trim($partes[0] ?? ''); $color = trim($partes[1] ?? '');
+        $clave = mb_strtolower($color);
+        if ($color !== '') $colores[$clave] = $color;
+        if ($talla !== '') {
+            $porTalla[$talla] ??= [0, 0];
+            $porTalla[$talla][0] += $st; $porTalla[$talla][1] += $on;
+        }
+        $matriz[$clave][$talla] = ($matriz[$clave][$talla] ?? 0) + $st + $on;
+    }
+    $html = '';
+    foreach ($porTalla as $ta => [$st, $on]) $html .= '<span class="vr-talla' . ($st + $on ? '' : ' agot') . '" title="Tienda ' . $st . ' · Online ' . $on . '"><b>' . $e($ta) . '</b>' . ($st + $on) . '</span>';
+    if (count($colores) === 1) {
+        $html .= '<small class="vr-colores">' . $e(reset($colores)) . '</small>';
+    } elseif ($colores) {
+        $id = 'vr-pop-' . $donde . (int) $p->id;
+        $tallas = array_keys($porTalla) ?: [''];
+        $tabla = '<table class="vr-matriz"><thead><tr><th scope="col"><span class="sr-only">Color</span></th>';
+        foreach ($tallas as $ta) $tabla .= '<th scope="col">' . $e($ta !== '' ? $ta : 'Stock') . '</th>';
+        $tabla .= '</tr></thead><tbody>';
+        foreach ($colores as $clave => $color) {
+            $tabla .= '<tr><th scope="row">' . $e($color) . '</th>';
+            foreach ($tallas as $ta) {
+                $n = $matriz[$clave][$ta] ?? null;
+                $tabla .= '<td' . ($n === 0 ? ' class="cero"' : '') . '>' . ($n === null ? '<span aria-label="No existe">–</span>' : $n) . '</td>';
+            }
+            $tabla .= '</tr>';
+        }
+        $tabla .= '</tbody></table>';
+        $html .= '<button type="button" class="vr-btn-col" popovertarget="' . $id . '" aria-label="Ver stock por color de ' . $e($p->nombre_producto) . '">' . count($colores) . ' colores<svg class="i" aria-hidden="true"><use href="#i-chevron"/></svg></button>'
+               . '<div class="vr-pop" id="' . $id . '" popover><header><b>' . $e($p->nombre_producto) . '</b><small>Stock por talla y color (tienda + online)</small></header>' . $tabla . '</div>';
+    }
+    return $html ? '<span class="vr-tallas">' . $html . '</span>' : '';
+};
 
 // Definición de respaldo de helpers en caso de que _abrir.php no los declare
 $e = $e ?? fn($v) => htmlspecialchars((string)($v ?? ''), ENT_QUOTES, 'UTF-8');
@@ -129,34 +169,7 @@ $url = fn($stock) => 'index.php?' . http_build_query(array_filter(['action' => '
                   <b><?= $e($p->nombre_producto) ?></b>
                   <span><?= $e($p->descripcion ?? '') ?></span>
 
-                  <?php if (!empty($p->resumen_variantes)): ?>
-                    <div class="atr-chips" style="display:flex; flex-wrap:wrap; gap:4px; margin-top:4px;">
-                      <?php 
-                        $itemsVar = explode('|', $p->resumen_variantes);
-                        foreach ($itemsVar as $iv):
-                          $partes = explode(':', $iv);
-                          if (count($partes) >= 5):
-                            $t = trim($partes[0]);
-                            $c = trim($partes[1]);
-                            $m = trim($partes[2]);
-                            $stk = (int)$partes[3];
-
-                            // Construir etiquetas con el nombre de cada atributo
-                            $detalles = [];
-                            if ($t !== '') $detalles[] = '<b>Talla:</b> ' . $e($t);
-                            if ($c !== '') $detalles[] = '<b>Color:</b> ' . $e($c);
-                            if ($m !== '') $detalles[] = '<b>Modelo:</b> ' . $e($m);
-                      ?>
-                        <span class="chip" style="font-size:0.75rem; padding:3px 8px; background:var(--fondo-2, #f1f5f9); border-radius:6px; line-height:1.3;" title="Stock en tienda: <?= $stk ?>">
-                          <?= implode(' <span style="opacity:0.4;">·</span> ', $detalles) ?>
-                          <span style="margin-left:4px; color:var(--primario, #166534); font-weight:bold;">(<?= $stk ?>)</span>
-                        </span>
-                      <?php 
-                          endif;
-                        endforeach; 
-                      ?>
-                    </div>
-                  <?php endif; ?>
+                  <?= $tallasDe($p) ?>
 
                   <span class="si-estrecho"><span class="cod"><?= $e($codigo) ?></span>, <?= !empty($padreNombre) ? $e($padreNombre) . ' › ' : '' ?><?= $e($cat) ?></span>
                 </div>
@@ -210,6 +223,7 @@ $url = fn($stock) => 'index.php?' . http_build_query(array_filter(['action' => '
           <div class="t-nom">
             <b><?= $e($p->nombre_producto) ?></b>
             <span><?= $e($codigo) ?>, <?= !empty($padreNombre) ? $e($padreNombre) . ' › ' : '' ?><?= $e($cat) ?></span>
+            <?= $tallasDe($p, 'm') ?>
           </div>
           <div class="t-precio"><?= $usd($p->precio) ?></div>
           <div class="t-stock">Tienda <b><?= (int) $p->stock ?></b>, online <b><?= (int) ($p->stock_online ?? 0) ?></b> <?php if ($s === 'bajo'): ?><span class="est bajo">Bajo</span><?php elseif ($s === 'agot'): ?><span class="est agot">Agotado</span><?php endif; ?></div>
