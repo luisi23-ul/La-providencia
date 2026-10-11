@@ -65,9 +65,8 @@ if (in_array($estado, ['retirado', 'entregado', 'completado'], true)) {
 }
 ?>
 <section class="contenido dv">
-  <a href="index.php?action=ventas" class="volver"><svg class="i"><use href="#i-volver"/></svg>Ventas</a>
   <header class="cab">
-    <div class="cab-txt"><small>Venta, <?= mb_strtolower($origen) === 'tienda online' ? 'online' : 'tienda física' ?></small><h2>#<?= str_pad($venta->id, 4, '0', STR_PAD_LEFT) ?></h2><p class="dv-fecha"><?= $e($fechaLarga) ?></p></div>
+    <div class="cab-txt"><small>Venta, <?= mb_strtolower($origen) === 'tienda online' ? 'online' : 'tienda física' ?></small><div class="titulo-atras"><a href="index.php?action=ventas" class="atras" aria-label="Volver a Ventas"><svg class="i"><use href="#i-volver"/></svg></a><h2>#<?= str_pad($venta->id, 4, '0', STR_PAD_LEFT) ?></h2></div><p class="dv-fecha"><?= $e($fechaLarga) ?></p></div>
     <div class="cab-acc dv-chips">
       <?php if ($chipPago): ?><span class="dv-chip <?= $chipPago[0] ?>"><svg class="i"><use href="#i-<?= $chipPago[1] ?>"/></svg><?= $chipPago[2] ?></span><?php endif; ?>
       <?php if ($chipEstado): ?><span class="dv-chip <?= $chipEstado[0] ?>"><svg class="i"><use href="#i-<?= $chipEstado[1] ?>"/></svg><?= $chipEstado[2] ?></span><?php endif; ?>
