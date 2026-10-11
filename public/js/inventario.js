@@ -1,39 +1,60 @@
 (function () {
   var form = document.getElementById('form-producto');
   if (!form) return;
-  var D = Panel.datos('datos-atributos') || { categorias: [], valores: {} };
+  var D = (window.Panel && window.Panel.datos) ? Panel.datos('datos-atributos') : null;
+  if (!D) {
+    var tag = document.getElementById('datos-atributos');
+    D = tag ? JSON.parse(tag.textContent) : { categorias: [], valores: {} };
+  }
+
   var cat = document.getElementById('fp-cat'), caja = document.getElementById('fp-atributos-caja'), cont = document.getElementById('fp-atributos');
   var costo = document.getElementById('fp-costo'), pct = document.getElementById('fp-margen-pct'), precio = document.getElementById('fp-precio');
-  var enBs = document.getElementById('fp-precio-bs'), gana = document.getElementById('fp-gana');
-  var unDecimal = function (n) { return String(Math.round(n * 10) / 10); };
-  var opcionesDe = function (ops) { return Array.isArray(ops) ? ops : String(ops || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean); };
-  D.valores = D.valores || {};
+  var nota = document.getElementById('fp-margen'), enBs = document.getElementById('fp-precio-bs');
+
+  function parseOps(ops) {
+    if (Array.isArray(ops)) return ops;
+    if (typeof ops === 'string' && ops.trim() !== '') {
+      return ops.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+    }
+    return [];
+  }
+
+  function esc(s) {
+    if (window.Panel && window.Panel.esc) return Panel.esc(s);
+    return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
 
   function atributos() {
-    var c = D.categorias.find(function (x) { return String(x.id) === cat.value; });
+    if (!cat || !caja || !cont) return;
+    var c = D.categorias.find(function (x) { return String(x.id) === String(cat.value); });
     var lista = c ? (c.atributos || []) : [];
     caja.hidden = !lista.length;
+    
     cont.innerHTML = lista.map(function (a) {
-      var v = D.valores[a.id] || '', id = 'fp-atr-' + a.id, nombre = 'atributo[' + a.id + ']';
-      var ops = opcionesDe(a.opciones);
+      var v = (D.valores && D.valores[a.id]) ? String(D.valores[a.id]) : '';
+      var id = 'fp-atr-' + a.id, nombre = 'atributo[' + a.id + ']';
+      var ops = parseOps(a.opciones);
+
       var control = ops.length
-        ? '<select id="' + id + '" name="' + nombre + '"><option value="">Sin indicar</option>' + ops.map(function (o) { return '<option' + (o === v ? ' selected' : '') + '>' + Panel.esc(o) + '</option>'; }).join('') + '</select>'
-        : '<input id="' + id + '" name="' + nombre + '" value="' + Panel.esc(v) + '">';
-      return '<div class="campo"><label for="' + id + '">' + Panel.esc(a.nombre) + '</label>' + control + '</div>';
+        ? '<select id="' + id + '" name="' + nombre + '" style="width:100%;"><option value="">Sin indicar</option>' + ops.map(function (o) { return '<option value="' + esc(o) + '"' + (String(o).toLowerCase() === v.toLowerCase() ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('') + '</select>'
+        : '<input id="' + id + '" name="' + nombre + '" value="' + esc(v) + '" placeholder="Ej.: ' + esc(a.nombre) + '">';
+      return '<div class="campo"><label for="' + id + '">' + esc(a.nombre) + '</label>' + control + '</div>';
     }).join('');
   }
 
   function resumen() {
     var c = parseFloat(costo.value) || 0, p = parseFloat(precio.value) || 0;
-    enBs.textContent = p ? '= ' + Panel.fmtBs(p * Panel.tasa) + ' Bs' : '';
-    gana.hidden = !(c > 0 && p > 0);
-    if (gana.hidden) return;
-    var g = p - c;
-    gana.classList.toggle('neg', g < 0);
-    document.getElementById('fp-g-tit').textContent = g < 0 ? 'Pierdes por unidad' : 'Ganas por unidad';
-    document.getElementById('fp-g-usd').textContent = Panel.usd(Math.abs(g));
-    document.getElementById('fp-g-costo').textContent = unDecimal(g / c * 100) + ' %';
-    document.getElementById('fp-g-precio').textContent = unDecimal(g / p * 100) + ' %';
+    if (enBs && window.Panel && Panel.fmtBs && Panel.tasa) {
+      enBs.textContent = p ? '= ' + Panel.fmtBs(p * Panel.tasa) + ' Bs' : '';
+    }
+    if (c && p && nota) {
+      var g = p - c;
+      var txtG = (window.Panel && Panel.usd) ? Panel.usd(g) : ('$' + g.toFixed(2));
+      nota.textContent = 'Ganas ' + txtG + ' por unidad (' + Math.round(g / c * 100) + '% sobre el costo).';
+      nota.className = 'fp-margen ancho' + (g < 0 ? ' neg' : '');
+    } else if (nota) {
+      nota.textContent = '';
+    }
   }
 
   function desdeMargen() {
@@ -44,43 +65,25 @@
 
   function desdePrecio() {
     var c = parseFloat(costo.value), p = parseFloat(precio.value);
-    pct.value = c > 0 && p > 0 ? unDecimal((p - c) / c * 100) : '';
+    pct.value = c > 0 && p > 0 ? Math.round((p - c) / c * 100) : '';
     resumen();
   }
 
   cat.addEventListener('change', atributos);
-  costo.addEventListener('input', desdePrecio);
+  costo.addEventListener('input', function () { pct.value ? desdeMargen() : desdePrecio(); });
   pct.addEventListener('input', desdeMargen);
   precio.addEventListener('input', desdePrecio);
 
-  var vis = document.querySelector('#fp-vis input[type=checkbox]');
-  vis.addEventListener('change', function () {
-    var si = vis.checked, chip = document.getElementById('fp-chip-vis');
-    document.getElementById('fp-vis').classList.toggle('oculto', !si);
-    document.getElementById('fp-vis-t').textContent = si ? 'Visible en la tienda' : 'Oculto en la tienda';
-    document.getElementById('fp-vis-s').textContent = si ? 'Los clientes lo ven y lo pueden comprar.' : 'Los clientes no lo ven.';
-    if (chip) { chip.textContent = si ? 'Visible en la tienda' : 'Oculto en la tienda'; chip.classList.toggle('pend', !si); }
-  });
-
-  document.getElementById('fp-img').addEventListener('change', function () {
-    var f = this.files[0], marco = document.getElementById('fp-foto');
-    if (!f) return;
-    marco.innerHTML = '<img src="' + URL.createObjectURL(f) + '" alt="Foto del producto">';
-    marco.classList.add('con-foto');
-    document.getElementById('fp-foto-btn').textContent = 'Cambiar foto';
-  });
+  var inpImg = document.getElementById('fp-img');
+  if (inpImg) {
+    inpImg.addEventListener('change', function () {
+      var f = this.files[0], marco = document.getElementById('fp-foto');
+      if (!f || !marco) return;
+      marco.innerHTML = '<img src="' + URL.createObjectURL(f) + '" alt="Foto del producto">';
+      marco.classList.add('con-foto');
+    });
+  }
 
   atributos();
   desdePrecio();
-
-  var barra = document.getElementById('fp-barra');
-  var foto = function () { var f = form.querySelector('[name=imagen]').files[0]; return f ? f.name + f.size : ''; };
-  var estadoForm = function () { var p = []; new FormData(form).forEach(function (v, k) { if (k !== 'imagen') p.push(k + '=' + v); }); return p.join('&') + '|' + foto(); };
-  var inicial = estadoForm();
-  var hayCambios = function () { return estadoForm() !== inicial; };
-  var revisar = function () { barra.hidden = !hayCambios(); };
-  form.addEventListener('input', revisar);
-  form.addEventListener('change', revisar);
-  var vigia = Panel.vigilarCambios(hayCambios);
-  document.getElementById('fp-descartar').addEventListener('click', function () { vigia.salir(); location.reload(); });
 })();
