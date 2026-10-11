@@ -22,12 +22,24 @@ $tabs = ['1' => ['Activos', $activos], '0' => ['Inactivos', count($proveedores) 
   <section class="tabla-caja" aria-label="Listado de proveedores">
     <div class="tabla-scroll">
       <table class="tabla-resp" id="tabla-prov" data-paginar="10">
-        <thead><tr><th>RIF / Cédula</th><th>Razón social</th><th>Teléfono</th><th class="c-media">Correo</th><th class="num c-media">Compras</th><th>Estado</th><th class="num">Acciones</th></tr></thead>
+        <thead>
+          <tr>
+            <th>RIF / Cédula</th>
+            <th>Razón social</th>
+            <th>Dirección</th>
+            <th>Teléfono</th>
+            <th class="c-media">Correo</th>
+            <th class="num c-media">Compras</th>
+            <th>Estado</th>
+            <th class="num">Acciones</th>
+          </tr>
+        </thead>
         <tbody>
         <?php foreach ($lista as $p): ?>
           <tr>
             <td class="cod" data-label="RIF / Cédula"><?= $e($p->rif_cedula) ?></td>
-            <td class="t-tit"><div class="t-nombre"><b><?= $e($p->razon_social) ?></b><?php if (!empty($p->direccion)): ?><span><?= $e($p->direccion) ?></span><?php endif; ?></div></td>
+            <td class="t-tit" data-label="Razón social"><b><?= $e($p->razon_social) ?></b></td>
+            <td data-label="Dirección"><?= $e($p->direccion ?: 'Sin dirección') ?></td>
             <td data-label="Teléfono"><?= $e($p->telefono ?: 'Sin teléfono') ?></td>
             <td data-label="Correo" class="c-media"><?= $e($p->correo ?: 'Sin correo') ?></td>
             <td class="num c-media" data-label="Compras"><?= (int) ($p->total_compras ?? 0) ?></td>

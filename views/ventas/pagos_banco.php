@@ -1,4 +1,6 @@
 <?php
+date_default_timezone_set('America/Caracas');
+
 $menu = 'pagos_banco';
 $tituloPagina = 'Pagos por banco';
 $pagosRecibidos = $pagosRecibidos ?? [];
@@ -82,8 +84,20 @@ foreach ($tipos as $t) if ((string) $t->id === (string) $f['metodo']) $nombreTip
 $hayFiltros = $f['metodo'] !== '' || $f['banco'] !== '' || $atajoActivo !== 'Hoy';
 
 $titular = function ($p) {
-    if (!preg_match('/Titular:\s*([^|]*?)\s*\|\s*Tel:\s*(.*)$/u', $p->observacion ?? '', $m)) return null;
-    return [trim($m[1]), trim($m[2])];
+    $obs = $p->observacion ?? '';
+    // Intenta extraer si viene con "Titular: ... | Tel: ..." o similar
+    if (preg_match('/Titular:\s*([^|]*?)(?:\s*\|\s*Tel:\s*(.*))?$/ui', $obs, $m)) {
+        return [trim($m[1]), trim($m[2] ?? '')];
+    }
+    // Si viene la propiedad ya armada desde el controlador
+    if (!empty($p->titular)) {
+        return [$p->titular, ''];
+    }
+    // Si no hay observación, muestra cédula y teléfono del cliente registrado
+    if (!empty($p->cliente_cedula)) {
+        return [$p->cliente_cedula, $p->cliente_telefono ?? ''];
+    }
+    return null;
 };
 ?>
 <section class="contenido pb">
@@ -146,13 +160,13 @@ $titular = function ($p) {
     <ol class="pb-bancos">
       <?php foreach ($porBanco as $nombre => $b):
         $activo = $f['banco'] === $nombre;
-        $pct = $totUsd > 0 ? $b['usd'] / $totUsd * 100 : 0;
+        $pct = $totUsd > 0 ? ($b['usd'] / $totUsd) * 100 : 0;
       ?>
       <li>
         <a href="<?= $e($url(['banco' => $activo ? '' : ($nombre === 'Sin banco' ? '' : $nombre)])) ?>" class="pb-banco" aria-current="<?= $activo ? 'true' : 'false' ?>">
           <span class="pb-banco-nom"><b><?= $e($nombre) ?></b><small><?= $b['n'] ?> <?= $b['n'] === 1 ? 'pago' : 'pagos' ?> · <?= number_format($pct, 0) ?> %</small></span>
           <span class="pb-banco-monto"><b><?= $fmtUsd($b['usd']) ?></b><small><?= $fmtBs($b['bs']) ?></small></span>
-          <span class="pb-barra" aria-hidden="true"><i style="--p: <?= $mayor > 0 ? round($b['usd'] / $mayor * 100, 1) : 0 ?>%"></i></span>
+          <span class="pb-barra" aria-hidden="true"><i style="--p: <?= $mayor > 0 ? round(($b['usd'] / $mayor) * 100, 1) : 0 ?>%"></i></span>
         </a>
       </li>
       <?php endforeach; ?>
@@ -197,7 +211,7 @@ $titular = function ($p) {
               </td>
               <td data-label="Titular">
                 <?php if ($tit): ?>
-                <span class="pb-titular"><?= $e($tit[0] ?: '—') ?><small><?= $e($tit[1] ?: '') ?></small></span>
+                <span class="pb-titular"><b><?= $e($tit[0] ?: '—') ?></b><?php if (!empty($tit[1])): ?><br><small><?= $e($tit[1]) ?></small><?php endif; ?></span>
                 <?php else: ?>
                 <span class="muted">—</span>
                 <?php endif; ?>

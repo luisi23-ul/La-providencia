@@ -1,6 +1,7 @@
 <?php
 ob_start();
 session_start(); 
+date_default_timezone_set('America/Caracas');
 
 require_once 'config/db.php';
 require_once 'controllers/UsuarioController.php';
@@ -10,6 +11,8 @@ require_once 'models/VentaModel.php';
 require_once 'controllers/ReporteController.php';
 require_once 'controllers/MasterController.php';
 require_once __DIR__ . '/vendor/autoload.php';
+require_once 'controllers/ProveedorController.php';
+require_once 'controllers/CompraController.php';
 
 $db = Database::connect(); 
 
@@ -18,8 +21,9 @@ $adminC   = new AdminControllers();
 $ventaC   = new VentaController($db);
 $reporteC = new ReporteController($db);
 $masterC  = new MasterController($db);
-
-$action = $_GET['action'] ?? 'inicio';
+$provC    = new ProveedorController($db);
+$compraC  = new CompraController($db);
+$action   = $_GET['action'] ?? 'inicio';
 
 // -----------------------------------------------------------------------------
 // LISTA DE ACCIONES POR PANEL
@@ -37,7 +41,7 @@ $acciones_admin = [
     'seccion_graficos', 'grafico_barras', 'grafico_tortas',
     'metodos_pago', 'guardar_metodo_pago', 'cambiar_estado_metodo',
     'punto_venta', 'guardar_venta_tienda', 'ventas', 'verificar_pagos', 
-    'aprobar_pago', 'rechazar_pago', 'pagos_banco', 'pagos_pendientes', 
+    'aprobar_pago', 'rechazar_pago', 'deshacer_pago', 'pagos_banco', 'pagos_pendientes', 
     'retiro_pedidos', 'procesar_retiro', 'detalle_venta', 'ver_reporte',
     'categorias', 'guardar_categoria', 'eliminar_categoria', 
     'ajustes_inventario', 'guardar_ajuste', 'kardex',
@@ -131,13 +135,14 @@ switch ($action) {
     case 'grafico_barras':      $adminC->grafico_barras(); break;
     case 'grafico_tortas':      $adminC->grafico_torta(); break;
 
-    // Panel Admin: Ventas, POS y Pagos (Controlador ejecutado)
+    // Panel Admin: Ventas, POS y Pagos
     case 'punto_venta':          $ventaC->puntoVenta(); break;
     case 'guardar_venta_tienda': $ventaC->guardarVentaTienda(); break;
     case 'ventas':               $ventaC->listarVentas(); break;
     case 'verificar_pagos':      $ventaC->verificarPagos(); break;
     case 'aprobar_pago':         $ventaC->aprobarPago(); break;
     case 'rechazar_pago':        $ventaC->rechazarPago(); break;
+    case 'deshacer_pago':        $ventaC->deshacerPago(); break;
     case 'pagos_banco':          $ventaC->pagosBanco(); break;
     case 'pagos_pendientes':     $ventaC->pagosPendientes(); break;
     case 'retiro_pedidos':       $ventaC->retiroPedidos(); break;
@@ -150,10 +155,14 @@ switch ($action) {
         break;
 
     // Panel Admin: Compras y Proveedores
-    case 'proveedores':          include 'views/compras/proveedores.php'; break;
-    case 'compras':              include 'views/compras/compras.php'; break;
-    case 'nueva_compra':         include 'views/compras/nueva_compra.php'; break;
-    case 'detalle_compra':       include 'views/compras/detalle_compra.php'; break;
+    case 'proveedores':              $provC->listar(); break;
+    case 'guardar_proveedor':        $provC->guardar(); break;
+    case 'cambiar_estado_proveedor': $provC->cambiarEstado(); break;
+    case 'compras':                  $compraC->listar(); break;
+    case 'nueva_compra':             $compraC->nuevaCompra(); break;
+    case 'guardar_compra':           $compraC->guardar(); break;
+    case 'detalle_compra':           $compraC->detalle(); break;
+    case 'anular_compra':            $compraC->anular(); break;
 
     // Panel Admin: Clientes y Métodos de Pago
     case 'metodos_pago':         include "views/metodos_pago.php"; break;

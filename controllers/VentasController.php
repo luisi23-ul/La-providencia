@@ -3,12 +3,18 @@ class VentaController {
     private $db;
 
     public function __construct($db = null) {
+        date_default_timezone_set('America/Caracas');
+
         if ($db) {
             $this->db = $db;
         } else {
             require_once 'config/db.php';
             $this->db = Database::connect();
         }
+
+        try {
+            $this->db->exec("SET time_zone = '-04:00'");
+        } catch (Exception $e) {}
     }
 
     private function log($modulo, $accion, $descripcion) {
@@ -86,7 +92,6 @@ class VentaController {
             $vuelto = (float)($_POST['vuelto'] ?? 0);
             $vueltoMoneda = $_POST['vuelto_moneda'] ?? 'USD';
 
-            // Registramos cabecera de la venta
             $stmtV = $this->db->prepare("
                 INSERT INTO ventas (id_usuario, origen_venta, vendedor_id, total, vuelto, vuelto_moneda, estado, fecha)
                 VALUES (?, 'tienda_fisica', ?, ?, ?, ?, 'pendiente', NOW())
@@ -94,7 +99,6 @@ class VentaController {
             $stmtV->execute([$idUsuario, $vendedorId, $total, $vuelto, $vueltoMoneda]);
             $idVenta = (int)$this->db->lastInsertId();
 
-            // Descuento de stock y líneas de venta
             $prodIds    = $_POST['id_producto'] ?? [];
             $cants      = $_POST['cantidad'] ?? [];
             $precios    = $_POST['precio_unitario'] ?? [];
@@ -142,7 +146,6 @@ class VentaController {
                 ];
             }
 
-            // Procesamiento de Pagos con Control de Referencias Únicas
             $metodoIds = $_POST['id_metodo_pago'] ?? [];
             $montos    = $_POST['monto'] ?? [];
             $tasas     = $_POST['tasa_cambio'] ?? [];
@@ -192,7 +195,6 @@ class VentaController {
                         throw new Exception("El método {$mObj->nombre} requiere número de referencia.");
                     }
 
-                    // Validación de Referencia Única por Banco
                     $stmtChk = $this->db->prepare("
                         SELECT id, id_venta 
                         FROM pagos_registro 
@@ -206,7 +208,7 @@ class VentaController {
                         throw new Exception("La referencia '{$rf}' del banco '{$bnk}' ya fue utilizada en la venta #{$dup->id_venta}. No se puede duplicar.");
                     }
 
-                    $obsBancaria = "Titular: {$ced} | Tel: {$tel}";
+                    $obsBancaria = "Titular: {$ced}" . (!empty($tel) ? " | Tel: {$tel}" : "");
                     $stmtP->execute([$idVenta, $mId, $bnk, $mObj->moneda, $mnt, $tsa, $rf, $obsBancaria, 'pendiente', null, null]);
                     $todosAprobados = false;
 
@@ -219,7 +221,6 @@ class VentaController {
                 }
             }
 
-            // Si todos los métodos fueron efectivo, la venta queda retirada inmediatamente
             if ($todosAprobados) {
                 $stmtUpdV = $this->db->prepare("UPDATE ventas SET estado = 'retirado', id_metodo_pago = ? WHERE id = ?");
                 $stmtUpdV->execute([$primerMetodoId, $idVenta]);
@@ -495,8 +496,8 @@ class VentaController {
         exit();
     }
 
-   // =========================================================================
-    // 4. REPORTE DE PAGOS POR BANCO CON FILTROS Y DESGLOSE
+    // =========================================================================
+    // 4. REPORTE DE PAGOS POR BANCO CON FILTROS, TITULAR Y CÉDULA
     // =========================================================================
     public function pagosBanco() {
         $desde  = trim($_GET['desde'] ?? date('Y-m-d'));
@@ -507,7 +508,6 @@ class VentaController {
         $where = ["pr.estado_verificacion = 'aprobado'"];
         $params = [];
 
-        // Normalización y filtro de fechas completo (00:00:00 a 23:59:59)
         $normalizarFecha = function($str) {
             if (empty($str)) return null;
             if (preg_match('/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/', $str, $m)) {
@@ -532,13 +532,11 @@ class VentaController {
             $params[] = $fechaHastaNorm . " 23:59:59";
         }
 
-        // Filtro por método de pago
         if ($idMet) {
             $where[] = "pr.id_metodo_pago = ?";
             $params[] = $idMet;
         }
 
-        // Filtro por banco específico si se hace clic en una tarjeta
         if (!empty($banco)) {
             $where[] = "pr.banco = ?";
             $params[] = $banco;
@@ -546,10 +544,13 @@ class VentaController {
 
         $sql = "SELECT pr.id, pr.id_venta, 
                        CONCAT(COALESCE(u.nombre, 'Cliente'), ' ', COALESCE(u.apellido, '')) AS cliente,
+                       u.cedula AS cliente_cedula,
+                       u.telefono AS cliente_telefono,
                        COALESCE(mp.nombre, 'General') AS metodo,
                        mp.requiere_referencia,
                        pr.moneda, pr.monto, pr.tasa_cambio, pr.referencia, 
                        COALESCE(NULLIF(TRIM(pr.banco), ''), 'Sin banco') AS banco,
+                       pr.observacion,
                        pr.fecha_pago,
                        v.origen_venta,
                        COALESCE(cajero.nombre, 'Caja Mostrador') AS custodio_cajero
@@ -565,11 +566,24 @@ class VentaController {
         $stmt->execute($params);
         $pagosRecibidos = $stmt->fetchAll(PDO::FETCH_OBJ);
 
-        // Lista de métodos para el desplegable del filtro
+        // Preparamos y limpiamos el titular para cada pago
+        foreach ($pagosRecibidos as $p) {
+            $titularLimpio = '';
+            if (!empty($p->observacion)) {
+                $titularLimpio = preg_replace('/^(Titular:\s*|Emisor:\s*[^|]+\|\s*Titular:\s*)/i', '', $p->observacion);
+            } elseif (!empty($p->cliente_cedula)) {
+                $titularLimpio = $p->cliente_cedula . ' (' . $p->cliente . ')';
+            } else {
+                $titularLimpio = $p->cliente;
+            }
+            $p->titular = $titularLimpio;
+        }
+
         $metodos = $this->db->query("SELECT id, nombre FROM metodos_pago WHERE activo = 1 ORDER BY nombre ASC")->fetchAll(PDO::FETCH_OBJ);
 
         require_once 'views/ventas/pagos_banco.php';
     }
+
     // =========================================================================
     // 5. RETIRO DE PEDIDOS
     // =========================================================================
