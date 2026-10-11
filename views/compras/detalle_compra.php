@@ -3,10 +3,11 @@ $menu = 'compras';
 $tituloPagina = 'Detalle de compra';
 $detalles = $detalles ?? [];
 include __DIR__ . '/../admin/_abrir.php';
-$num = '#' . str_pad($compra->id, 4, '0', STR_PAD_LEFT);
+$num = '#' . str_pad((string)$compra->id, 4, '0', STR_PAD_LEFT);
 $anulada = $compra->estado === 'anulado';
 $destino = $compra->destino_stock === 'online' ? 'Online' : 'Tienda física';
 $unidades = array_sum(array_map(fn($d) => $d->cantidad, $detalles));
+$totalGananciaProyectada = array_sum(array_map(fn($d) => (float)($d->ganancia_total_linea ?? 0), $detalles));
 ?>
 <section class="contenido">
   <a href="index.php?action=compras" class="volver"><svg class="i"><use href="#i-volver"/></svg>Compras</a>
@@ -25,27 +26,68 @@ $unidades = array_sum(array_map(fn($d) => $d->cantidad, $detalles));
       <div class="dato"><span>Factura</span><b class="cod"><?= $e($compra->numero_factura ?: 'Sin número') ?></b></div>
       <div class="dato"><span>Recibida</span><b><?= date('d/m/Y, g:i a', strtotime($compra->fecha_compra)) ?></b></div>
       <div class="dato"><span>Destino</span><b><?= $destino ?></b></div>
-      <div class="dato"><span>Registrada por</span><b><?= $e($compra->usuario ?? '') ?></b></div>
+      <div class="dato"><span>Comprado por</span><b><?= $e($compra->comprado_por ?: 'No indicado') ?></b></div>
+      <div class="dato"><span>Registrada por</span><b><?= $e($compra->usuario ?? 'Admin') ?></b></div>
+      <?php if (!empty($compra->metodo_pago)): ?>
+        <div class="dato"><span>Método / Banco</span><b><?= $e($compra->metodo_pago) ?><?= !empty($compra->banco) ? ' (' . $e($compra->banco) . ')' : '' ?></b><?php if (!empty($compra->referencia_pago)): ?><small class="cod">Ref: <?= $e($compra->referencia_pago) ?></small><?php endif; ?></div>
+      <?php endif; ?>
     </div>
   </section>
 
   <section class="tabla-caja" aria-label="Productos de la compra">
     <div class="tabla-scroll">
       <table class="tabla-resp">
-        <thead><tr><th class="c-media">Código</th><th>Producto</th><th class="num">Cantidad</th><th class="num">Costo unitario</th><th class="num c-media">Precio de venta</th><th class="num">Subtotal</th></tr></thead>
+        <thead>
+          <tr>
+            <th class="c-media">Código</th>
+            <th>Producto</th>
+            <th class="num">Cantidad</th>
+            <th class="num">Costo unitario</th>
+            <th class="num">Precio venta</th>
+            <th class="num c-media">Margen / Ganancia</th>
+            <th class="num">Subtotal costo</th>
+          </tr>
+        </thead>
         <tbody>
         <?php foreach ($detalles as $d): ?>
           <tr>
             <td class="cod c-media" data-label="Código"><?= $e($d->codigo ?? '') ?></td>
-            <td class="t-tit"><div class="prod"><?php if (!empty($d->imagen)): ?><img class="foto chica" src="public/uploads/<?= $e($d->imagen) ?>" alt="" width="36" height="36"><?php endif; ?><div><b><?= $e($d->nombre_producto) ?></b><?php if (!empty($d->precio_venta)): ?><span class="si-estrecho">Venta <?= $usd($d->precio_venta) ?><?= $d->margen !== null ? ', +' . (float) $d->margen . '%' : '' ?></span><?php endif; ?></div></div></td>
+            <td class="t-tit">
+              <div class="prod">
+                <?php if (!empty($d->imagen)): ?>
+                  <img class="foto chica" src="public/uploads/<?= $e($d->imagen) ?>" alt="" width="36" height="36">
+                <?php endif; ?>
+                <div>
+                  <b><?= $e($d->nombre_producto) ?></b>
+                </div>
+              </div>
+            </td>
             <td class="num" data-label="Cantidad"><?= (int) $d->cantidad ?></td>
             <td class="num" data-label="Costo unitario"><?= $usd($d->costo_unitario) ?></td>
-            <td class="num c-media" data-label="Precio de venta"><?php if (!empty($d->precio_venta)): ?><?= $usd($d->precio_venta) ?><br><span class="margen">+<?= (float) $d->margen ?>%<?= !empty($d->actualizo_precio) ? ', aplicado' : '' ?></span><?php else: ?><span class="muted">No indicado</span><?php endif; ?></td>
+            <td class="num" data-label="Precio venta"><?= !empty($d->precio_venta) ? $usd($d->precio_venta) : '<span class="muted">—</span>' ?></td>
+            <td class="num c-media" data-label="Margen / Ganancia">
+              <?php if (!empty($d->precio_venta) && (float)$d->precio_venta > (float)$d->costo_unitario): ?>
+                <span class="margen" style="color:#166534; font-weight:600;">+<?= (float)$d->margen ?>%</span><br>
+                <small style="color:#15803d;">+<?= $usd($d->ganancia_unitaria) ?>/u (Total +<?= $usd($d->ganancia_total_linea) ?>)</small>
+              <?php else: ?>
+                <span class="muted">0%</span>
+              <?php endif; ?>
+            </td>
             <td class="num" data-label="Subtotal"><b><?= $usd($d->subtotal) ?></b></td>
           </tr>
         <?php endforeach; ?>
         </tbody>
-        <tfoot><tr><td class="c-media"></td><td></td><td class="num"><?= $unidades ?> unid.</td><td class="num c-media"></td><td class="num">Total</td><td class="num"><?= $usd($compra->total) ?></td></tr></tfoot>
+        <tfoot>
+          <tr>
+            <td class="c-media"></td>
+            <td></td>
+            <td class="num"><b><?= $unidades ?> unid.</b></td>
+            <td class="c-media"></td>
+            <td class="num"><b>Ganancia est.</b></td>
+            <td class="num c-media" style="color:#166534;"><b>+<?= $usd($totalGananciaProyectada) ?></b></td>
+            <td class="num"><b><?= $usd($compra->total) ?></b></td>
+          </tr>
+        </tfoot>
       </table>
     </div>
   </section>

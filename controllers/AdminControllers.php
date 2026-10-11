@@ -18,9 +18,55 @@ class AdminControllers {
             $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
             $stmt = $this->db->prepare("INSERT INTO auditoria_logs (id_usuario, modulo, accion, descripcion, ip) VALUES (?, ?, ?, ?, ?)");
             $stmt->execute([$idUsuario, $modulo, $accion, $descripcion, $ip]);
-        } catch (Exception $e) {
-            // Silenciar para no interrumpir el flujo si no está configurada la sesión
+        } catch (Exception $e) {}
+    }
+
+    // Helper de seguridad: validación y procesamiento de imágenes (Punto 1)
+    private function procesarImagenUpload($file, $imagenAnterior = null) {
+        if (empty($file['tmp_name']) || $file['error'] !== UPLOAD_ERR_OK) {
+            return $imagenAnterior;
         }
+
+        // Validar tipo real
+        $mime = '';
+        if (function_exists('finfo_open')) {
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mime = finfo_file($finfo, $file['tmp_name']);
+            finfo_close($finfo);
+        } elseif (function_exists('getimagesize')) {
+            $info = @getimagesize($file['tmp_name']);
+            $mime = $info['mime'] ?? '';
+        }
+
+        $mimesPermitidos = [
+            'image/jpeg' => 'jpg',
+            'image/png'  => 'png',
+            'image/webp' => 'webp'
+        ];
+
+        if (!array_key_exists($mime, $mimesPermitidos)) {
+            throw new Exception("El archivo debe ser una imagen válida (JPG, PNG o WEBP).");
+        }
+
+        $ext = $mimesPermitidos[$mime];
+        $nombreLimpio = 'prod_' . bin2hex(random_bytes(8)) . '_' . time() . '.' . $ext;
+        $carpeta = 'public/uploads/';
+
+        if (!is_dir($carpeta)) {
+            mkdir($carpeta, 0755, true);
+        }
+
+        $destino = $carpeta . $nombreLimpio;
+        if (!move_uploaded_file($file['tmp_name'], $destino)) {
+            throw new Exception("Error al mover la imagen al servidor.");
+        }
+
+        // Borrar imagen vieja si existía una diferente
+        if (!empty($imagenAnterior) && file_exists($carpeta . $imagenAnterior)) {
+            @unlink($carpeta . $imagenAnterior);
+        }
+
+        return $nombreLimpio;
     }
 
     // -------------------------------------------------------------------------
@@ -32,7 +78,6 @@ class AdminControllers {
     }
 
     public function mostrarPanel() {
-        // Carga categorías para el formulario nuevo
         $categorias = $this->obtenerCategoriasConAtributos();
         $p = null;
         include 'views/formulario_producto.php';
@@ -42,6 +87,9 @@ class AdminControllers {
         $listaProductos = $this->productoModelo->obtenerTodos();
         $stmtCat = $this->db->query("SELECT id, nombre_categoria FROM categorias ORDER BY nombre_categoria ASC");
         $categorias = $stmtCat->fetchAll(PDO::FETCH_OBJ);
+        
+        $aviso = $_SESSION['aviso'] ?? null;
+        unset($_SESSION['aviso']);
 
         include 'views/listado_productos.php';
     }
@@ -61,7 +109,7 @@ class AdminControllers {
     // -------------------------------------------------------------------------
 
     private function obtenerCategoriasConAtributos() {
-        $stmtCat = $this->db->query("SELECT id, nombre_categoria FROM categorias ORDER BY nombre_categoria ASC");
+        $stmtCat = $this->db->query("SELECT id, nombre_categoria, id_padre FROM categorias ORDER BY nombre_categoria ASC");
         $cats = $stmtCat->fetchAll(PDO::FETCH_OBJ);
 
         $stmtAtr = $this->db->prepare("SELECT id, nombre, opciones FROM categoria_atributos WHERE id_categoria = ?");
@@ -72,48 +120,60 @@ class AdminControllers {
         return $cats;
     }
 
-    public function agregar() {
+   public function agregar() {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            $nombre = trim($_POST['nombre_producto'] ?? $_POST['nombre'] ?? '');
-            $codigo = trim($_POST['codigo'] ?? '');
-            $desc   = trim($_POST['descripcion'] ?? $_POST['desc'] ?? '');
-            $precio = (float)($_POST['precio'] ?? 0);
-            $costo  = (float)($_POST['costo_compra'] ?? 0);
-            $stock  = (int)($_POST['stock'] ?? 0);
-            $stockOnline = (int)($_POST['stock_online'] ?? 0);
-            $stockMinimo = (int)($_POST['stock_minimo'] ?? 5);
-            $catId  = !empty($_POST['id_categoria']) ? (int)$_POST['id_categoria'] : (!empty($_POST['categoria']) ? (int)$_POST['categoria'] : null);
-            $estado = isset($_POST['estado']) ? (int)$_POST['estado'] : 1;
-            $atributos = $_POST['atributo'] ?? [];
+            try {
+                $nombre = trim($_POST['nombre_producto'] ?? $_POST['nombre'] ?? '');
+                $codigo = trim($_POST['codigo'] ?? '');
+                $desc   = trim($_POST['descripcion'] ?? $_POST['desc'] ?? '');
+                $precio = (float)($_POST['precio'] ?? 0);
+                $costo  = (float)($_POST['costo_compra'] ?? 0);
+                $stock  = (int)($_POST['stock'] ?? 0);
+                $stockOnline = (int)($_POST['stock_online'] ?? 0);
+                $stockMinimo = (int)($_POST['stock_minimo'] ?? 5);
+                $catId  = !empty($_POST['id_categoria']) ? (int)$_POST['id_categoria'] : (!empty($_POST['categoria']) ? (int)$_POST['categoria'] : null);
+                $estado = isset($_POST['estado']) ? (int)$_POST['estado'] : 1;
+                $atributos = $_POST['atributo'] ?? [];
+                $variantes = $_POST['variantes'] ?? []; // <-- Recibir variantes
 
-            // Manejo de imagen
-            $nombreImagen = null;
-            if (!empty($_FILES['imagen']['name']) && $_FILES['imagen']['error'] == 0) {
-                $nombreLimpio = str_replace(' ', '_', $_FILES['imagen']['name']);
-                $nombreImagen = time() . "_" . $nombreLimpio;
-                $destino = "public/uploads/" . $nombreImagen;
-                move_uploaded_file($_FILES['imagen']['tmp_name'], $destino);
+                if (!empty($codigo)) {
+                    $stmtChk = $this->db->prepare("SELECT id FROM productos WHERE codigo = ? AND deleted_at IS NULL LIMIT 1");
+                    $stmtChk->execute([$codigo]);
+                    if ($stmtChk->fetch()) {
+                        throw new Exception("El código '{$codigo}' ya está registrado en otro producto.");
+                    }
+                }
+
+                $nombreImagen = null;
+                if (!empty($_FILES['imagen']['tmp_name'])) {
+                    $nombreImagen = $this->procesarImagenUpload($_FILES['imagen']);
+                }
+
+                $datos = [
+                    'codigo'          => $codigo,
+                    'nombre_producto' => $nombre,
+                    'descripcion'     => $desc,
+                    'precio'          => $precio,
+                    'costo_compra'    => $costo,
+                    'stock'           => $stock,
+                    'stock_online'    => $stockOnline,
+                    'stock_minimo'    => $stockMinimo,
+                    'id_categoria'    => $catId,
+                    'estado'          => $estado,
+                    'imagen'          => $nombreImagen
+                ];
+
+                $nuevoId = $this->productoModelo->guardarCompleto($datos, $atributos, $variantes);
+                $this->log('Inventario', 'INSERT', "Creó producto: {$nombre} (ID: {$nuevoId})");
+
+                $_SESSION['aviso'] = 'Producto creado exitosamente.';
+                header("Location: index.php?action=listado_productos");
+                exit();
+
+            } catch (Exception $e) {
+                echo "<script>alert('" . addslashes($e->getMessage()) . "'); window.history.back();</script>";
+                exit();
             }
-
-            $datos = [
-                'codigo'          => $codigo,
-                'nombre_producto' => $nombre,
-                'descripcion'     => $desc,
-                'precio'          => $precio,
-                'costo_compra'    => $costo,
-                'stock'           => $stock,
-                'stock_online'    => $stockOnline,
-                'stock_minimo'    => $stockMinimo,
-                'id_categoria'    => $catId,
-                'estado'          => $estado,
-                'imagen'          => $nombreImagen
-            ];
-
-            $nuevoId = $this->productoModelo->guardarCompleto($datos, $atributos);
-            $this->log('Inventario', 'INSERT', "Creó producto: {$nombre} (ID: {$nuevoId})");
-
-            header("Location: index.php?action=listado_productos");
-            exit();
         }
     }
 
@@ -121,78 +181,91 @@ class AdminControllers {
         $id = (int)($_GET['id'] ?? 0);
         $p = $this->productoModelo->obtenerPorId($id);
 
-        if ($p) {
-            $p->atributos = $this->productoModelo->obtenerAtributosProducto($id);
-        }
-
-        $categorias = $this->obtenerCategoriasConAtributos();
-        require_once 'views/editar_producto.php';
-    }
-
-    public function actualizar() {
-    if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-        $id = (int)$_POST['id'];
-        $pActual = $this->productoModelo->obtenerPorId($id);
-
-        if (!$pActual) {
+        if (!$p) {
             header("Location: index.php?action=listado_productos");
             exit();
         }
 
-        // Manejo de imagen
-        $nombreImagen = $pActual->imagen;
-        if (isset($_FILES['imagen']) && $_FILES['imagen']['error'] == 0) {
-            $nombreLimpio = str_replace(' ', '_', $_FILES['imagen']['name']);
-            $nombreImagen = time() . "_" . $nombreLimpio;
-            $rutaDestino = "public/uploads/" . $nombreImagen;
-            move_uploaded_file($_FILES['imagen']['tmp_name'], $rutaDestino);
-        }
-
-        // Lectura flexible de variables (soporta ambos nombres de formulario)
-        $nombre = trim($_POST['nombre_producto'] ?? $_POST['nombre'] ?? $pActual->nombre_producto);
-        $codigo = trim($_POST['codigo'] ?? $pActual->codigo);
-        $desc   = trim($_POST['descripcion'] ?? $_POST['desc'] ?? $pActual->descripcion);
-        $precio = isset($_POST['precio']) && $_POST['precio'] !== '' ? (float)$_POST['precio'] : (float)$pActual->precio;
-        $costo  = isset($_POST['costo_compra']) && $_POST['costo_compra'] !== '' ? (float)$_POST['costo_compra'] : (float)$pActual->costo_compra;
+        $p->atributos = $this->productoModelo->obtenerAtributosProducto($id);
+        $p->variantes = $this->productoModelo->obtenerVariantesProducto($id); // <-- Cargar variantes
+        $categorias = $this->obtenerCategoriasConAtributos();
         
-        // Stock: si el campo viene en POST se actualiza; si vino disabled/vacío, conserva el actual
-        $stock = isset($_POST['stock_tienda']) && $_POST['stock_tienda'] !== '' 
-                    ? (int)$_POST['stock_tienda'] 
-                    : (isset($_POST['stock']) && $_POST['stock'] !== '' ? (int)$_POST['stock'] : (int)$pActual->stock);
+        $aviso = $_SESSION['aviso'] ?? null;
+        unset($_SESSION['aviso']);
 
-        $stockOnline = isset($_POST['stock_online']) && $_POST['stock_online'] !== '' 
-                        ? (int)$_POST['stock_online'] 
-                        : (int)$pActual->stock_online;
-
-        $stockMinimo = isset($_POST['stock_minimo']) && $_POST['stock_minimo'] !== '' 
-                        ? (int)$_POST['stock_minimo'] 
-                        : (int)$pActual->stock_minimo;
-
-        $catId  = !empty($_POST['id_categoria']) ? (int)$_POST['id_categoria'] : (!empty($_POST['categoria']) ? (int)$_POST['categoria'] : $pActual->id_categoria);
-        $estado = isset($_POST['estado']) ? (int)$_POST['estado'] : (int)$pActual->estado;
-        $atributos = $_POST['atributo'] ?? [];
-
-        $datos = [
-            'codigo'          => $codigo,
-            'nombre_producto' => $nombre,
-            'descripcion'     => $desc,
-            'precio'          => $precio,
-            'costo_compra'    => $costo,
-            'stock'           => $stock,
-            'stock_online'    => $stockOnline,
-            'stock_minimo'    => $stockMinimo,
-            'id_categoria'    => $catId,
-            'estado'          => $estado,
-            'imagen'          => $nombreImagen
-        ];
-
-        $this->productoModelo->actualizarCompleto($id, $datos, $atributos);
-        $this->log('Inventario', 'UPDATE', "Actualizó producto: {$nombre} (ID: {$id})");
-
-        header("Location: index.php?action=listado_productos");
-        exit();
+        require_once 'views/editar_producto.php';
     }
-}
+
+    public function actualizar() {
+        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+            try {
+                $id = (int)$_POST['id'];
+                $pActual = $this->productoModelo->obtenerPorId($id);
+
+                if (!$pActual) {
+                    header("Location: index.php?action=listado_productos");
+                    exit();
+                }
+
+                $codigo = trim($_POST['codigo'] ?? $pActual->codigo);
+
+                if (!empty($codigo)) {
+                    $stmtChk = $this->db->prepare("SELECT id FROM productos WHERE codigo = ? AND id != ? AND deleted_at IS NULL LIMIT 1");
+                    $stmtChk->execute([$codigo, $id]);
+                    if ($stmtChk->fetch()) {
+                        throw new Exception("El código '{$codigo}' ya está asignado a otro producto.");
+                    }
+                }
+
+                $nombreImagen = $pActual->imagen;
+                if (!empty($_FILES['imagen']['tmp_name'])) {
+                    $nombreImagen = $this->procesarImagenUpload($_FILES['imagen'], $pActual->imagen);
+                }
+
+                $nombre = trim($_POST['nombre_producto'] ?? $_POST['nombre'] ?? $pActual->nombre_producto);
+                $desc   = trim($_POST['descripcion'] ?? $_POST['desc'] ?? $pActual->descripcion);
+                $precio = isset($_POST['precio']) && $_POST['precio'] !== '' ? (float)$_POST['precio'] : (float)$pActual->precio;
+                $costo  = isset($_POST['costo_compra']) && $_POST['costo_compra'] !== '' ? (float)$_POST['costo_compra'] : (float)$pActual->costo_compra;
+                
+                $stock       = (int)$pActual->stock;
+                $stockOnline = (int)$pActual->stock_online;
+
+                $stockMinimo = isset($_POST['stock_minimo']) && $_POST['stock_minimo'] !== '' 
+                                ? (int)$_POST['stock_minimo'] 
+                                : (int)$pActual->stock_minimo;
+
+                $catId  = !empty($_POST['id_categoria']) ? (int)$_POST['id_categoria'] : (!empty($_POST['categoria']) ? (int)$_POST['categoria'] : $pActual->id_categoria);
+                $estado = isset($_POST['estado']) ? (int)$_POST['estado'] : (int)$pActual->estado;
+                $atributos = $_POST['atributo'] ?? [];
+                $variantes = $_POST['variantes'] ?? []; // <-- Recibir variantes
+
+                $datos = [
+                    'codigo'          => $codigo,
+                    'nombre_producto' => $nombre,
+                    'descripcion'     => $desc,
+                    'precio'          => $precio,
+                    'costo_compra'    => $costo,
+                    'stock'           => $stock,
+                    'stock_online'    => $stockOnline,
+                    'stock_minimo'    => $stockMinimo,
+                    'id_categoria'    => $catId,
+                    'estado'          => $estado,
+                    'imagen'          => $nombreImagen
+                ];
+
+                $this->productoModelo->actualizarCompleto($id, $datos, $atributos, $variantes);
+                $this->log('Inventario', 'UPDATE', "Actualizó producto y variantes: {$nombre} (ID: {$id})");
+
+                $_SESSION['aviso'] = 'Producto actualizado correctamente.';
+                header("Location: index.php?action=listado_productos");
+                exit();
+
+            } catch (Exception $e) {
+                echo "<script>alert('" . addslashes($e->getMessage()) . "'); window.history.back();</script>";
+                exit();
+            }
+        }
+    }
 
     public function eliminar() {
         $id = $_GET['id'] ?? null;
@@ -205,17 +278,20 @@ class AdminControllers {
     }
 
     // -------------------------------------------------------------------------
-    // CATEGORÍAS Y ATRIBUTOS
+    // CATEGORÍAS Y ATRIBUTOS (Con soporte de Subcategorías)
     // -------------------------------------------------------------------------
 
     public function categorias() {
-        $sql = "SELECT c.id, c.nombre_categoria,
-                       COUNT(p.id) AS total_productos,
-                       COALESCE(SUM(p.stock + p.stock_online), 0) AS total_unidades
+        $sql = "SELECT c.id, c.id_padre, c.nombre_categoria,
+                       p.nombre_categoria AS nombre_padre,
+                       COUNT(pr.id) AS total_productos,
+                       COALESCE(SUM(pr.stock + pr.stock_online), 0) AS total_unidades
                 FROM categorias c
-                LEFT JOIN productos p ON p.id_categoria = c.id AND p.deleted_at IS NULL
-                GROUP BY c.id, c.nombre_categoria
-                ORDER BY c.nombre_categoria ASC";
+                LEFT JOIN categorias p ON c.id_padre = p.id
+                LEFT JOIN productos pr ON pr.id_categoria = c.id AND pr.deleted_at IS NULL
+                GROUP BY c.id, c.id_padre, c.nombre_categoria, p.nombre_categoria
+                ORDER BY COALESCE(c.id_padre, c.id), c.id_padre IS NOT NULL, c.nombre_categoria ASC";
+
         $stmt = $this->db->query($sql);
         $categorias = $stmt->fetchAll(PDO::FETCH_OBJ);
 
@@ -225,25 +301,45 @@ class AdminControllers {
             $cat->atributos = $stmtAtr->fetchAll(PDO::FETCH_OBJ);
         }
 
-        require_once 'views/inventario/categorias.php';
+        // Cargar vista soportando ambas rutas para evitar errores de ruta
+        if (file_exists('views/categorias.php')) {
+            require_once 'views/categorias.php';
+        } elseif (file_exists('views/inventario/categorias.php')) {
+            require_once 'views/inventario/categorias.php';
+        }
     }
 
     public function guardarCategoria() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $id = !empty($_POST['id']) ? (int)$_POST['id'] : null;
             $nombre = trim($_POST['nombre_categoria'] ?? '');
+            $rawPadre = $_POST['id_padre'] ?? '';
+            $nuevaPadre = trim($_POST['nueva_categoria_padre'] ?? '');
+            $idPadre = null;
+
+            // Si el usuario eligió crear una categoría padre en el momento
+            if ($rawPadre === 'nueva_padre' && !empty($nuevaPadre)) {
+                $stmtNP = $this->db->prepare("INSERT INTO categorias (nombre_categoria, id_padre) VALUES (?, NULL)");
+                $stmtNP->execute([$nuevaPadre]);
+                $idPadre = (int)$this->db->lastInsertId();
+                $this->log('Inventario', 'INSERT', "Creó categoría principal padre: {$nuevaPadre}");
+            } elseif (!empty($rawPadre) && is_numeric($rawPadre)) {
+                $idPadre = (int)$rawPadre;
+            }
+
             $atrIds = $_POST['atributo_id'] ?? [];
             $atrNombres = $_POST['atributo_nombre'] ?? [];
             $atrOpciones = $_POST['atributo_opciones'] ?? [];
 
             if (!empty($nombre)) {
                 if ($id) {
-                    $stmt = $this->db->prepare("UPDATE categorias SET nombre_categoria = ? WHERE id = ?");
-                    $stmt->execute([$nombre, $id]);
+                    if ($idPadre === $id) $idPadre = null; // Evitar asignarse a sí misma como padre
+                    $stmt = $this->db->prepare("UPDATE categorias SET nombre_categoria = ?, id_padre = ? WHERE id = ?");
+                    $stmt->execute([$nombre, $idPadre, $id]);
                     $this->log('Inventario', 'UPDATE', "Editó categoría: {$nombre}");
                 } else {
-                    $stmt = $this->db->prepare("INSERT INTO categorias (nombre_categoria) VALUES (?)");
-                    $stmt->execute([$nombre]);
+                    $stmt = $this->db->prepare("INSERT INTO categorias (nombre_categoria, id_padre) VALUES (?, ?)");
+                    $stmt->execute([$nombre, $idPadre]);
                     $id = $this->db->lastInsertId();
                     $this->log('Inventario', 'INSERT', "Creó categoría: {$nombre}");
                 }
@@ -348,7 +444,7 @@ class AdminControllers {
                     $canal = $_POST['canal'] ?? 'tienda_fisica';
                     $cant = abs((int)$_POST['cantidad']);
                     $motivo = trim($_POST['motivo'] ?? 'Merma');
-                    $observacion = $observacion ? "$motivo - $observacion" : $motivo;
+                    $observacion = $observacion ? "$motivo: $observacion" : $motivo;
                     $cantidadMov = -$cant;
                     if ($canal === 'tienda_fisica') {
                         $stockTienda = max(0, $stockTienda - $cant);
@@ -383,6 +479,14 @@ class AdminControllers {
                 $stmtK->execute([$idProducto, $tipo, $canal, $cantidadMov, $stockTienda, $stockOnline, $observacion, $idUsuario]);
 
                 $this->log('Inventario', 'UPDATE', "Ajuste de inventario ({$tipo}) producto ID: {$idProducto}");
+            }
+
+            // Punto 6: Volver al producto si viene el campo oculto
+            $_SESSION['aviso'] = 'Ajuste de stock registrado.';
+            $volverId = (int)($_POST['volver_producto'] ?? 0);
+            if ($volverId > 0) {
+                header("Location: index.php?action=editar&id=" . $volverId);
+                exit();
             }
 
             header("Location: index.php?action=kardex");

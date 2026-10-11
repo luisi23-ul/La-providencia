@@ -1,6 +1,25 @@
 (function () {
   var modal = document.getElementById('modal-categoria'), lista = document.getElementById('mcat-atributos');
   var tpl = document.getElementById('tpl-atributo');
+  var selPadre = document.getElementById('mcat-padre');
+  var campoNuevaPadre = document.getElementById('campo-nueva-padre');
+  var inpNuevaPadre = document.getElementById('mcat-nueva-padre');
+
+  function toggleNuevaPadre() {
+    if (selPadre && campoNuevaPadre) {
+      var esNueva = selPadre.value === 'nueva_padre';
+      campoNuevaPadre.style.display = esNueva ? 'block' : 'none';
+      if (inpNuevaPadre) {
+        inpNuevaPadre.required = esNueva;
+        if (esNueva) inpNuevaPadre.focus();
+        else inpNuevaPadre.value = '';
+      }
+    }
+  }
+
+  if (selPadre) {
+    selPadre.addEventListener('change', toggleNuevaPadre);
+  }
 
   function agregar(a) {
     var fila = tpl.content.firstElementChild.cloneNode(true), n = lista.children.length;
@@ -24,6 +43,17 @@
       document.getElementById('mcat-titulo').textContent = c ? 'Editar ' + c.nombre : 'Nueva categoría';
       document.getElementById('mcat-id').value = c ? c.id : '';
       document.getElementById('mcat-nombre').value = c ? c.nombre : '';
+      
+      // Manejo de categoría padre / subcategoría
+      if (selPadre) {
+        selPadre.value = (c && c.id_padre) ? c.id_padre : '';
+        // Ocultar o deshabilitar la opción de sí misma para que no sea padre de sí misma
+        Array.from(selPadre.options).forEach(function (opt) {
+          opt.disabled = Boolean(c && String(opt.value) === String(c.id));
+        });
+      }
+      toggleNuevaPadre();
+
       lista.innerHTML = '';
       (c ? c.atributos : []).forEach(agregar);
       modal.showModal();

@@ -9,8 +9,22 @@ include __DIR__ . '/admin/_abrir.php';
 $e = $e ?? fn($v) => htmlspecialchars((string)($v ?? ''), ENT_QUOTES, 'UTF-8');
 $usd = $usd ?? fn($n) => '$' . number_format((float)($n ?? 0), 2, '.', ',');
 
+// Mapa de nombres y jerarquía de categorías
 $nombreCat = [];
-foreach ($categorias as $c) $nombreCat[$c->id] = $c->nombre_categoria;
+$padresCat = [];
+$categoriasPrincipales = [];
+$subcategoriasPorPadre = [];
+
+foreach ($categorias as $c) {
+    $nombreCat[$c->id] = $c->nombre_categoria;
+    if (!empty($c->id_padre)) {
+        $padresCat[$c->id] = $c->id_padre;
+        $subcategoriasPorPadre[$c->id_padre][] = $c;
+    } else {
+        $categoriasPrincipales[] = $c;
+    }
+}
+
 $filtro = $_GET['stock'] ?? '';
 $catSel = $_GET['categoria'] ?? '';
 
@@ -58,7 +72,18 @@ $url = fn($stock) => 'index.php?' . http_build_query(array_filter(['action' => '
     <label class="f-select<?= $catSel !== '' ? ' activo' : '' ?>"><svg class="i"><use href="#i-etiqueta"/></svg>
       <select name="categoria" aria-label="Categoría" data-auto-enviar data-desplegable>
         <option value="">Todas las categorías</option>
-        <?php foreach ($categorias as $c): ?><option value="<?= (int) $c->id ?>"<?= $catSel === (string) $c->id ? ' selected' : '' ?>><?= $e($c->nombre_categoria) ?></option><?php endforeach; ?>
+        <?php foreach ($categoriasPrincipales as $cp): ?>
+          <?php if (!empty($subcategoriasPorPadre[$cp->id])): ?>
+            <optgroup label="<?= $e($cp->nombre_categoria) ?>">
+              <option value="<?= (int) $cp->id ?>"<?= $catSel === (string) $cp->id ? ' selected' : '' ?>><?= $e($cp->nombre_categoria) ?> (General)</option>
+              <?php foreach ($subcategoriasPorPadre[$cp->id] as $sub): ?>
+                <option value="<?= (int) $sub->id ?>"<?= $catSel === (string) $sub->id ? ' selected' : '' ?>>↳ <?= $e($sub->nombre_categoria) ?></option>
+              <?php endforeach; ?>
+            </optgroup>
+          <?php else: ?>
+            <option value="<?= (int) $cp->id ?>"<?= $catSel === (string) $cp->id ? ' selected' : '' ?>><?= $e($cp->nombre_categoria) ?></option>
+          <?php endif; ?>
+        <?php endforeach; ?>
       </select>
     </label>
     <?php if ($filtro !== '' || $catSel !== ''): ?>
@@ -83,7 +108,13 @@ $url = fn($stock) => 'index.php?' . http_build_query(array_filter(['action' => '
         <tbody>
         <?php foreach ($lista as $p):
             $codigo = $p->codigo ?? ('P-' . str_pad($p->id, 4, '0', STR_PAD_LEFT));
-            $cat = $p->nombre_categoria ?? ($nombreCat[$p->id_categoria] ?? 'Sin categoría');
+            
+            // Detección de subcategoría y categoría padre
+            $catId = $p->id_categoria ?? null;
+            $cat = $p->nombre_categoria ?? ($nombreCat[$catId] ?? 'Sin categoría');
+            $padreId = $padresCat[$catId] ?? null;
+            $padreNombre = $p->nombre_categoria_padre ?? ($padreId ? ($nombreCat[$padreId] ?? '') : '');
+
             $costo = (float) ($p->costo_compra ?? 0);
             $margen = ($p->precio > 0 && $costo > 0) ? round((($p->precio - $costo) / $costo) * 100) : null;
             $s = $estadoDe($p); ?>
@@ -95,11 +126,48 @@ $url = fn($stock) => 'index.php?' . http_build_query(array_filter(['action' => '
                 <div>
                   <b><?= $e($p->nombre_producto) ?></b>
                   <span><?= $e($p->descripcion ?? '') ?></span>
-                  <span class="si-estrecho"><span class="cod"><?= $e($codigo) ?></span>, <?= $e($cat) ?></span>
+
+                  <?php if (!empty($p->resumen_variantes)): ?>
+                    <div class="atr-chips" style="display:flex; flex-wrap:wrap; gap:4px; margin-top:4px;">
+                      <?php 
+                        $itemsVar = explode('|', $p->resumen_variantes);
+                        foreach ($itemsVar as $iv):
+                          $partes = explode(':', $iv);
+                          if (count($partes) >= 5):
+                            $t = trim($partes[0]);
+                            $c = trim($partes[1]);
+                            $m = trim($partes[2]);
+                            $stk = (int)$partes[3];
+
+                            // Construir etiquetas con el nombre de cada atributo
+                            $detalles = [];
+                            if ($t !== '') $detalles[] = '<b>Talla:</b> ' . $e($t);
+                            if ($c !== '') $detalles[] = '<b>Color:</b> ' . $e($c);
+                            if ($m !== '') $detalles[] = '<b>Modelo:</b> ' . $e($m);
+                      ?>
+                        <span class="chip" style="font-size:0.75rem; padding:3px 8px; background:var(--fondo-2, #f1f5f9); border-radius:6px; line-height:1.3;" title="Stock en tienda: <?= $stk ?>">
+                          <?= implode(' <span style="opacity:0.4;">·</span> ', $detalles) ?>
+                          <span style="margin-left:4px; color:var(--primario, #166534); font-weight:bold;">(<?= $stk ?>)</span>
+                        </span>
+                      <?php 
+                          endif;
+                        endforeach; 
+                      ?>
+                    </div>
+                  <?php endif; ?>
+
+                  <span class="si-estrecho"><span class="cod"><?= $e($codigo) ?></span>, <?= !empty($padreNombre) ? $e($padreNombre) . ' / ' : '' ?><?= $e($cat) ?></span>
                 </div>
               </div>
             </td>
-            <td class="c-media"><span class="chip"><?= $e($cat) ?></span></td>
+            <td class="c-media">
+              <span class="chip">
+                <?php if (!empty($padreNombre)): ?>
+                  <small style="color:var(--texto-3, #64748b); font-weight:normal;"><?= $e($padreNombre) ?> /</small>
+                <?php endif; ?>
+                <?= $e($cat) ?>
+              </span>
+            </td>
             <td class="num">
               <b><?= $usd($p->precio) ?></b>
               <?php if ($costo): ?><br><span class="margen">costo <?= $usd($costo) ?><?= $margen !== null ? ', +' . $margen . '%' : '' ?></span><?php endif; ?>
@@ -130,11 +198,17 @@ $url = fn($stock) => 'index.php?' . http_build_query(array_filter(['action' => '
     <ul class="tarjetas-prod" data-paginar="10">
       <?php foreach ($lista as $p):
           $codigo = $p->codigo ?? ('P-' . str_pad($p->id, 4, '0', STR_PAD_LEFT));
-          $cat = $p->nombre_categoria ?? ($nombreCat[$p->id_categoria] ?? 'Sin categoría');
+          $catId = $p->id_categoria ?? null;
+          $cat = $p->nombre_categoria ?? ($nombreCat[$catId] ?? 'Sin categoría');
+          $padreId = $padresCat[$catId] ?? null;
+          $padreNombre = $p->nombre_categoria_padre ?? ($padreId ? ($nombreCat[$padreId] ?? '') : '');
           $s = $estadoDe($p); ?>
         <li>
           <?php if ($p->imagen): ?><img class="foto grande" src="public/uploads/<?= $e($p->imagen) ?>" alt="" width="56" height="56" loading="lazy"><?php else: ?><span></span><?php endif; ?>
-          <div class="t-nom"><b><?= $e($p->nombre_producto) ?></b><span><?= $e($codigo) ?>, <?= $e($cat) ?></span></div>
+          <div class="t-nom">
+            <b><?= $e($p->nombre_producto) ?></b>
+            <span><?= $e($codigo) ?>, <?= !empty($padreNombre) ? $e($padreNombre) . ' / ' : '' ?><?= $e($cat) ?></span>
+          </div>
           <div class="t-precio"><?= $usd($p->precio) ?></div>
           <div class="t-stock">Tienda <b><?= (int) $p->stock ?></b>, online <b><?= (int) ($p->stock_online ?? 0) ?></b> <?php if ($s === 'bajo'): ?><span class="est bajo">Bajo</span><?php elseif ($s === 'agot'): ?><span class="est agot">Agotado</span><?php endif; ?></div>
           <div class="t-acc">
