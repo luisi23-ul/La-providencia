@@ -6,6 +6,10 @@ $proveedores = $proveedores ?? [];
 $productos = $productos ?? $listaProductos ?? [];
 $metodos = $metodos ?? [];
 $empleados = $empleados ?? [];
+$categorias = $categorias ?? [];
+$catPrincipales = array_filter($categorias, fn($c) => empty($c->id_padre));
+$catHijas = [];
+foreach ($categorias as $c) if (!empty($c->id_padre)) $catHijas[$c->id_padre][] = $c;
 $bancosLista = ['Banesco', 'Banco de Venezuela', 'Mercantil', 'Banco Provincial', 'BNC Nacional de Crédito', 'Bancaribe', 'Banco Exterior', 'Banco Plaza', 'Banco del Tesoro', 'Banco Bicentenario', 'Banplus', '100% Banco', 'Caja chica', 'Otro'];
 include __DIR__ . '/../admin/_abrir.php';
 ?>
@@ -108,7 +112,18 @@ include __DIR__ . '/../admin/_abrir.php';
     <div class="cpx-nuevo-prod" hidden>
       <div class="campo"><label>Código del producto nuevo</label><input name="nuevo_codigo[]" maxlength="50" autocomplete="off" placeholder="P-0080"></div>
       <div class="campo"><label>Nombre del producto nuevo</label><input name="nuevo_nombre[]" maxlength="150" autocomplete="off" placeholder="Ej.: Blusa de lino manga corta"></div>
-      <p class="ayuda">Se crea en el inventario al guardar la compra. Después le agregas la foto y la categoría desde Productos.</p>
+      <?php if ($categorias): ?>
+      <div class="campo ancho"><label>Categoría</label>
+        <select name="nuevo_categoria[]">
+          <option value="">Elige una categoría</option>
+          <?php foreach ($catPrincipales as $padre): ?>
+            <option value="<?= (int) $padre->id ?>"><?= $e($padre->nombre_categoria) ?></option>
+            <?php foreach ($catHijas[$padre->id] ?? [] as $sub): ?><option value="<?= (int) $sub->id ?>">↳ <?= $e($sub->nombre_categoria) ?></option><?php endforeach; ?>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <?php endif; ?>
+      <p class="ayuda">Se crea en el inventario al guardar la compra. Después le agregas la foto desde Productos.</p>
     </div>
     <div class="cpx-rg-num">
       <div class="campo"><label>Cantidad</label><div class="ajx-cant"><button type="button" data-paso="-1" aria-label="Restar uno">−</button><input name="cantidad[]" type="number" min="1" step="1" inputmode="numeric" value="1" required><button type="button" data-paso="1" aria-label="Sumar uno">+</button></div></div>

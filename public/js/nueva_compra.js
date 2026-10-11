@@ -27,7 +27,8 @@
     else if (foto.tagName === 'IMG') { var s = document.createElement('span'); s.className = 'sin-foto'; s.innerHTML = '<svg class="i"><use href="#i-caja"/></svg>'; foto.replaceWith(s); }
     var esNuevo = campo(li, 'id_producto').value === 'nuevo', bloque = li.querySelector('.cpx-nuevo-prod');
     bloque.hidden = !esNuevo;
-    bloque.querySelectorAll('input').forEach(function (i) { i.required = esNuevo; if (!esNuevo) i.value = ''; });
+    bloque.querySelectorAll('input, select').forEach(function (i) { i.required = esNuevo; if (!esNuevo) i.value = ''; });
+    Panel.refrescarSelects(bloque);
     li.querySelector('.cpx-hoy').textContent = p ? 'Hoy se vende a ' + usd(p.precio) : esNuevo ? 'Producto nuevo: escribe su código y nombre' : 'Elige qué llegó en la factura';
     if (esNuevo) { campo(li, 'costo_unitario').value = ''; campo(li, 'margen').value = MARGEN; campo(li, 'precio_venta').value = ''; pintar(li); bloque.querySelector('input').focus(); return; }
     if (!p) { pintar(li); return; }
