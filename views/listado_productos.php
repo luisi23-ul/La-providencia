@@ -156,14 +156,14 @@ $url = fn($stock) => 'index.php?' . http_build_query(array_filter(['action' => '
                     </div>
                   <?php endif; ?>
 
-                  <span class="si-estrecho"><span class="cod"><?= $e($codigo) ?></span>, <?= !empty($padreNombre) ? $e($padreNombre) . ' / ' : '' ?><?= $e($cat) ?></span>
+                  <span class="si-estrecho"><span class="cod"><?= $e($codigo) ?></span>, <?= !empty($padreNombre) ? $e($padreNombre) . ' › ' : '' ?><?= $e($cat) ?></span>
                 </div>
               </div>
             </td>
             <td class="c-media">
               <span class="chip">
                 <?php if (!empty($padreNombre)): ?>
-                  <small style="color:var(--texto-3, #64748b); font-weight:normal;"><?= $e($padreNombre) ?> /</small>
+                  <span class="chip-padre"><?= $e($padreNombre) ?> ›</span>
                 <?php endif; ?>
                 <?= $e($cat) ?>
               </span>
@@ -207,7 +207,7 @@ $url = fn($stock) => 'index.php?' . http_build_query(array_filter(['action' => '
           <?php if ($p->imagen): ?><img class="foto grande" src="public/uploads/<?= $e($p->imagen) ?>" alt="" width="56" height="56" loading="lazy"><?php else: ?><span></span><?php endif; ?>
           <div class="t-nom">
             <b><?= $e($p->nombre_producto) ?></b>
-            <span><?= $e($codigo) ?>, <?= !empty($padreNombre) ? $e($padreNombre) . ' / ' : '' ?><?= $e($cat) ?></span>
+            <span><?= $e($codigo) ?>, <?= !empty($padreNombre) ? $e($padreNombre) . ' › ' : '' ?><?= $e($cat) ?></span>
           </div>
           <div class="t-precio"><?= $usd($p->precio) ?></div>
           <div class="t-stock">Tienda <b><?= (int) $p->stock ?></b>, online <b><?= (int) ($p->stock_online ?? 0) ?></b> <?php if ($s === 'bajo'): ?><span class="est bajo">Bajo</span><?php elseif ($s === 'agot'): ?><span class="est agot">Agotado</span><?php endif; ?></div>

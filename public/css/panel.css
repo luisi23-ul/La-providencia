@@ -1957,3 +1957,29 @@ body:has(.panel.modo-pos) .avisos { top: 76px; }
 .cpx-nuevo-prod .ayuda { grid-column: 1 / -1; margin: 0; }
 .cpx-nuevo-prod[hidden] { display: none; }
 @container marco (max-width: 640px) { .cpx-nuevo-prod { grid-template-columns: minmax(0, 1fr); margin: 0 10px; } }
+.fpx-var { padding: 16px 20px 20px; }
+.fpx-var-cab { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) 96px 96px 40px; gap: 10px; padding: 0 12px 8px; font-size: 13.5px; font-weight: 600; color: var(--texto-2); }
+.fpx-var-lista { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.fpx-var-fila { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) 96px 96px 40px; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--linea); border-radius: 14px; background: var(--tarjeta); }
+.fpx-var-campo label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); }
+.fpx .fpx-var-campo input, .fpx .fpx-var-campo select { width: 100%; min-height: 44px; border: 1.5px solid var(--linea); border-radius: 10px; padding: 0 12px; font-size: 15.5px; background: var(--tarjeta); }
+.fpx .fpx-var-campo .dsp-btn { min-height: 44px; }
+.fpx-var-campo input[type=number] { text-align: center; font-variant-numeric: tabular-nums; font-weight: 600; }
+.fpx-var-campo input:focus { outline: 0; border-color: var(--marca); box-shadow: 0 0 0 4px var(--marca-suave); }
+.fpx-var-mas { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 48px; margin-top: 10px; border: 2px dashed var(--marca-borde); border-radius: 14px; background: var(--marca-tenue); color: var(--marca-fuerte); font: 600 15px var(--f-ui); cursor: pointer; transition: background-color 150ms ease, border-color 150ms ease; }
+.fpx-var-mas:hover { border-color: var(--marca); background: var(--marca-suave); }
+.fpx-var-mas svg.i { width: 18px; height: 18px; }
+.fpx-st input[readonly] { background: var(--fondo); color: var(--texto); border-style: dashed; }
+@container marco (max-width: 760px) {
+  .fpx-var-cab { display: none; }
+  .fpx-var-fila { grid-template-columns: 1fr 1fr; }
+  .fpx-var-campo label { position: static; width: auto; height: auto; clip: auto; display: block; margin-bottom: 4px; font-size: 13px; font-weight: 600; color: var(--texto-2); }
+  .fpx-var-fila .ic-btn { grid-column: 2; justify-self: end; }
+}
+.chip .chip-padre { color: var(--texto-2); font-weight: 500; margin-right: 2px; }
+.tarjetas-prod + .paginas { display: none; }
+.tabla-caja:has(.paginas:not([hidden])) > .tabla-pie { display: none; }
+@container tabla (max-width: 600px) {
+  #p-inventario .tabla-scroll + .paginas { display: none; }
+  #p-inventario .tarjetas-prod + .paginas:not([hidden]) { display: flex; }
+}
