@@ -6,15 +6,18 @@
   var costo = document.getElementById('fp-costo'), pct = document.getElementById('fp-margen-pct'), precio = document.getElementById('fp-precio');
   var enBs = document.getElementById('fp-precio-bs'), gana = document.getElementById('fp-gana');
   var unDecimal = function (n) { return String(Math.round(n * 10) / 10); };
+  var opcionesDe = function (ops) { return Array.isArray(ops) ? ops : String(ops || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean); };
+  D.valores = D.valores || {};
 
   function atributos() {
     var c = D.categorias.find(function (x) { return String(x.id) === cat.value; });
-    var lista = c ? c.atributos : [];
+    var lista = c ? (c.atributos || []) : [];
     caja.hidden = !lista.length;
     cont.innerHTML = lista.map(function (a) {
       var v = D.valores[a.id] || '', id = 'fp-atr-' + a.id, nombre = 'atributo[' + a.id + ']';
-      var control = a.opciones.length
-        ? '<select id="' + id + '" name="' + nombre + '"><option value="">Sin indicar</option>' + a.opciones.map(function (o) { return '<option' + (o === v ? ' selected' : '') + '>' + Panel.esc(o) + '</option>'; }).join('') + '</select>'
+      var ops = opcionesDe(a.opciones);
+      var control = ops.length
+        ? '<select id="' + id + '" name="' + nombre + '"><option value="">Sin indicar</option>' + ops.map(function (o) { return '<option' + (o === v ? ' selected' : '') + '>' + Panel.esc(o) + '</option>'; }).join('') + '</select>'
         : '<input id="' + id + '" name="' + nombre + '" value="' + Panel.esc(v) + '">';
       return '<div class="campo"><label for="' + id + '">' + Panel.esc(a.nombre) + '</label>' + control + '</div>';
     }).join('');

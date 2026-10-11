@@ -12,7 +12,7 @@
   function agregar(abrir) {
     var li = tpl.content.firstElementChild.cloneNode(true), sel = campo(li, 'id_producto');
     n++;
-    sel.innerHTML = '<option value="">Elige un producto</option>' + productos.map(function (p) { return '<option value="' + p.id + '">' + Panel.esc(p.c + ' · ' + p.n) + '</option>'; }).join('');
+    sel.innerHTML = '<option value="">Elige un producto</option><option value="nuevo">+ Producto nuevo (no está en el inventario)</option>' + productos.map(function (p) { return '<option value="' + p.id + '">' + Panel.esc(p.c + ' · ' + p.n) + '</option>'; }).join('');
     li.querySelectorAll('.cpx-rg-num .campo').forEach(function (c, i) { var id = 'rg-' + n + '-' + i; c.querySelector('label').htmlFor = id; c.querySelector('input').id = id; });
     lista.appendChild(li);
     resumen();
@@ -25,7 +25,11 @@
     var p = prod(campo(li, 'id_producto').value), cab = li.querySelector('.cpx-rg-cab'), foto = cab.querySelector('.sin-foto, img');
     if (p && p.img) { var img = document.createElement('img'); img.src = p.img; img.alt = ''; img.width = 52; img.height = 52; foto.replaceWith(img); }
     else if (foto.tagName === 'IMG') { var s = document.createElement('span'); s.className = 'sin-foto'; s.innerHTML = '<svg class="i"><use href="#i-caja"/></svg>'; foto.replaceWith(s); }
-    li.querySelector('.cpx-hoy').textContent = p ? 'Hoy se vende a ' + usd(p.precio) : 'Elige qué llegó en la factura';
+    var esNuevo = campo(li, 'id_producto').value === 'nuevo', bloque = li.querySelector('.cpx-nuevo-prod');
+    bloque.hidden = !esNuevo;
+    bloque.querySelectorAll('input').forEach(function (i) { i.required = esNuevo; if (!esNuevo) i.value = ''; });
+    li.querySelector('.cpx-hoy').textContent = p ? 'Hoy se vende a ' + usd(p.precio) : esNuevo ? 'Producto nuevo: escribe su código y nombre' : 'Elige qué llegó en la factura';
+    if (esNuevo) { campo(li, 'costo_unitario').value = ''; campo(li, 'margen').value = MARGEN; campo(li, 'precio_venta').value = ''; pintar(li); bloque.querySelector('input').focus(); return; }
     if (!p) { pintar(li); return; }
     campo(li, 'costo_unitario').value = p.costo ? p.costo.toFixed(2) : '';
     if (p.costo && p.precio) {
@@ -79,7 +83,7 @@
       var cant = parseInt(campo(li, 'cantidad').value, 10) || 0, c = parseFloat(campo(li, 'costo_unitario').value) || 0;
       unid += cant; total += cant * c;
       if (+li.querySelector('.cpx-precio input[type=hidden]').value) precios++;
-      if (id) { if (vistos[id]) repetido = true; vistos[id] = 1; }
+      if (id && id !== 'nuevo') { if (vistos[id]) repetido = true; vistos[id] = 1; }
     });
     var cuenta = document.getElementById('cuenta-renglones');
     cuenta.textContent = elegidos + (elegidos === 1 ? ' producto' : ' productos');

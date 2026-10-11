@@ -4,6 +4,9 @@ $tituloPagina = 'Registrar compra';
 $scripts = ['nueva_compra'];
 $proveedores = $proveedores ?? [];
 $productos = $productos ?? $listaProductos ?? [];
+$metodos = $metodos ?? [];
+$empleados = $empleados ?? [];
+$bancosLista = ['Banesco', 'Banco de Venezuela', 'Mercantil', 'Banco Provincial', 'BNC Nacional de Crédito', 'Bancaribe', 'Banco Exterior', 'Banco Plaza', 'Banco del Tesoro', 'Banco Bicentenario', 'Banplus', '100% Banco', 'Caja chica', 'Otro'];
 include __DIR__ . '/../admin/_abrir.php';
 ?>
 <section class="contenido">
@@ -25,7 +28,10 @@ include __DIR__ . '/../admin/_abrir.php';
             </select>
             <button type="button" class="cpx-nuevo" data-abrir-modal="modal-proveedor"><svg class="i"><use href="#i-mas"/></svg>Proveedor nuevo</button>
           </div>
-          <div class="campo"><label for="c-fac">N.º de factura</label><input id="c-fac" name="numero_factura" maxlength="50" autocomplete="off" placeholder="A-00046120"></div>
+          <div class="campo"><label for="c-fac">N.º de factura <span class="ob">*</span></label><input id="c-fac" name="numero_factura" maxlength="50" autocomplete="off" placeholder="A-00046120" required></div>
+          <div class="campo"><label for="c-comprador">Empleado que compró <span class="ob">*</span></label><input id="c-comprador" name="comprado_por" list="lista-empleados" maxlength="150" autocomplete="off" placeholder="Nombre del empleado" value="<?= $e($_SESSION['nombre'] ?? '') ?>" required>
+            <datalist id="lista-empleados"><?php foreach ($empleados as $emp): ?><option value="<?= $e($emp->nombre_completo) ?>"></option><?php endforeach; ?></datalist>
+          </div>
           <div class="campo"><label for="c-fecha">Fecha de recepción <span class="ob">*</span></label><input id="c-fecha" type="date" name="fecha_compra" value="<?= date('Y-m-d') ?>" max="<?= date('Y-m-d') ?>" required></div>
           <div class="campo"><span class="lbl" id="l-destino">¿A dónde entra el stock? <span class="ob">*</span></span>
             <div class="ajx-seg" role="radiogroup" aria-labelledby="l-destino">
@@ -33,6 +39,25 @@ include __DIR__ . '/../admin/_abrir.php';
               <label><input type="radio" name="destino_stock" value="online"><svg class="i"><use href="#i-globo"/></svg>Online</label>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section class="fpx-sec" aria-labelledby="c-t-pago">
+        <header><span class="fpx-ic"><svg class="i"><use href="#i-tarjeta"/></svg></span><div><h3 id="c-t-pago">Pago de la compra</h3><p>Cómo se le pagó al proveedor.</p></div></header>
+        <div class="fpx-cuerpo">
+          <div class="campo"><label for="c-metodo">Método de pago <span class="ob">*</span></label>
+            <select id="c-metodo" name="id_metodo_pago" required>
+              <option value="">Elige el método</option>
+              <?php foreach ($metodos as $m): ?><option value="<?= (int) $m->id ?>"><?= $e($m->nombre) ?></option><?php endforeach; ?>
+            </select>
+          </div>
+          <div class="campo"><label for="c-banco">Banco de salida</label>
+            <select id="c-banco" name="banco">
+              <option value="">No aplica</option>
+              <?php foreach ($bancosLista as $b): ?><option value="<?= $e($b) ?>"><?= $e($b) ?></option><?php endforeach; ?>
+            </select>
+          </div>
+          <div class="campo ancho"><label for="c-ref">Referencia del pago</label><input id="c-ref" name="referencia_pago" maxlength="100" autocomplete="off" inputmode="numeric" placeholder="Número de la transferencia o del pago móvil"></div>
         </div>
       </section>
 
@@ -79,6 +104,11 @@ include __DIR__ . '/../admin/_abrir.php';
       <small class="cpx-hoy">Elige qué llegó en la factura</small>
       <span class="cpx-stock" hidden></span>
       <button type="button" class="ic-btn" data-quitar aria-label="Quitar producto"><svg class="i"><use href="#i-basura"/></svg></button>
+    </div>
+    <div class="cpx-nuevo-prod" hidden>
+      <div class="campo"><label>Código del producto nuevo</label><input name="nuevo_codigo[]" maxlength="50" autocomplete="off" placeholder="P-0080"></div>
+      <div class="campo"><label>Nombre del producto nuevo</label><input name="nuevo_nombre[]" maxlength="150" autocomplete="off" placeholder="Ej.: Blusa de lino manga corta"></div>
+      <p class="ayuda">Se crea en el inventario al guardar la compra. Después le agregas la foto y la categoría desde Productos.</p>
     </div>
     <div class="cpx-rg-num">
       <div class="campo"><label>Cantidad</label><div class="ajx-cant"><button type="button" data-paso="-1" aria-label="Restar uno">−</button><input name="cantidad[]" type="number" min="1" step="1" inputmode="numeric" value="1" required><button type="button" data-paso="1" aria-label="Sumar uno">+</button></div></div>

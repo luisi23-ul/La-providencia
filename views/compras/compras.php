@@ -6,7 +6,7 @@ include __DIR__ . '/../admin/_abrir.php';
 $f = ['desde' => $_GET['desde'] ?? date('Y-m-01'), 'hasta' => $_GET['hasta'] ?? date('Y-m-d'), 'estado' => $_GET['estado'] ?? ''];
 $lista = $f['estado'] ? array_filter($compras, fn($c) => $c->estado === $f['estado']) : $compras;
 $recibidas = array_filter($compras, fn($c) => $c->estado === 'recibido');
-$total = array_sum(array_map(fn($c) => $c->total, $recibidas));
+$total = array_sum(array_map(fn($c) => (float)$c->total, $recibidas));
 $url = fn($estado) => 'index.php?' . http_build_query(array_filter(['action' => 'compras', 'desde' => $f['desde'], 'hasta' => $f['hasta'], 'estado' => $estado]));
 ?>
 <section class="contenido">
@@ -37,10 +37,29 @@ $url = fn($estado) => 'index.php?' . http_build_query(array_filter(['action' => 
       <table class="tabla-resp" id="tabla-compras" data-paginar="10">
         <thead><tr><th>Compra</th><th>Proveedor</th><th class="c-media">Destino</th><th class="num c-media">Productos</th><th class="num">Total</th><th>Estado</th><th class="num"></th></tr></thead>
         <tbody>
-        <?php foreach ($lista as $c): $destino = $c->destino_stock === 'online' ? 'Online' : 'Tienda física'; ?>
+        <?php foreach ($lista as $c): 
+          $destino = $c->destino_stock === 'online' ? 'Online' : 'Tienda física'; 
+          $infoPago = !empty($c->metodo_pago) ? $c->metodo_pago . (!empty($c->banco) ? ' (' . $c->banco . ')' : '') : '';
+        ?>
           <tr>
-            <td class="t-tit"><div class="t-nombre"><b>#<?= str_pad($c->id, 4, '0', STR_PAD_LEFT) ?></b><span><?= date('d/m/Y', strtotime($c->fecha_compra)) ?><?= $c->numero_factura ? ', fact. ' . $e($c->numero_factura) : '' ?></span></div></td>
-            <td data-label="Proveedor"><div class="t-nombre"><b><?= $e($c->razon_social) ?></b><span class="si-estrecho"><?= $destino ?>, <?= (int) ($c->total_productos ?? 0) ?> productos</span></div></td>
+            <td class="t-tit">
+              <div class="t-nombre">
+                <b>#<?= str_pad((string)$c->id, 4, '0', STR_PAD_LEFT) ?></b>
+                <span><?= date('d/m/Y', strtotime($c->fecha_compra)) ?><?= $c->numero_factura ? ', fact. ' . $e($c->numero_factura) : '' ?></span>
+                <?php if (!empty($c->comprado_por)): ?>
+                  <small style="color: #64748b;">Compró: <?= $e($c->comprado_por) ?></small>
+                <?php endif; ?>
+              </div>
+            </td>
+            <td data-label="Proveedor">
+              <div class="t-nombre">
+                <b><?= $e($c->razon_social) ?></b>
+                <span class="si-estrecho"><?= $destino ?>, <?= (int) ($c->total_productos ?? 0) ?> productos</span>
+                <?php if ($infoPago): ?>
+                  <small style="color: #64748b;"><?= $e($infoPago) ?></small>
+                <?php endif; ?>
+              </div>
+            </td>
             <td data-label="Destino" class="c-media"><span class="chip"><?= $destino ?></span></td>
             <td class="num c-media" data-label="Productos"><?= (int) ($c->total_productos ?? 0) ?></td>
             <td class="num" data-label="Total"><b<?= $c->estado === 'anulado' ? ' style="text-decoration:line-through;color:var(--texto-3)"' : '' ?>><?= $usd($c->total) ?></b></td>
