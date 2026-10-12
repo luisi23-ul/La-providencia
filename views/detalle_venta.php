@@ -118,7 +118,7 @@ if (in_array($estado, ['retirado', 'entregado', 'completado'], true)) {
           <article class="dv-pago <?= $vf[0] ?>">
             <span class="dv-pago-ic"><svg class="i"><use href="#i-<?= $iconoMetodo($p->metodo) ?>"/></svg></span>
             <b><?= $e($p->metodo) ?></b>
-            <span class="monto"><?= ($p->moneda ?? 'Bs') === 'USD' ? $usd($p->monto) : number_format((float) $p->monto, 2) . ' Bs' ?><?php if (($p->moneda ?? 'Bs') !== 'USD'): ?><small><?= $usd($enUsd($p)) ?></small><?php endif; ?></span>
+            <span class="monto"><?= ($p->moneda ?? 'Bs') === 'USD' ? $usd($p->monto) : number_format((float) $p->monto, 2, ',', '.') . ' Bs' ?><?php if (($p->moneda ?? 'Bs') !== 'USD'): ?><small><?= $usd($enUsd($p)) ?></small><?php endif; ?></span>
             <dl>
               <?php if (!empty($p->banco) && $p->banco !== 'Caja Física'): ?><div><dt>Banco</dt><dd><?= $e($p->banco) ?></dd></div><?php endif; ?>
               <?php if (!empty($p->referencia) && $p->referencia !== 'No aplica'): ?><div><dt>Ref.</dt><dd><?= $e($p->referencia) ?></dd></div><?php endif; ?>

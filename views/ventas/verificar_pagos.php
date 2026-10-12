@@ -15,7 +15,7 @@ $metodosList = $db->query("SELECT id, nombre FROM metodos_pago ORDER BY nombre A
 <section class="contenido" id="p-verificar_pagos">
   <header class="cab">
     <div class="cab-txt"><small>Ventas</small><h2>Verificar pagos</h2></div>
-    <div class="cab-acc"><span class="tasa">Tasa BCV <b><?= number_format($tasa, 2) ?> Bs/$</b></span></div>
+    <div class="cab-acc"><span class="tasa">Tasa BCV <b><?= number_format($tasa, 2, ',', '.') ?> Bs/$</b></span></div>
   </header>
 
   <form class="filtros" method="GET" action="index.php" aria-label="Filtros">
@@ -45,7 +45,7 @@ $metodosList = $db->query("SELECT id, nombre FROM metodos_pago ORDER BY nombre A
         <li><button type="button" class="vf-item <?= $claseEstado ?>" data-pago="<?= $i ?>" aria-current="<?= $i === 0 ? 'true' : 'false' ?>">
           <span class="vf-ic"><svg class="i"><use href="#i-<?= $icono ?>"/></svg></span>
           <b><?= $e($p->cliente) ?>, #<?= str_pad($p->id_venta, 4, '0', STR_PAD_LEFT) ?></b>
-          <span class="m"><?= ($p->moneda ?? 'Bs') === 'USD' ? $usd($p->monto) : number_format((float) $p->monto, 2) . ' Bs' ?></span>
+          <span class="m"><?= ($p->moneda ?? 'Bs') === 'USD' ? $usd($p->monto) : number_format((float) $p->monto, 2, ',', '.') . ' Bs' ?></span>
           <small><?= $e($p->metodo) ?> · <?= $esEf ? 'en caja' : 'Ref. ' . $e($p->referencia ?: 'sin referencia') ?></small>
         </button></li>
         <?php endforeach; ?>

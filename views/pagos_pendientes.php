@@ -57,7 +57,7 @@
                                 <span class="metodo-badge"><?php echo htmlspecialchars($venta->nombre_metodo ?? 'N/A'); ?></span>
                             </td>
                             <td class="monto-usd">$<?php echo number_format($venta->total, 2); ?></td>
-                            <td class="monto-bs"><?php echo number_format($venta->total_bs ?? 0, 2); ?> Bs</td>
+                            <td class="monto-bs"><?php echo number_format($venta->total_bs ?? 0, 2, ',', '.'); ?> Bs</td>
                             <td>
                                 <?php if ($venta->estado == 'pendiente'): ?>
                                     <span class="badge badge-pendiente">Pendiente</span>

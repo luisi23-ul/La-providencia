@@ -12,7 +12,7 @@ $categorias = array_values(array_unique(array_filter(array_map(fn($p) => $p->nom
 <section class="pantalla pv" id="p-punto_venta">
   <header class="pv-top">
     <div class="pv-caja"><span class="marca-logo">P</span><div><b>Caja · Tienda física</b><span><?= $e($_SESSION['nombre'] ?? '') ?><?= !empty($turno->apertura) ? ', caja abierta desde ' . $e(date('g:i a', strtotime($turno->apertura))) : '' ?></span></div></div>
-    <span class="tasa">Tasa BCV <b><?= number_format($tasa, 2) ?> Bs/$</b></span>
+    <span class="tasa">Tasa BCV <b><?= number_format($tasa, 2, ',', '.') ?> Bs/$</b></span>
     <button type="button" class="pv-top-btn" id="pv-ver-espera"><svg class="i"><use href="#i-recibo"/></svg><span class="txt">En espera</span><span class="cuenta" id="pv-cuenta-espera" hidden>0</span></button>
     <a href="index.php?action=ventas" class="pv-top-btn"><svg class="i"><use href="#i-lista"/></svg><span class="txt">Ventas del día</span></a>
     <a href="index.php?action=dashboard" class="pv-top-btn salir"><svg class="i"><use href="#i-salir"/></svg><span class="txt">Salir de la caja</span></a>
@@ -33,7 +33,7 @@ $categorias = array_values(array_unique(array_filter(array_map(fn($p) => $p->nom
         <div class="fila-total"><span>Artículos</span><b id="pv-art">0</b></div>
         <div class="fila-total" id="pv-fila-desc" hidden><span>Descuentos</span><b id="pv-desc"></b></div>
         <div class="fila-total grande"><span>Total</span><b id="pv-total">$0.00</b></div>
-        <div class="fila-total pv-fila-bs"><span>En bolívares <small class="pv-tasa-movil">a <?= number_format($tasa, 2) ?> Bs/$</small></span><b id="pv-bs">0.00 Bs</b></div>
+        <div class="fila-total pv-fila-bs"><span>En bolívares <small class="pv-tasa-movil">a <?= number_format($tasa, 2, ',', '.') ?> Bs/$</small></span><b id="pv-bs">0.00 Bs</b></div>
       </div>
       <div class="pv-pagos-r" id="pv-pagos-r"></div>
       <div class="pv-acciones">

@@ -3,7 +3,6 @@ $permisosUsuario = $_SESSION['permisos'] ?? [];
 $rol = $_SESSION['rol'] ?? 0;
 $panelMaster = $panelMaster ?? false;
 
-// Mapeo de sinónimos: lo que pide el menú => lo que existe en la tabla permisos
 $equivalencias = [
     'gestionar_productos' => ['gestionar_productos', 'listar_productos', 'cargar_producto'],
     'categorias'          => ['categorias', 'gestionar_categorias'],
@@ -21,17 +20,14 @@ $equivalencias = [
 ];
 
 $puede = function($codigo) use ($rol, $permisosUsuario, $equivalencias) {
-    // Rol Master o comodín total
     if ((int)$rol === 1 || in_array('*', $permisosUsuario, true)) {
         return true;
     }
 
-    // Coincidencia directa
     if (in_array($codigo, $permisosUsuario, true)) {
         return true;
     }
 
-    // Comprobación por tabla de equivalencias
     if (isset($equivalencias[$codigo])) {
         foreach ($equivalencias[$codigo] as $posibleCodigo) {
             if (in_array($posibleCodigo, $permisosUsuario, true)) {
@@ -56,6 +52,11 @@ if (empty($aviso) && !empty($_SESSION['aviso'])) {
     unset($_SESSION['aviso']);
     $aviso = is_array($avisoSesion) ? ($avisoSesion[0] ?? '') : (string) $avisoSesion;
     $avisoTipo = is_array($avisoSesion) ? ($avisoSesion[1] ?? 'ok') : 'ok';
+}
+if (empty($aviso) && !empty($_SESSION['aviso_error'])) {
+    $aviso = (string) $_SESSION['aviso_error'];
+    $avisoTipo = 'error';
+    unset($_SESSION['aviso_error']);
 }
 include __DIR__ . '/../_sistema.php';
 ?>

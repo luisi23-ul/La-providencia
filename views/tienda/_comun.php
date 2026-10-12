@@ -2,7 +2,6 @@
 include __DIR__ . '/../_sistema.php';
 $e = fn($v) => htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8');
 
-// Obtener la tasa activa del sistema
 require_once __DIR__ . '/../../models/BcvService.php';
 $bcvService = new BcvService();
 $tasaTienda = $bcvService->obtenerTasaActiva() ?: ((float)($sistema->tasa_manual ?? 526.87));

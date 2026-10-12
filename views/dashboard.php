@@ -20,7 +20,7 @@ $semanaTienda = array_sum(array_column($ventasSemana, 'tienda'));
   <header class="cab">
     <div class="cab-txt"><small><?= ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'][date('w')] ?> <?= date('j') ?> de <?= $meses[date('n') - 1] ?></small><h2>Resumen de hoy</h2></div>
     <div class="cab-acc">
-      <span class="tasa">Tasa BCV <b><?= number_format($tasa, 2) ?> Bs/$</b></span>
+      <span class="tasa">Tasa BCV <b><?= number_format($tasa, 2, ',', '.') ?> Bs/$</b></span>
       <?php if ($puede('compras')): ?><a href="index.php?action=nueva_compra" class="btn btn-sec"><svg class="i"><use href="#i-carrito"/></svg>Registrar compra</a><?php endif; ?>
       <?php if ($puede('punto_venta')): ?><a href="index.php?action=punto_venta" class="btn btn-pri"><svg class="i"><use href="#i-pos"/></svg>Nueva venta</a><?php endif; ?>
     </div>
@@ -55,7 +55,7 @@ $semanaTienda = array_sum(array_column($ventasSemana, 'tienda'));
       <header class="caja-cab"><h3 id="t-pagos">Pagos por verificar<?php if ($pagosPendientes): ?> <span class="contador"><?= count($pagosPendientes) ?></span><?php endif; ?></h3><a href="index.php?action=verificar_pagos">Ver todos</a></header>
       <ul class="lista">
         <?php foreach ($pagosPendientes as $p): ?>
-          <li><div class="quien"><b><?= $e($p->cliente) ?></b><span><span class="chip"><?= $e($p->metodo) ?></span><span class="ref">Ref. <?= $e($p->referencia) ?></span></span></div><div class="monto"><b><?= ($p->moneda ?? 'Bs') === 'USD' ? $usd($p->monto) : number_format($p->monto, 2) . ' Bs' ?></b></div><a href="index.php?action=verificar_pagos" class="btn btn-sec btn-peq">Revisar</a></li>
+          <li><div class="quien"><b><?= $e($p->cliente) ?></b><span><span class="chip"><?= $e($p->metodo) ?></span><span class="ref">Ref. <?= $e($p->referencia) ?></span></span></div><div class="monto"><b><?= ($p->moneda ?? 'Bs') === 'USD' ? $usd($p->monto) : number_format($p->monto, 2, ',', '.') . ' Bs' ?></b></div><a href="index.php?action=verificar_pagos" class="btn btn-sec btn-peq">Revisar</a></li>
         <?php endforeach; ?>
         <?php if (!$pagosPendientes): ?><li class="vacio-filtro" style="display:block">No hay pagos esperando verificación.</li><?php endif; ?>
       </ul>

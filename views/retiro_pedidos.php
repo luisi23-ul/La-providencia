@@ -32,7 +32,7 @@ $lista = $tab === 'pendiente' ? $porRetirar : $entregados;
             <td class="t-tit"><div class="t-nombre"><b><?= $num ?></b><span>Pagado <?= date('d/m, g:i a', strtotime($v->fecha)) ?></span></div></td>
             <td data-label="Cliente"><div class="t-nombre"><b><?= $e($v->nombre_cliente) ?></b><?php if (!empty($v->telefono)): ?><span class="tel-cli"><?= $e($v->telefono) ?></span><?php endif; ?></div></td>
             <td data-label="Pago" class="c-media centro"><span class="chip"><?= $e($v->nombre_metodo ?? 'N/A') ?></span></td>
-            <td class="num" data-label="Total"><b><?= $usd($v->total) ?></b><br><span class="muted"><?= number_format($v->total_bs ?? $v->total * $tasa, 2) ?> Bs</span></td>
+            <td class="num" data-label="Total"><b><?= $usd($v->total) ?></b><br><span class="muted"><?= number_format($v->total_bs ?? $v->total * $tasa, 2, ',', '.') ?> Bs</span></td>
             <td class="t-acc centro">
               <?php if ($v->estado === 'pagado'): ?>
                 <div class="acc"><button type="button" class="btn btn-ok btn-peq" data-abrir-modal="modal-entrega" data-registro="<?= $e(json_encode(['id' => $v->id, 'cliente' => $v->nombre_cliente, 'pedido' => $num])) ?>"><svg class="i"><use href="#i-bolsa"/></svg>Entregar</button></div>
