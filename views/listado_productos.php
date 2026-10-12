@@ -1,29 +1,57 @@
 <?php
-// 1. Declarar helpers primero
-$e = $e ?? fn($v) => htmlspecialchars((string)($v ?? ''), ENT_QUOTES, 'UTF-8');
-$usd = $usd ?? fn($n) => '$' . number_format((float)($n ?? 0), 2, '.', ',');
-
 $menu = 'listado_productos';
 $tituloPagina = 'Productos';
 $listaProductos = $listaProductos ?? $productos ?? [];
 $categorias = $categorias ?? array_map(fn($id, $n) => (object) ['id' => $id, 'nombre_categoria' => $n], [1, 2, 3], ['Aluminio', 'Lencería', 'Plástico']);
-
-
-// 2. Cargar layout del panel
 include __DIR__ . '/admin/_abrir.php';
+$tallasDe = function ($p, $donde = 't') use ($e) {
+    if (empty($p->resumen_variantes)) return '';
+    $porTalla = []; $colores = []; $matriz = [];
+    foreach (explode('|', $p->resumen_variantes) as $iv) {
+        $partes = explode(':', $iv);
+        if (count($partes) < 3) continue;
+        $on = (int) array_pop($partes); $st = (int) array_pop($partes);
+        $talla = trim($partes[0] ?? ''); $color = trim($partes[1] ?? '');
+        $clave = mb_strtolower($color);
+        if ($color !== '') $colores[$clave] = $color;
+        if ($talla !== '') {
+            $porTalla[$talla] ??= [0, 0];
+            $porTalla[$talla][0] += $st; $porTalla[$talla][1] += $on;
+        }
+        $matriz[$clave][$talla] = ($matriz[$clave][$talla] ?? 0) + $st + $on;
+    }
+    $html = '';
+    foreach ($porTalla as $ta => [$st, $on]) $html .= '<span class="vr-talla' . ($st + $on ? '' : ' agot') . '" title="Tienda ' . $st . ' · Online ' . $on . '"><b>' . $e($ta) . '</b>' . ($st + $on) . '</span>';
+    if (count($colores) === 1) {
+        $html .= '<small class="vr-colores">' . $e(reset($colores)) . '</small>';
+    } elseif ($colores) {
+        $id = 'vr-pop-' . $donde . (int) $p->id;
+        $tallas = array_keys($porTalla) ?: [''];
+        $tabla = '<table class="vr-matriz"><thead><tr><th scope="col"><span class="sr-only">Color</span></th>';
+        foreach ($tallas as $ta) $tabla .= '<th scope="col">' . $e($ta !== '' ? $ta : 'Stock') . '</th>';
+        $tabla .= '</tr></thead><tbody>';
+        foreach ($colores as $clave => $color) {
+            $tabla .= '<tr><th scope="row">' . $e($color) . '</th>';
+            foreach ($tallas as $ta) {
+                $n = $matriz[$clave][$ta] ?? null;
+                $tabla .= '<td' . ($n === 0 ? ' class="cero"' : '') . '>' . ($n === null ? '<span aria-label="No existe">–</span>' : $n) . '</td>';
+            }
+            $tabla .= '</tr>';
+        }
+        $tabla .= '</tbody></table>';
+        $html .= '<button type="button" class="vr-btn-col" popovertarget="' . $id . '" aria-label="Ver stock por color de ' . $e($p->nombre_producto) . '">' . count($colores) . ' colores<svg class="i" aria-hidden="true"><use href="#i-chevron"/></svg></button>'
+               . '<div class="vr-pop" id="' . $id . '" popover><header><b>' . $e($p->nombre_producto) . '</b><small>Stock por talla y color (tienda + online)</small></header>' . $tabla . '</div>';
+    }
+    return $html ? '<span class="vr-tallas">' . $html . '</span>' : '';
+};
 
-// 3. Capturar avisos de sesión
-$avisoError = $_SESSION['aviso_error'] ?? null;
-unset($_SESSION['aviso_error']);
+// Definición de respaldo de helpers en caso de que _abrir.php no los declare
+$e = $e ?? fn($v) => htmlspecialchars((string)($v ?? ''), ENT_QUOTES, 'UTF-8');
+$usd = $usd ?? fn($n) => '$' . number_format((float)($n ?? 0), 2, '.', ',');
 
-$aviso = $_SESSION['aviso'] ?? null;
-unset($_SESSION['aviso']);
-
-// 4. Mapeo de categorías
+// Mapa de nombres y jerarquía de categorías
 $nombreCat = [];
 $padresCat = [];
-$categoriasPrincipales = [];
-$subcategoriasPorPadre = [];
 $categoriasPrincipales = [];
 $subcategoriasPorPadre = [];
 
@@ -62,23 +90,8 @@ $lista = array_filter($listaProductos, function ($p) use ($filtro, $catSel, $est
 
 $url = fn($stock) => 'index.php?' . http_build_query(array_filter(['action' => 'listado_productos', 'stock' => $stock, 'categoria' => $catSel]));
 ?>
-
-
 <section class="contenido" id="p-inventario">
 
-  <!-- AVISO DE ERROR ROJO -->
-  <?php if (!empty($avisoError)): ?>
-    <div class="aviso-error" style="background:#fee2e2; color:#991b1b; padding:12px 16px; border-radius:8px; margin-bottom:1rem; font-weight:500; border:1px solid #f87171;">
-      <?= $e($avisoError) ?>
-    </div>
-  <?php endif; ?>
-
-  <!-- AVISO DE ÉXITO VERDE -->
-  <?php if (!empty($aviso)): ?>
-    <div class="aviso-exito" style="background:#dcfce7; color:#166534; padding:12px 16px; border-radius:8px; margin-bottom:1rem; font-weight:500; border:1px solid #86efac;">
-      <?= $e($aviso) ?>
-    </div>
-  <?php endif; ?>
 
   <header class="cab">
     <div class="cab-txt"><small>Inventario</small><h2>Productos</h2></div>
@@ -137,6 +150,8 @@ $url = fn($stock) => 'index.php?' . http_build_query(array_filter(['action' => '
         <tbody>
         <?php foreach ($lista as $p):
             $codigo = $p->codigo ?? ('P-' . str_pad($p->id, 4, '0', STR_PAD_LEFT));
+            
+            // Detección de subcategoría y categoría padre
             $catId = $p->id_categoria ?? null;
             $cat = $p->nombre_categoria ?? ($nombreCat[$catId] ?? 'Sin categoría');
             $padreId = $padresCat[$catId] ?? null;
@@ -149,47 +164,21 @@ $url = fn($stock) => 'index.php?' . http_build_query(array_filter(['action' => '
             <td class="cod c-media"><?= $e($codigo) ?></td>
             <td>
               <div class="prod">
-                <?php if (!empty($p->imagen)): ?><img class="foto" src="public/uploads/<?= $e($p->imagen) ?>" alt="" width="44" height="44" loading="lazy"><?php endif; ?>
+                <?php if ($p->imagen): ?><img class="foto" src="public/uploads/<?= $e($p->imagen) ?>" alt="" width="44" height="44" loading="lazy"><?php endif; ?>
                 <div>
                   <b><?= $e($p->nombre_producto) ?></b>
                   <span><?= $e($p->descripcion ?? '') ?></span>
 
-                  <?php if (!empty($p->resumen_variantes)): ?>
-                    <div class="atr-chips" style="display:flex; flex-wrap:wrap; gap:4px; margin-top:4px;">
-                      <?php 
-                        $itemsVar = explode('|', $p->resumen_variantes);
-                        foreach ($itemsVar as $iv):
-                          $partes = explode(':', $iv);
-                          if (count($partes) >= 5):
-                            $t = trim($partes[0]);
-                            $c = trim($partes[1]);
-                            $m = trim($partes[2]);
-                            $stk = (int)$partes[3];
+                  <?= $tallasDe($p) ?>
 
-                            $detalles = [];
-                            if ($t !== '') $detalles[] = '<b>Talla:</b> ' . $e($t);
-                            if ($c !== '') $detalles[] = '<b>Color:</b> ' . $e($c);
-                            if ($m !== '') $detalles[] = '<b>Modelo:</b> ' . $e($m);
-                      ?>
-                        <span class="chip" style="font-size:0.75rem; padding:3px 8px; background:var(--fondo-2, #f1f5f9); border-radius:6px; line-height:1.3;" title="Stock en tienda: <?= $stk ?>">
-                          <?= implode(' <span style="opacity:0.4;">·</span> ', $detalles) ?>
-                          <span style="margin-left:4px; color:var(--primario, #166534); font-weight:bold;">(<?= $stk ?>)</span>
-                        </span>
-                      <?php 
-                          endif;
-                        endforeach; 
-                      ?>
-                    </div>
-                  <?php endif; ?>
-
-                  <span class="si-estrecho"><span class="cod"><?= $e($codigo) ?></span>, <?= !empty($padreNombre) ? $e($padreNombre) . ' / ' : '' ?><?= $e($cat) ?></span>
+                  <span class="si-estrecho"><span class="cod"><?= $e($codigo) ?></span>, <?= !empty($padreNombre) ? $e($padreNombre) . ' › ' : '' ?><?= $e($cat) ?></span>
                 </div>
               </div>
             </td>
             <td class="c-media">
               <span class="chip">
                 <?php if (!empty($padreNombre)): ?>
-                  <small style="color:var(--texto-3, #64748b); font-weight:normal;"><?= $e($padreNombre) ?> /</small>
+                  <span class="chip-padre"><?= $e($padreNombre) ?> ›</span>
                 <?php endif; ?>
                 <?= $e($cat) ?>
               </span>
@@ -230,10 +219,11 @@ $url = fn($stock) => 'index.php?' . http_build_query(array_filter(['action' => '
           $padreNombre = $p->nombre_categoria_padre ?? ($padreId ? ($nombreCat[$padreId] ?? '') : '');
           $s = $estadoDe($p); ?>
         <li>
-          <?php if (!empty($p->imagen)): ?><img class="foto grande" src="public/uploads/<?= $e($p->imagen) ?>" alt="" width="56" height="56" loading="lazy"><?php else: ?><span></span><?php endif; ?>
+          <?php if ($p->imagen): ?><img class="foto grande" src="public/uploads/<?= $e($p->imagen) ?>" alt="" width="56" height="56" loading="lazy"><?php else: ?><span></span><?php endif; ?>
           <div class="t-nom">
             <b><?= $e($p->nombre_producto) ?></b>
-            <span><?= $e($codigo) ?>, <?= !empty($padreNombre) ? $e($padreNombre) . ' / ' : '' ?><?= $e($cat) ?></span>
+            <span><?= $e($codigo) ?>, <?= !empty($padreNombre) ? $e($padreNombre) . ' › ' : '' ?><?= $e($cat) ?></span>
+            <?= $tallasDe($p, 'm') ?>
           </div>
           <div class="t-precio"><?= $usd($p->precio) ?></div>
           <div class="t-stock">Tienda <b><?= (int) $p->stock ?></b>, online <b><?= (int) ($p->stock_online ?? 0) ?></b> <?php if ($s === 'bajo'): ?><span class="est bajo">Bajo</span><?php elseif ($s === 'agot'): ?><span class="est agot">Agotado</span><?php endif; ?></div>

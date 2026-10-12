@@ -5,6 +5,16 @@ $scripts = ['categorias'];
 $categorias = $categorias ?? [];
 $categoriasPrincipales = array_filter($categorias, fn($c) => empty($c->id_padre));
 include __DIR__ . '/../admin/_abrir.php';
+$hijas = [];
+foreach ($categorias as $c) if (!empty($c->id_padre)) $hijas[$c->id_padre][] = $c;
+$ordenadas = [];
+foreach ($categorias as $c) {
+    if (!empty($c->id_padre)) continue;
+    $ordenadas[] = [$c, false];
+    foreach ($hijas[$c->id] ?? [] as $h) $ordenadas[] = [$h, true];
+}
+$idsPadre = array_column(array_filter($categorias, fn($c) => empty($c->id_padre)), 'id');
+foreach ($categorias as $c) if (!empty($c->id_padre) && !in_array($c->id_padre, $idsPadre)) $ordenadas[] = [$c, true];
 ?>
 <section class="contenido">
   <header class="cab">
@@ -14,29 +24,41 @@ include __DIR__ . '/../admin/_abrir.php';
 
   <section class="tabla-caja" aria-label="Listado de categorías">
     <div class="tabla-scroll">
-      <table class="tabla-resp">
+      <table class="tabla-resp tabla-cat">
         <thead><tr><th>Categoría</th><th>Atributos</th><th class="num">Productos</th><th class="num c-media">Unidades en stock</th><th class="num">Acciones</th></tr></thead>
         <tbody>
-        <?php foreach ($categorias as $c):
-            $atr = array_map(fn($a) => ['id' => (int) $a->id, 'nombre' => $a->nombre, 'opciones' => $a->opciones ?? ''], $c->atributos ?? []);
-            $productos = (int) ($c->total_productos ?? 0); ?>
-          <tr>
+        <?php foreach ($ordenadas as [$c, $esSub]):
+            $vistos = [];
+            $atr = [];
+            foreach ($c->atributos ?? [] as $a) {
+                $clave = mb_strtolower(trim($a->nombre));
+                if (isset($vistos[$clave])) continue;
+                $vistos[$clave] = true;
+                $atr[] = ['id' => (int) $a->id, 'nombre' => $a->nombre, 'opciones' => $a->opciones ?? ''];
+            }
+            $productos = (int) ($c->total_productos ?? 0);
+            $unidades = (int) ($c->total_unidades ?? 0);
+            $subs = $esSub ? [] : ($hijas[$c->id] ?? []);
+            $prodTotal = $productos + array_sum(array_map(fn($h) => (int) ($h->total_productos ?? 0), $subs));
+            $uniTotal = $unidades + array_sum(array_map(fn($h) => (int) ($h->total_unidades ?? 0), $subs)); ?>
+          <tr class="<?= $esSub ? 'cat-sub' : 'cat-padre' ?>">
             <td class="t-tit">
-              <div class="t-nombre">
-                <b><?= $e($c->nombre_categoria) ?></b>
-                <?php if (!empty($c->nombre_padre)): ?>
-                  <span class="muted" style="font-size:0.8rem;">↳ Subcategoría de <b><?= $e($c->nombre_padre) ?></b></span>
-                <?php endif; ?>
+              <div class="cat-nom">
+                <?php if ($esSub): ?><span class="cat-rama" aria-hidden="true"></span><?php else: ?><span class="cat-ic"><svg class="i"><use href="#i-<?= $subs ? 'lista' : 'etiqueta' ?>"/></svg></span><?php endif; ?>
+                <div>
+                  <b><?= $e($c->nombre_categoria) ?></b>
+                  <?php if ($subs): ?><small><?= count($subs) === 1 ? '1 subcategoría' : count($subs) . ' subcategorías' ?></small><?php elseif ($esSub): ?><small class="cat-de">Subcategoría de <?= $e($c->nombre_padre ?? '') ?></small><?php endif; ?>
+                </div>
               </div>
             </td>
-            <td data-label="Atributos"><?php if ($atr): ?><span class="atr-chips"><?php foreach ($atr as $a): ?><span class="chip" title="<?= $e($a['opciones'] ?: 'Texto libre') ?>"><?= $e($a['nombre']) ?></span><?php endforeach; ?></span><?php else: ?><span class="muted">Sin atributos</span><?php endif; ?></td>
-            <td class="num" data-label="Productos"><?= $productos ?></td>
-            <td class="num c-media" data-label="Unidades en stock"><?= (int) ($c->total_unidades ?? 0) ?></td>
+            <td data-label="Atributos"><?php if ($atr): ?><span class="atr-chips"><?php foreach (array_slice($atr, 0, 4) as $a): ?><span class="chip" title="<?= $e($a['opciones'] ?: 'Texto libre') ?>"><?= $e($a['nombre']) ?></span><?php endforeach; ?><?php if (count($atr) > 4): $resto = array_column(array_slice($atr, 4), 'nombre'); ?><span class="chip cat-mas" title="<?= $e(implode(', ', $resto)) ?>" aria-label="<?= count($resto) ?> más: <?= $e(implode(', ', $resto)) ?>">+<?= count($resto) ?></span><?php endif; ?></span><?php else: ?><span class="muted">Sin atributos</span><?php endif; ?></td>
+            <td class="num" data-label="Productos"><?= $prodTotal ?><?php if ($subs && $prodTotal !== $productos): ?><small class="cat-incl">con subcategorías</small><?php endif; ?></td>
+            <td class="num c-media" data-label="Unidades en stock"><?= number_format($uniTotal, 0, ',', '.') ?></td>
             <td class="t-acc"><div class="acc">
               <button type="button" class="ic-btn" data-categoria="<?= $e(json_encode(['id' => (int) $c->id, 'nombre' => $c->nombre_categoria, 'id_padre' => $c->id_padre ?? '', 'atributos' => $atr], JSON_UNESCAPED_UNICODE)) ?>" aria-label="Editar <?= $e($c->nombre_categoria) ?>"><svg class="i"><use href="#i-editar"/></svg></button>
               <form method="POST" action="index.php?action=eliminar_categoria">
                 <input type="hidden" name="id" value="<?= (int) $c->id ?>">
-                <button type="submit" class="ic-btn" aria-label="Eliminar <?= $e($c->nombre_categoria) ?>" <?= $productos ? 'data-bloqueo="No se puede eliminar ' . $e($c->nombre_categoria) . '" data-bloqueo-texto="Tiene ' . $productos . ($productos === 1 ? ' producto' : ' productos') . '. Muévelos a otra categoría antes de eliminarla." data-bloqueo-enlace="index.php?action=listado_productos&amp;categoria=' . (int) $c->id . '"' : 'data-confirmar="¿Eliminar la categoría ' . $e($c->nombre_categoria) . '?" data-confirmar-texto="Esta acción no se puede deshacer." data-confirmar-boton="Eliminar"' ?>><svg class="i"><use href="#i-basura"/></svg></button>
+                <button type="submit" class="ic-btn" aria-label="Eliminar <?= $e($c->nombre_categoria) ?>" <?= $productos ? 'data-bloqueo="No se puede eliminar ' . $e($c->nombre_categoria) . '" data-bloqueo-texto="Tiene ' . $productos . ($productos === 1 ? ' producto' : ' productos') . '. Muévelos a otra categoría antes de eliminarla." data-bloqueo-enlace="index.php?action=listado_productos&amp;categoria=' . (int) $c->id . '"' : ($subs ? 'data-bloqueo="No se puede eliminar ' . $e($c->nombre_categoria) . '" data-bloqueo-texto="Tiene ' . (count($subs) === 1 ? '1 subcategoría' : count($subs) . ' subcategorías') . '. Elimínalas o cámbialas de categoría principal antes."' : 'data-confirmar="¿Eliminar la categoría ' . $e($c->nombre_categoria) . '?" data-confirmar-texto="Esta acción no se puede deshacer." data-confirmar-boton="Eliminar"') ?>><svg class="i"><use href="#i-basura"/></svg></button>
               </form>
             </div></td>
           </tr>
