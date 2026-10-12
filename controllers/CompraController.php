@@ -72,7 +72,7 @@ class CompraController {
         $productos   = $this->db->query("SELECT id, codigo, nombre_producto, precio, costo_compra, stock, stock_online FROM productos WHERE estado = 1 AND deleted_at IS NULL ORDER BY nombre_producto ASC")->fetchAll(PDO::FETCH_OBJ);
         $metodos     = $this->db->query("SELECT id, nombre FROM metodos_pago WHERE activo = 1 ORDER BY nombre ASC")->fetchAll(PDO::FETCH_OBJ);
         $empleados   = $this->db->query("SELECT id, CONCAT(nombre, ' ', apellido) AS nombre_completo FROM usuarios WHERE id_rol IN (1, 2) AND deleted_at IS NULL ORDER BY nombre ASC")->fetchAll(PDO::FETCH_OBJ);
-
+        $categorias  = $this->db->query("SELECT id, id_padre, nombre_categoria FROM categorias ORDER BY nombre_categoria ASC")->fetchAll(PDO::FETCH_OBJ);
         require_once 'views/compras/nueva_compra.php';
     }
 
@@ -102,6 +102,7 @@ class CompraController {
             $costos      = $_POST['costo_unitario'] ?? [];
             $nuevosPv    = $_POST['precio_venta'] ?? [];
             $actPrecios  = $_POST['actualizar_precio'] ?? [];
+            $nuevosCat   = $_POST['nuevo_categoria'] ?? [];
 
             if ($idProveedor <= 0 || empty($numeroFactura)) {
                 throw new Exception("Selecciona un proveedor e ingresa el número de factura.");
@@ -131,8 +132,8 @@ class CompraController {
             ");
 
             $stmtNuevoProd = $this->db->prepare("
-                INSERT INTO productos (codigo, nombre_producto, precio, costo_compra, stock, stock_online, estado)
-                VALUES (?, ?, ?, ?, 0, 0, 1)
+                INSERT INTO productos (codigo, nombre_producto, id_categoria, precio, costo_compra, stock, stock_online, estado)
+                VALUES (?, ?, ?, ?, ?, 0, 0, 1)
             ");
 
             $stmtStockTienda = $this->db->prepare("UPDATE productos SET stock = stock + ?, costo_compra = ? WHERE id = ?");
@@ -159,10 +160,16 @@ class CompraController {
                 if ($rawPId === 'nuevo') {
                     $cod = trim($nuevosCod[$i] ?? '');
                     $nom = trim($nuevosNom[$i] ?? '');
+                    $cat = (int)($nuevosCat[$i] ?? 0);
+
                     if (empty($cod) || empty($nom)) {
                         throw new Exception("Debes indicar código y nombre para el nuevo producto.");
                     }
-                    $stmtNuevoProd->execute([$cod, $nom, $pv, $costo]);
+                    if ($cat <= 0) {
+                        throw new Exception("Elige la categoría del producto nuevo.");
+                    }
+
+                    $stmtNuevoProd->execute([$cod, $nom, $cat, $pv, $costo]);
                     $pId = (int)$this->db->lastInsertId();
                     $this->log('Inventario', 'INSERT', "Producto creado desde Compra #{$idCompra}: {$nom} ({$cod})");
                 } else {

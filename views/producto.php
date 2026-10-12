@@ -5,6 +5,8 @@ $atributos = $atributos ?? [];
 $relacionados = $relacionados ?? [];
 if (!$producto): ?>
   <section class="carro"><div class="carro-vacio"><i class="ti ti-hanger" aria-hidden="true"></i><h2>No encontramos esta prenda</h2><p>Puede que ya no esté disponible.</p><a class="btn" href="index.php?action=ver_catalogo">Ver el catálogo</a></div></section>
+
+
 <?php $seccionPie = 'catalogo'; include __DIR__ . '/tienda/_pie.php'; return; endif;
 
 $opciones = function ($a) {

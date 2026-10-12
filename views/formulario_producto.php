@@ -5,6 +5,10 @@ $tituloPagina = $editando ? 'Editar producto' : 'Nuevo producto';
 $scripts = ['inventario'];
 $categorias = $categorias ?? [];
 include __DIR__ . '/admin/_abrir.php';
+
+$avisoError = $_SESSION['aviso_error'] ?? null;
+unset($_SESSION['aviso_error']);
+
 $codigo = $editando ? ($p->codigo ?? ('P-' . str_pad($p->id, 4, '0', STR_PAD_LEFT))) : '';
 $campo = fn($crear, $editar) => $editando ? $editar : $crear;
 $visible = (int) ($p->estado ?? 1) === 1;
@@ -14,9 +18,16 @@ $hijas = [];
 foreach ($categorias as $c) if (!empty($c->id_padre)) $hijas[$c->id_padre][] = $c;
 $nombreCategoria = '';
 foreach ($categorias as $c) if ($editando && (string) $c->id === (string) ($p->id_categoria ?? '')) $nombreCategoria = $c->nombre_categoria;
-$opcionCat = fn($c, $prefijo = '') => '<option value="' . (int) $c->id . '"' . ((string) ($p->id_categoria ?? '') === (string) $c->id ? ' selected' : '') . '>' . $e($prefijo . $c->nombre_categoria) . '</option>';
+$opcionCat = fn($c, $prefijo = '') => '<option value="' . (int) $c->id . '"' . ((string) ($p->id_categoria ?? '') === (string) $c->id ? ' selected' : '') . '>' . $prefijo . htmlspecialchars($c->nombre_categoria, ENT_QUOTES, 'UTF-8') . '</option>';
 ?>
 <section class="contenido">
+
+  <?php if (!empty($avisoError)): ?>
+    <div class="aviso-error" style="background:#fee2e2; color:#991b1b; padding:12px 16px; border-radius:8px; margin-bottom:1.5rem; font-weight:500; border:1px solid #f87171;">
+      <?= htmlspecialchars((string)$avisoError, ENT_QUOTES, 'UTF-8') ?>
+    </div>
+  <?php endif; ?>
+
   <header class="cab">
     <div class="cab-txt"><small>Inventario</small>
       <div class="titulo-atras"><a href="index.php?action=listado_productos" class="atras" aria-label="Volver a Productos"><svg class="i"><use href="#i-volver"/></svg></a><h2><?= $editando ? 'Editar ' . $e($p->nombre_producto) : 'Nuevo producto' ?></h2></div>

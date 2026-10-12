@@ -124,8 +124,9 @@ class AdminControllers {
         return $cats;
     }
 
-    public function agregar() {
+  public function agregar() {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+            $db = $this->productoModelo->getDb();
             try {
                 $nombre = trim($_POST['nombre_producto'] ?? $_POST['nombre'] ?? '');
                 $codigo = trim($_POST['codigo'] ?? '');
@@ -140,12 +141,17 @@ class AdminControllers {
                 $atributos = $_POST['atributo'] ?? [];
                 $variantes = $_POST['variantes'] ?? [];
 
-                // Punto 3: Validar que el código no exista
+                // 1. Validar nombre obligatorio
+                if (empty($nombre)) {
+                    throw new Exception("El nombre del producto es obligatorio.");
+                }
+
+                // 2. Validar que el código no exista previamente
                 if (!empty($codigo) && $this->productoModelo->existeCodigo($codigo)) {
                     throw new Exception("El código '{$codigo}' ya está registrado en otro producto.");
                 }
 
-                // Punto 1: Procesar imagen
+                // 3. Procesar imagen de forma segura
                 $nombreImagen = null;
                 if (!empty($_FILES['imagen']['tmp_name'])) {
                     $nombreImagen = $this->procesarImagenUpload($_FILES['imagen']);
@@ -165,21 +171,33 @@ class AdminControllers {
                     'imagen'          => $nombreImagen
                 ];
 
+                // 4. Iniciar transacción
+                $db->beginTransaction();
+
                 $nuevoId = $this->productoModelo->guardarCompleto($datos, $atributos, $variantes);
                 $this->log('Inventario', 'INSERT', "Creó producto: {$nombre} (ID: {$nuevoId})");
 
-                // Punto 5: Aviso al guardar
+                $db->commit();
+
                 $_SESSION['aviso'] = 'Producto creado exitosamente.';
                 header("Location: index.php?action=listado_productos");
                 exit();
 
             } catch (Exception $e) {
-                echo "<script>alert('" . addslashes($e->getMessage()) . "'); window.history.back();</script>";
+                // Cancelar cualquier operación pendiente si ocurrió un error
+                if ($db && $db->inTransaction()) {
+                    $db->rollBack();
+                }
+
+                // Guardar el mensaje de error para mostrar el banner rojo
+                $_SESSION['aviso_error'] = $e->getMessage();
+
+                // Redirigir de inmediato al mismo formulario para verlo al instante
+                header("Location: index.php?action=formulario_producto");
                 exit();
             }
         }
     }
-
     public function editar() {
         $id = (int)($_GET['id'] ?? 0);
         $p = $this->productoModelo->obtenerPorId($id);
@@ -203,24 +221,22 @@ class AdminControllers {
 
     public function actualizar() {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+            $db = $this->productoModelo->getDb();
+            $id = (int)($_POST['id'] ?? 0);
             try {
-                $id = (int)$_POST['id'];
                 $pActual = $this->productoModelo->obtenerPorId($id);
 
                 if (!$pActual) {
-                    $_SESSION['aviso'] = 'El producto no existe.';
-                    header("Location: index.php?action=listado_productos");
-                    exit();
+                    throw new Exception("El producto a actualizar no existe.");
                 }
 
                 $codigo = trim($_POST['codigo'] ?? $pActual->codigo);
 
-                // Punto 3: Validar que el código no pertenezca a otro producto
+                // PUNTO 3 / D: Validar código
                 if (!empty($codigo) && $this->productoModelo->existeCodigo($codigo, $id)) {
                     throw new Exception("El código '{$codigo}' ya está asignado a otro producto.");
                 }
 
-                // Punto 1: Procesar imagen y borrar la vieja
                 $nombreImagen = $pActual->imagen;
                 if (!empty($_FILES['imagen']['tmp_name'])) {
                     $nombreImagen = $this->procesarImagenUpload($_FILES['imagen'], $pActual->imagen);
@@ -240,7 +256,6 @@ class AdminControllers {
                 $atributos = $_POST['atributo'] ?? [];
                 $variantes = $_POST['variantes'] ?? [];
 
-                // Punto 2: No se envían ni stock ni stock_online para no alterarlos desde edición
                 $datos = [
                     'codigo'          => $codigo,
                     'nombre_producto' => $nombre,
@@ -253,21 +268,30 @@ class AdminControllers {
                     'imagen'          => $nombreImagen
                 ];
 
+                // PUNTO C: Transacción
+                $db->beginTransaction();
+
                 $this->productoModelo->actualizarCompleto($id, $datos, $atributos, $variantes);
                 $this->log('Inventario', 'UPDATE', "Actualizó producto y variantes: {$nombre} (ID: {$id})");
 
-                // Punto 5: Aviso verde
+                $db->commit();
+
                 $_SESSION['aviso'] = 'Producto actualizado correctamente.';
                 header("Location: index.php?action=listado_productos");
                 exit();
 
             } catch (Exception $e) {
-                echo "<script>alert('" . addslashes($e->getMessage()) . "'); window.history.back();</script>";
+                // PUNTO C: Rollback
+                if ($db->inTransaction()) {
+                    $db->rollBack();
+                }
+                // PUNTO D: Enviar aviso rojo
+                $_SESSION['aviso_error'] = $e->getMessage();
+                header("Location: index.php?action=editar&id=" . $id);
                 exit();
             }
         }
     }
-
     public function eliminar() {
         $id = $_GET['id'] ?? null;
         if ($id) {
@@ -310,7 +334,7 @@ class AdminControllers {
         }
     }
 
-    public function guardarCategoria() {
+   public function guardarCategoria() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $id = !empty($_POST['id']) ? (int)$_POST['id'] : null;
             $nombre = trim($_POST['nombre_categoria'] ?? '');
@@ -318,20 +342,26 @@ class AdminControllers {
             $nuevaPadre = trim($_POST['nueva_categoria_padre'] ?? '');
             $idPadre = null;
 
-            if ($rawPadre === 'nueva_padre' && !empty($nuevaPadre)) {
-                $stmtNP = $this->db->prepare("INSERT INTO categorias (nombre_categoria, id_padre) VALUES (?, NULL)");
-                $stmtNP->execute([$nuevaPadre]);
-                $idPadre = (int)$this->db->lastInsertId();
-                $this->log('Inventario', 'INSERT', "Creó categoría principal padre: {$nuevaPadre}");
-            } elseif (!empty($rawPadre) && is_numeric($rawPadre)) {
-                $idPadre = (int)$rawPadre;
+            if (empty($nombre)) {
+                $_SESSION['aviso_error'] = "El nombre de la categoría es obligatorio.";
+                header("Location: index.php?action=categorias");
+                exit();
             }
 
-            $atrIds = $_POST['atributo_id'] ?? [];
-            $atrNombres = $_POST['atributo_nombre'] ?? [];
-            $atrOpciones = $_POST['atributo_opciones'] ?? [];
+            try {
+                $this->db->beginTransaction();
 
-            if (!empty($nombre)) {
+                // 1. Manejo de categoría padre
+                if ($rawPadre === 'nueva_padre' && !empty($nuevaPadre)) {
+                    $stmtNP = $this->db->prepare("INSERT INTO categorias (nombre_categoria, id_padre) VALUES (?, NULL)");
+                    $stmtNP->execute([$nuevaPadre]);
+                    $idPadre = (int)$this->db->lastInsertId();
+                    $this->log('Inventario', 'INSERT', "Creó categoría principal padre: {$nuevaPadre}");
+                } elseif (!empty($rawPadre) && is_numeric($rawPadre)) {
+                    $idPadre = (int)$rawPadre;
+                }
+
+                // 2. Guardar o actualizar la categoría
                 if ($id) {
                     if ($idPadre === $id) $idPadre = null;
                     $stmt = $this->db->prepare("UPDATE categorias SET nombre_categoria = ?, id_padre = ? WHERE id = ?");
@@ -340,14 +370,58 @@ class AdminControllers {
                 } else {
                     $stmt = $this->db->prepare("INSERT INTO categorias (nombre_categoria, id_padre) VALUES (?, ?)");
                     $stmt->execute([$nombre, $idPadre]);
-                    $id = $this->db->lastInsertId();
+                    $id = (int)$this->db->lastInsertId();
                     $this->log('Inventario', 'INSERT', "Creó categoría: {$nombre}");
                 }
 
-                $idsMantener = array_filter(array_map('intval', $atrIds));
+                // 3. Procesamiento y desduplicación de atributos
+                $atrIds = $_POST['atributo_id'] ?? [];
+                $atrNombres = $_POST['atributo_nombre'] ?? [];
+                $atrOpciones = $_POST['atributo_opciones'] ?? [];
+
+                $atributosProcesados = [];
+
+                for ($i = 0; $i < count($atrNombres); $i++) {
+                    $nomAtr = trim($atrNombres[$i]);
+                    $claveUnica = mb_strtolower($nomAtr, 'UTF-8');
+
+                    if ($nomAtr === '' || isset($atributosProcesados[$claveUnica])) {
+                        // Omitir vacíos o atributos que ya se leyeron en este mismo formulario
+                        continue;
+                    }
+
+                    // Normalizar opciones: quitar repetidas, espacios y comas sueltas
+                    $opcRaw = explode(',', $atrOpciones[$i] ?? '');
+                    $opcLimpias = [];
+                    foreach ($opcRaw as $opc) {
+                        $opcT = trim($opc);
+                        if ($opcT !== '' && !in_array($opcT, $opcLimpias, true)) {
+                            $opcLimpias[] = $opcT;
+                        }
+                    }
+                    $opcAtr = implode(', ', $opcLimpias);
+
+                    $atrId = !empty($atrIds[$i]) ? (int)$atrIds[$i] : 0;
+
+                    $atributosProcesados[$claveUnica] = [
+                        'id' => $atrId,
+                        'nombre' => $nomAtr,
+                        'opciones' => $opcAtr
+                    ];
+                }
+
+                // 4. Sincronizar atributos en la base de datos
+                $idsMantener = [];
+                foreach ($atributosProcesados as $item) {
+                    if ($item['id'] > 0) {
+                        $idsMantener[] = $item['id'];
+                    }
+                }
+
                 if (!empty($idsMantener)) {
-                    $in = implode(',', $idsMantener);
-                    $this->db->prepare("DELETE FROM categoria_atributos WHERE id_categoria = ? AND id NOT IN ($in)")->execute([$id]);
+                    $placeholders = implode(',', array_fill(0, count($idsMantener), '?'));
+                    $stmtDel = $this->db->prepare("DELETE FROM categoria_atributos WHERE id_categoria = ? AND id NOT IN ($placeholders)");
+                    $stmtDel->execute(array_merge([$id], $idsMantener));
                 } else {
                     $this->db->prepare("DELETE FROM categoria_atributos WHERE id_categoria = ?")->execute([$id]);
                 }
@@ -355,19 +429,22 @@ class AdminControllers {
                 $stmtUpd = $this->db->prepare("UPDATE categoria_atributos SET nombre = ?, opciones = ? WHERE id = ? AND id_categoria = ?");
                 $stmtIns = $this->db->prepare("INSERT INTO categoria_atributos (id_categoria, nombre, opciones) VALUES (?, ?, ?)");
 
-                for ($i = 0; $i < count($atrNombres); $i++) {
-                    $nomAtr = trim($atrNombres[$i]);
-                    $opcAtr = trim($atrOpciones[$i] ?? '');
-                    $atrId = !empty($atrIds[$i]) ? (int)$atrIds[$i] : 0;
-
-                    if (!empty($nomAtr)) {
-                        if ($atrId > 0) {
-                            $stmtUpd->execute([$nomAtr, $opcAtr, $atrId, $id]);
-                        } else {
-                            $stmtIns->execute([$id, $nomAtr, $opcAtr]);
-                        }
+                foreach ($atributosProcesados as $item) {
+                    if ($item['id'] > 0) {
+                        $stmtUpd->execute([$item['nombre'], $item['opciones'], $item['id'], $id]);
+                    } else {
+                        $stmtIns->execute([$id, $item['nombre'], $item['opciones']]);
                     }
                 }
+
+                $this->db->commit();
+                $_SESSION['aviso'] = "Categoría guardada correctamente.";
+
+            } catch (Exception $e) {
+                if ($this->db->inTransaction()) {
+                    $this->db->rollBack();
+                }
+                $_SESSION['aviso_error'] = "Error al guardar la categoría: " . $e->getMessage();
             }
 
             header("Location: index.php?action=categorias");
@@ -538,5 +615,68 @@ class AdminControllers {
     public function grafico_torta() {
         $datosEstadisticas = $this->productoModelo->obtenerEstadisticasGenerales();
         require_once 'views/grafico_tortas.php';
+    }
+    public function verReporte() {
+        require_once 'models/MetodoPagoModel.php';
+        $metodoModel = new MetodoPagoModel();
+
+        $idMetodo = (int)($_GET['metodo'] ?? 1);
+        $metodo = $metodoModel->obtenerPorId($idMetodo);
+
+        if (!$metodo) {
+            $_SESSION['aviso'] = 'El método de pago no existe.';
+            header("Location: index.php?action=metodos_pago");
+            exit();
+        }
+
+        // Filtro rápido de fecha
+        $rango = $_GET['rango'] ?? 'este_mes';
+        $desde = $_GET['desde'] ?? '';
+        $hasta = $_GET['hasta'] ?? '';
+
+        if ($rango === 'hoy') {
+            $desde = $hasta = date('Y-m-d');
+        } elseif ($rango === 'ayer') {
+            $desde = $hasta = date('Y-m-d', strtotime('-1 day'));
+        } elseif ($rango === '7dias') {
+            $desde = date('Y-m-d', strtotime('-6 days'));
+            $hasta = date('Y-m-d');
+        } elseif ($rango === 'este_mes') {
+            $desde = date('Y-m-01');
+            $hasta = date('Y-m-t');
+        }
+
+        $bancoSel  = trim($_GET['banco'] ?? '');
+        $estadoSel = trim($_GET['estado'] ?? '');
+
+        // Obtener datos del modelo
+        $bancosDisponibles = $metodoModel->obtenerBancosDisponibles();
+        $listaPagos        = $metodoModel->obtenerReportePagos($idMetodo, $desde, $hasta, $bancoSel, $estadoSel);
+        $totales           = $metodoModel->obtenerResumenTotales($idMetodo, $desde, $hasta, $bancoSel, $estadoSel);
+
+        $aviso = $_SESSION['aviso'] ?? null;
+        unset($_SESSION['aviso']);
+
+        require_once 'views/ver_reporte.php';
+    }
+
+    public function confirmarPago() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            require_once 'models/MetodoPagoModel.php';
+            $metodoModel = new MetodoPagoModel();
+
+            $idPago = (int)($_POST['id_pago'] ?? 0);
+            $idMetodo = (int)($_POST['id_metodo'] ?? 1);
+            $idUsuario = $_SESSION['id_usuario'] ?? 1;
+
+            if ($idPago > 0) {
+                $metodoModel->confirmarPago($idPago, $idUsuario);
+                $this->log('Pagos', 'UPDATE', "Confirmó pago ID: {$idPago}");
+                $_SESSION['aviso'] = 'Pago verificado y aprobado correctamente.';
+            }
+
+            header("Location: index.php?action=ver_reporte&metodo=" . $idMetodo);
+            exit();
+        }
     }
 }

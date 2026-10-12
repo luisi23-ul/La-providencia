@@ -1,17 +1,29 @@
 <?php
+// 1. Declarar helpers primero
+$e = $e ?? fn($v) => htmlspecialchars((string)($v ?? ''), ENT_QUOTES, 'UTF-8');
+$usd = $usd ?? fn($n) => '$' . number_format((float)($n ?? 0), 2, '.', ',');
+
 $menu = 'listado_productos';
 $tituloPagina = 'Productos';
 $listaProductos = $listaProductos ?? $productos ?? [];
 $categorias = $categorias ?? array_map(fn($id, $n) => (object) ['id' => $id, 'nombre_categoria' => $n], [1, 2, 3], ['Aluminio', 'Lencería', 'Plástico']);
+
+
+// 2. Cargar layout del panel
 include __DIR__ . '/admin/_abrir.php';
 
-// Definición de respaldo de helpers en caso de que _abrir.php no los declare
-$e = $e ?? fn($v) => htmlspecialchars((string)($v ?? ''), ENT_QUOTES, 'UTF-8');
-$usd = $usd ?? fn($n) => '$' . number_format((float)($n ?? 0), 2, '.', ',');
+// 3. Capturar avisos de sesión
+$avisoError = $_SESSION['aviso_error'] ?? null;
+unset($_SESSION['aviso_error']);
 
-// Mapa de nombres y jerarquía de categorías
+$aviso = $_SESSION['aviso'] ?? null;
+unset($_SESSION['aviso']);
+
+// 4. Mapeo de categorías
 $nombreCat = [];
 $padresCat = [];
+$categoriasPrincipales = [];
+$subcategoriasPorPadre = [];
 $categoriasPrincipales = [];
 $subcategoriasPorPadre = [];
 
@@ -50,8 +62,23 @@ $lista = array_filter($listaProductos, function ($p) use ($filtro, $catSel, $est
 
 $url = fn($stock) => 'index.php?' . http_build_query(array_filter(['action' => 'listado_productos', 'stock' => $stock, 'categoria' => $catSel]));
 ?>
+
+
 <section class="contenido" id="p-inventario">
 
+  <!-- AVISO DE ERROR ROJO -->
+  <?php if (!empty($avisoError)): ?>
+    <div class="aviso-error" style="background:#fee2e2; color:#991b1b; padding:12px 16px; border-radius:8px; margin-bottom:1rem; font-weight:500; border:1px solid #f87171;">
+      <?= $e($avisoError) ?>
+    </div>
+  <?php endif; ?>
+
+  <!-- AVISO DE ÉXITO VERDE -->
+  <?php if (!empty($aviso)): ?>
+    <div class="aviso-exito" style="background:#dcfce7; color:#166534; padding:12px 16px; border-radius:8px; margin-bottom:1rem; font-weight:500; border:1px solid #86efac;">
+      <?= $e($aviso) ?>
+    </div>
+  <?php endif; ?>
 
   <header class="cab">
     <div class="cab-txt"><small>Inventario</small><h2>Productos</h2></div>
@@ -110,8 +137,6 @@ $url = fn($stock) => 'index.php?' . http_build_query(array_filter(['action' => '
         <tbody>
         <?php foreach ($lista as $p):
             $codigo = $p->codigo ?? ('P-' . str_pad($p->id, 4, '0', STR_PAD_LEFT));
-            
-            // Detección de subcategoría y categoría padre
             $catId = $p->id_categoria ?? null;
             $cat = $p->nombre_categoria ?? ($nombreCat[$catId] ?? 'Sin categoría');
             $padreId = $padresCat[$catId] ?? null;
@@ -124,7 +149,7 @@ $url = fn($stock) => 'index.php?' . http_build_query(array_filter(['action' => '
             <td class="cod c-media"><?= $e($codigo) ?></td>
             <td>
               <div class="prod">
-                <?php if ($p->imagen): ?><img class="foto" src="public/uploads/<?= $e($p->imagen) ?>" alt="" width="44" height="44" loading="lazy"><?php endif; ?>
+                <?php if (!empty($p->imagen)): ?><img class="foto" src="public/uploads/<?= $e($p->imagen) ?>" alt="" width="44" height="44" loading="lazy"><?php endif; ?>
                 <div>
                   <b><?= $e($p->nombre_producto) ?></b>
                   <span><?= $e($p->descripcion ?? '') ?></span>
@@ -141,7 +166,6 @@ $url = fn($stock) => 'index.php?' . http_build_query(array_filter(['action' => '
                             $m = trim($partes[2]);
                             $stk = (int)$partes[3];
 
-                            // Construir etiquetas con el nombre de cada atributo
                             $detalles = [];
                             if ($t !== '') $detalles[] = '<b>Talla:</b> ' . $e($t);
                             if ($c !== '') $detalles[] = '<b>Color:</b> ' . $e($c);
@@ -158,14 +182,14 @@ $url = fn($stock) => 'index.php?' . http_build_query(array_filter(['action' => '
                     </div>
                   <?php endif; ?>
 
-                  <span class="si-estrecho"><span class="cod"><?= $e($codigo) ?></span>, <?= !empty($padreNombre) ? $e($padreNombre) . ' › ' : '' ?><?= $e($cat) ?></span>
+                  <span class="si-estrecho"><span class="cod"><?= $e($codigo) ?></span>, <?= !empty($padreNombre) ? $e($padreNombre) . ' / ' : '' ?><?= $e($cat) ?></span>
                 </div>
               </div>
             </td>
             <td class="c-media">
               <span class="chip">
                 <?php if (!empty($padreNombre)): ?>
-                  <span class="chip-padre"><?= $e($padreNombre) ?> ›</span>
+                  <small style="color:var(--texto-3, #64748b); font-weight:normal;"><?= $e($padreNombre) ?> /</small>
                 <?php endif; ?>
                 <?= $e($cat) ?>
               </span>
@@ -206,10 +230,10 @@ $url = fn($stock) => 'index.php?' . http_build_query(array_filter(['action' => '
           $padreNombre = $p->nombre_categoria_padre ?? ($padreId ? ($nombreCat[$padreId] ?? '') : '');
           $s = $estadoDe($p); ?>
         <li>
-          <?php if ($p->imagen): ?><img class="foto grande" src="public/uploads/<?= $e($p->imagen) ?>" alt="" width="56" height="56" loading="lazy"><?php else: ?><span></span><?php endif; ?>
+          <?php if (!empty($p->imagen)): ?><img class="foto grande" src="public/uploads/<?= $e($p->imagen) ?>" alt="" width="56" height="56" loading="lazy"><?php else: ?><span></span><?php endif; ?>
           <div class="t-nom">
             <b><?= $e($p->nombre_producto) ?></b>
-            <span><?= $e($codigo) ?>, <?= !empty($padreNombre) ? $e($padreNombre) . ' › ' : '' ?><?= $e($cat) ?></span>
+            <span><?= $e($codigo) ?>, <?= !empty($padreNombre) ? $e($padreNombre) . ' / ' : '' ?><?= $e($cat) ?></span>
           </div>
           <div class="t-precio"><?= $usd($p->precio) ?></div>
           <div class="t-stock">Tienda <b><?= (int) $p->stock ?></b>, online <b><?= (int) ($p->stock_online ?? 0) ?></b> <?php if ($s === 'bajo'): ?><span class="est bajo">Bajo</span><?php elseif ($s === 'agot'): ?><span class="est agot">Agotado</span><?php endif; ?></div>

@@ -30,13 +30,26 @@ class VentaController {
     // 1. PUNTO DE VENTA (POS TIENDA FÍSICA)
     // =========================================================================
     public function puntoVenta() {
-        $sqlP = "SELECT p.id, p.codigo, p.nombre_producto, p.precio, p.costo_compra,
-                        p.stock, p.stock_minimo, p.imagen, c.nombre_categoria
+       $sqlP = "SELECT p.id, p.codigo, p.nombre_producto, p.precio, p.costo_compra,
+                        p.stock, p.stock_minimo, p.imagen, p.id_categoria,
+                        c.nombre_categoria, c.id_padre,
+                        cp.nombre_categoria AS nombre_categoria_padre
                  FROM productos p
                  LEFT JOIN categorias c ON p.id_categoria = c.id
+                 LEFT JOIN categorias cp ON c.id_padre = cp.id
                  WHERE p.estado = 1 AND p.deleted_at IS NULL
                  ORDER BY p.nombre_producto ASC";
         $productos = $this->db->query($sqlP)->fetchAll(PDO::FETCH_OBJ);
+
+        // Obtener variantes (talla, color, modelo, stock) de cada producto
+        $stmtVar = $this->db->prepare("SELECT id, id_producto, talla, color, modelo, stock 
+                                       FROM producto_variantes 
+                                       WHERE id_producto = ? AND stock > 0");
+
+        foreach ($productos as $p) {
+            $stmtVar->execute([$p->id]);
+            $p->variantes = $stmtVar->fetchAll(PDO::FETCH_OBJ);
+        }
 
         $sqlM = "SELECT id, nombre, moneda, requiere_referencia, en_tienda, activo 
                  FROM metodos_pago 
