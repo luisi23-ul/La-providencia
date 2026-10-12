@@ -131,7 +131,7 @@ switch ($action) {
     case 'kardex':              $adminC->kardex(); break;
 
     // Gráficos y Estadísticas
-    case 'seccion_graficos':    include "views/seccion_graficos.php"; break;
+   case 'seccion_graficos':    $adminC->mostrarEstadisticas(); break;
     case 'grafico_barras':      $adminC->grafico_barras(); break;
     case 'grafico_tortas':      $adminC->grafico_torta(); break;
 

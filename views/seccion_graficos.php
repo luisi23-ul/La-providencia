@@ -1,99 +1,265 @@
 <?php
 $menu = 'seccion_graficos';
 $tituloPagina = 'Estadísticas';
-$est = array_merge(['dias' => [], 'resumen' => [], 'top' => [], 'sin_movimiento' => [], 'categorias' => [], 'metodos' => [], 'proveedores' => []], $estadisticas ?? []);
+$est = array_merge([
+    'dias' => [],
+    'resumen' => [],
+    'top' => [],
+    'sin_movimiento' => [],
+    'categorias' => [],
+    'metodos' => [],
+    'proveedores' => []
+], $estadisticas ?? []);
+
 $r = array_merge(['vendido' => 0, 'ganancia' => 0, 'ventas' => 0, 'tienda' => 0], $est['resumen']);
 include __DIR__ . '/admin/_abrir.php';
-$f = ['desde' => $_GET['desde'] ?? date('Y-m-d', strtotime('-13 days')), 'hasta' => $_GET['hasta'] ?? date('Y-m-d'), 'agrupar' => ($_GET['agrupar'] ?? 'dia') === 'mes' ? 'mes' : 'dia', 'tab' => $_GET['tab'] ?? 'ventas'];
-$tabs = ['ventas' => 'Ventas', 'productos' => 'Productos', 'dinero' => 'Cobros y compras'];
+
+$f = [
+    'desde'   => $_GET['desde'] ?? date('Y-m-d', strtotime('-13 days')),
+    'hasta'   => $_GET['hasta'] ?? date('Y-m-d'),
+    'agrupar' => ($_GET['agrupar'] ?? 'dia') === 'mes' ? 'mes' : 'dia',
+    'tab'     => $_GET['tab'] ?? 'ventas'
+];
+
+$tabs = [
+    'ventas'    => 'Ventas',
+    'productos' => 'Productos',
+    'dinero'    => 'Cobros y compras'
+];
 if (!isset($tabs[$f['tab']])) $f['tab'] = 'ventas';
+
 $url = fn($cambios) => 'index.php?' . http_build_query(array_merge(['action' => 'seccion_graficos'], $f, $cambios));
-$tiendaPct = $r['vendido'] ? round($r['tienda'] / $r['vendido'] * 100) : 0;
-$meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+// Prevenir DivisionByZeroError
+$vendidoTotal = (float)($r['vendido'] ?? 0);
+$tiendaMonto  = (float)($r['tienda'] ?? 0);
+$tiendaPct    = $vendidoTotal > 0 ? round(($tiendaMonto / $vendidoTotal) * 100) : 0;
+$meses        = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 
 $barras = function ($id, $titulo, $filas, $vacio, $extra = '') { ?>
   <section class="caja" aria-labelledby="<?= $id ?>">
     <header class="caja-cab"><h3 id="<?= $id ?>"><?= $titulo ?></h3><?= $extra ?></header>
-    <?php if ($filas): $max = max(array_column($filas, 'v')) ?: 1; ?>
+    <?php if (!empty($filas)): 
+        $maxValores = array_column($filas, 'v');
+        $max = !empty($maxValores) ? max($maxValores) : 0;
+        $max = $max > 0 ? $max : 1;
+    ?>
       <ol class="hb-lista">
-        <?php foreach ($filas as $x): ?>
-          <li class="hb"><span class="hb-nom"><b><?= $x['n'] ?></b><?php if (!empty($x['s'])): ?><small><?= $x['s'] ?></small><?php endif; ?></span><span class="hb-val"><?= $x['vt'] ?><?php if (!empty($x['vs'])): ?><small><?= $x['vs'] ?></small><?php endif; ?></span><span class="hb-pista"><i class="<?= $x['c'] ?? '' ?>" style="width:<?= round(max(0, $x['v']) / $max * 100, 1) ?>%"></i></span></li>
+        <?php foreach ($filas as $x): 
+            $porcentajeAncho = round((max(0, (float)$x['v']) / $max) * 100, 1);
+        ?>
+          <li class="hb">
+            <span class="hb-nom">
+              <b><?= $x['n'] ?></b>
+              <?php if (!empty($x['s'])): ?><small><?= $x['s'] ?></small><?php endif; ?>
+            </span>
+            <span class="hb-val">
+              <?= $x['vt'] ?>
+              <?php if (!empty($x['vs'])): ?><small><?= $x['vs'] ?></small><?php endif; ?>
+            </span>
+            <span class="hb-pista">
+              <i class="<?= $x['c'] ?? '' ?>" style="width:<?= $porcentajeAncho ?>%"></i>
+            </span>
+          </li>
         <?php endforeach; ?>
       </ol>
-    <?php else: ?><div class="vacio-filtro"><?= $vacio ?></div><?php endif; ?>
+    <?php else: ?>
+      <div class="vacio-filtro"><?= $vacio ?></div>
+    <?php endif; ?>
   </section>
-<?php };
-?>
+<?php }; ?>
+
 <section class="contenido">
   <header class="cab">
     <div class="cab-txt"><small>Gestión</small><h2>Estadísticas</h2></div>
-    <div class="cab-acc"><a href="index.php?<?= $e(http_build_query(['action' => 'exportar_pdf', 'tipo' => 'estadisticas', 'desde' => $f['desde'], 'hasta' => $f['hasta']])) ?>" target="_blank" class="btn btn-sec"><svg class="i"><use href="#i-archivo"/></svg>PDF</a></div>
+    <div class="cab-acc">
+      <a href="index.php?<?= $e(http_build_query(['action' => 'exportar_pdf', 'tipo' => 'estadisticas', 'desde' => $f['desde'], 'hasta' => $f['hasta']])) ?>" target="_blank" class="btn btn-sec">
+        <svg class="i"><use href="#i-archivo"/></svg>PDF
+      </a>
+    </div>
   </header>
 
   <form class="filtros" method="GET" action="index.php" aria-label="Filtros">
     <input type="hidden" name="action" value="seccion_graficos">
     <input type="hidden" name="tab" value="<?= $e($f['tab']) ?>">
     <input type="hidden" name="agrupar" value="<?= $e($f['agrupar']) ?>">
-    <?php $periodoFiltro = ['modo' => 'rango', 'atajos' => ['7 días', '14 días', 'Este mes'], 'defecto' => '14 días']; include __DIR__ . '/admin/_periodo.php'; ?>
+    <?php 
+      $periodoFiltro = ['modo' => 'rango', 'atajos' => ['7 días', '14 días', 'Este mes'], 'defecto' => '14 días']; 
+      include __DIR__ . '/admin/_periodo.php'; 
+    ?>
   </form>
 
   <nav class="est-tabs" aria-label="Secciones de estadísticas">
-    <?php foreach ($tabs as $k => $t): ?><a href="<?= $e($url(['tab' => $k])) ?>" aria-current="<?= $f['tab'] === $k ? 'page' : 'false' ?>"><?= $t ?></a><?php endforeach; ?>
+    <?php foreach ($tabs as $k => $t): ?>
+      <a href="<?= $e($url(['tab' => $k])) ?>" aria-current="<?= $f['tab'] === $k ? 'page' : 'false' ?>"><?= $t ?></a>
+    <?php endforeach; ?>
   </nav>
 
   <?php if ($f['tab'] === 'ventas'): ?>
     <section class="mini-kpis" aria-label="Resumen del periodo">
-      <div><span class="mk-ic"><svg class="i"><use href="#i-dolar"/></svg></span><span>Vendido</span><b><?= $usd($r['vendido']) ?></b><small><?= $bs($r['vendido']) ?></small></div>
-      <div class="mk-oscuro"><span class="mk-ic"><svg class="i"><use href="#i-grafico"/></svg></span><span>Ganancia</span><b><?= $usd($r['ganancia']) ?></b><small>precio menos costo</small></div>
-      <div class="mk-claro"><span class="mk-ic"><svg class="i"><use href="#i-tienda"/></svg></span><span>Tienda / Online</span><b><?= $tiendaPct ?>% / <?= $r['vendido'] ? 100 - $tiendaPct : 0 ?>%</b><small>de lo vendido</small><span class="mk-barra" aria-hidden="true"><i style="width: <?= $tiendaPct ?>%"></i><i style="width: <?= $r['vendido'] ? 100 - $tiendaPct : 0 ?>%"></i></span></div>
-      <div class="mk-ambar"><span class="mk-ic"><svg class="i"><use href="#i-bolsa"/></svg></span><span>Ticket promedio</span><b><?= $usd($r['ventas'] ? $r['vendido'] / $r['ventas'] : 0) ?></b><small><?= (int) $r['ventas'] ?> ventas</small></div>
+      <div>
+        <span class="mk-ic"><svg class="i"><use href="#i-dolar"/></svg></span>
+        <span>Vendido</span>
+        <b><?= $usd($r['vendido']) ?></b>
+        <small><?= $bs($r['vendido']) ?></small>
+      </div>
+      <div class="mk-oscuro">
+        <span class="mk-ic"><svg class="i"><use href="#i-grafico"/></svg></span>
+        <span>Ganancia</span>
+        <b><?= $usd($r['ganancia']) ?></b>
+        <small>precio menos costo</small>
+      </div>
+      <div class="mk-claro">
+        <span class="mk-ic"><svg class="i"><use href="#i-tienda"/></svg></span>
+        <span>Tienda / Online</span>
+        <b><?= $tiendaPct ?>% / <?= $vendidoTotal > 0 ? (100 - $tiendaPct) : 0 ?>%</b>
+        <small>de lo vendido</small>
+        <span class="mk-barra" aria-hidden="true">
+          <i style="width: <?= $tiendaPct ?>%"></i>
+          <i style="width: <?= $vendidoTotal > 0 ? (100 - $tiendaPct) : 0 ?>%"></i>
+        </span>
+      </div>
+      <div class="mk-ambar">
+        <span class="mk-ic"><svg class="i"><use href="#i-bolsa"/></svg></span>
+        <span>Ticket promedio</span>
+        <b><?= $usd(!empty($r['ventas']) && (int)$r['ventas'] > 0 ? $vendidoTotal / (int)$r['ventas'] : 0) ?></b>
+        <small><?= (int) ($r['ventas'] ?? 0) ?> ventas</small>
+      </div>
     </section>
 
     <section class="caja" aria-labelledby="t-graf">
-      <header class="caja-cab"><h3 id="t-graf">Ventas por <?= $f['agrupar'] === 'mes' ? 'mes' : 'día' ?></h3>
-        <nav class="f-grupo" aria-label="Agrupar"><a href="<?= $e($url(['agrupar' => 'dia'])) ?>" class="f-op" aria-current="<?= $f['agrupar'] === 'dia' ? 'page' : 'false' ?>">Por día</a><a href="<?= $e($url(['agrupar' => 'mes'])) ?>" class="f-op" aria-current="<?= $f['agrupar'] === 'mes' ? 'page' : 'false' ?>">Por mes</a></nav>
+      <header class="caja-cab">
+        <h3 id="t-graf">Ventas por <?= $f['agrupar'] === 'mes' ? 'mes' : 'día' ?></h3>
+        <nav class="f-grupo" aria-label="Agrupar">
+          <a href="<?= $e($url(['agrupar' => 'dia'])) ?>" class="f-op" aria-current="<?= $f['agrupar'] === 'dia' ? 'page' : 'false' ?>">Por día</a>
+          <a href="<?= $e($url(['agrupar' => 'mes'])) ?>" class="f-op" aria-current="<?= $f['agrupar'] === 'mes' ? 'page' : 'false' ?>">Por mes</a>
+        </nav>
       </header>
-      <?php if ($est['dias']):
-          $maxDia = max(array_map(fn($d) => $d['tienda'] + $d['online'], $est['dias'])) ?: 1;
-          $paso = $maxDia > 1500 ? 1500 : ($maxDia > 450 ? 300 : 150);
-          $escala = ceil($maxDia / $paso) * $paso;
+      <?php if (!empty($est['dias'])):
+          $totalesDias = array_map(fn($d) => (float)$d['tienda'] + (float)$d['online'], $est['dias']);
+          $maxDia = !empty($totalesDias) ? max($totalesDias) : 0;
+          $maxDia = $maxDia > 0 ? $maxDia : 1;
+          $paso   = $maxDia > 1500 ? 1500 : ($maxDia > 450 ? 300 : 150);
+          $escala = max(ceil($maxDia / $paso) * $paso, 1);
           $ultimo = count($est['dias']) - 1; ?>
         <div class="grafico">
-          <div class="leyenda"><span><i class="c-tienda"></i>Tienda física</span><span><i class="c-online"></i>Online</span></div>
+          <div class="leyenda">
+            <span><i class="c-tienda"></i>Tienda física</span>
+            <span><i class="c-online"></i>Online</span>
+          </div>
           <div class="barras" role="img" aria-label="Ventas por <?= $f['agrupar'] === 'mes' ? 'mes' : 'día' ?> y canal">
-            <div class="eje"><span>$0</span><span>$<?= round($escala / 3) ?></span><span>$<?= round($escala / 3 * 2) ?></span><span>$<?= $escala ?></span></div>
+            <div class="eje">
+              <span>$0</span>
+              <span>$<?= round($escala / 3) ?></span>
+              <span>$<?= round(($escala / 3) * 2) ?></span>
+              <span>$<?= $escala ?></span>
+            </div>
             <div class="area">
               <?php foreach ($est['dias'] as $i => $d):
                   $ts = strtotime($d['fecha']);
-                  $etq = $f['agrupar'] === 'mes' ? $meses[date('n', $ts) - 1] : ($d['fecha'] === date('Y-m-d') ? 'Hoy' : date('d', $ts)); ?>
-                <div class="dia<?= $i === $ultimo ? ' hoy' : '' ?>" title="<?= $f['agrupar'] === 'mes' ? $meses[date('n', $ts) - 1] . ' ' . date('Y', $ts) : date('d/m', $ts) ?>: tienda <?= $usd($d['tienda']) ?>, online <?= $usd($d['online']) ?>"><div class="pila" style="height:<?= round(($d['tienda'] + $d['online']) / $escala * 100, 1) ?>%"><span class="o" style="flex:<?= (float) $d['online'] ?>"></span><span class="t" style="flex:<?= (float) $d['tienda'] ?>"></span></div><small><?= $etq ?></small></div>
+                  $etq = $f['agrupar'] === 'mes' ? $meses[date('n', $ts) - 1] : ($d['fecha'] === date('Y-m-d') ? 'Hoy' : date('d', $ts)); 
+                  $sumaDia = (float)$d['tienda'] + (float)$d['online'];
+                  $alturaPila = round(($sumaDia / $escala) * 100, 1);
+              ?>
+                <div class="dia<?= $i === $ultimo ? ' hoy' : '' ?>" title="<?= $f['agrupar'] === 'mes' ? $meses[date('n', $ts) - 1] . ' ' . date('Y', $ts) : date('d/m', $ts) ?>: tienda <?= $usd($d['tienda']) ?>, online <?= $usd($d['online']) ?>">
+                  <div class="pila" style="height:<?= $alturaPila ?>%">
+                    <span class="o" style="flex:<?= (float)$d['online'] ?>"></span>
+                    <span class="t" style="flex:<?= (float)$d['tienda'] ?>"></span>
+                  </div>
+                  <small><?= $etq ?></small>
+                </div>
               <?php endforeach; ?>
             </div>
           </div>
         </div>
-      <?php else: ?><div class="vacio-filtro">No hay ventas en estas fechas.</div><?php endif; ?>
+      <?php else: ?>
+        <div class="vacio-filtro">No hay ventas en estas fechas.</div>
+      <?php endif; ?>
     </section>
 
-    <?php $barras('t-cat', 'Ganancia por categoría', array_map(fn($c) => ['n' => $e($c->nombre), 's' => 'vendido ' . $usd($c->vendido), 'v' => $c->ganancia, 'vt' => $usd($c->ganancia), 'vs' => $c->vendido > $c->ganancia ? round($c->ganancia / ($c->vendido - $c->ganancia) * 100) . '% sobre el costo' : '', 'c' => 'verde'], $est['categorias']), 'No hay ventas en estas fechas.'); ?>
+    <?php 
+      $filasCategorias = array_map(function($c) use ($e, $usd) {
+          $vendidoCat = (float)$c->vendido;
+          $gananciaCat = (float)$c->ganancia;
+          $costoBase = $vendidoCat - $gananciaCat;
+          $porcentajeCosto = ($costoBase > 0) ? round(($gananciaCat / $costoBase) * 100) . '% sobre el costo' : '';
+          return [
+              'n'  => $e($c->nombre),
+              's'  => 'vendido ' . $usd($vendidoCat),
+              'v'  => $gananciaCat,
+              'vt' => $usd($gananciaCat),
+              'vs' => ($vendidoCat > $gananciaCat) ? $porcentajeCosto : '',
+              'c'  => 'verde'
+          ];
+      }, $est['categorias'] ?? []);
+
+      $barras('t-cat', 'Ganancia por categoría', $filasCategorias, 'No hay ventas en estas fechas.'); 
+    ?>
 
   <?php elseif ($f['tab'] === 'productos'): ?>
     <div class="rejilla-2">
-      <?php $barras('t-top', 'Más vendidos', array_map(fn($p) => ['n' => $e($p->nombre), 's' => $e($p->categoria) . ', ' . (int) $p->unidades . ' vendidos', 'v' => $p->monto, 'vt' => $usd($p->monto), 'vs' => 'gana ' . $usd($p->ganancia)], $est['top']), 'No hay ventas en estas fechas.', '<span class="muted">por monto</span>'); ?>
+      <?php 
+        $filasTop = array_map(function($p) use ($e, $usd) {
+            return [
+                'n'  => $e($p->nombre),
+                's'  => $e($p->categoria) . ', ' . (int)$p->unidades . ' vendidos',
+                'v'  => (float)$p->monto,
+                'vt' => $usd($p->monto),
+                'vs' => 'gana ' . $usd($p->ganancia)
+            ];
+        }, $est['top'] ?? []);
+
+        $barras('t-top', 'Más vendidos', $filasTop, 'No hay ventas en estas fechas.', '<span class="muted">por monto</span>'); 
+      ?>
+
       <section class="caja" aria-labelledby="t-sinmov">
         <header class="caja-cab"><h3 id="t-sinmov">Sin movimiento</h3><span class="muted">30 días o más sin venderse</span></header>
-        <?php if ($est['sin_movimiento']): ?>
+        <?php if (!empty($est['sin_movimiento'])): ?>
           <ul class="sin-mov" style="list-style:none;margin:0;padding:0">
-            <?php foreach ($est['sin_movimiento'] as $p): ?><li><b><?= $e($p->nombre) ?></b><span class="dias"><?= $p->dias === null ? 'Nunca vendido' : (int) $p->dias . ' días' ?></span><small><?= $e($p->categoria) ?>, <?= (int) $p->stock ?> en stock</small></li><?php endforeach; ?>
+            <?php foreach ($est['sin_movimiento'] as $p): ?>
+              <li>
+                <b><?= $e($p->nombre) ?></b>
+                <span class="dias"><?= $p->dias === null ? 'Nunca vendido' : (int)$p->dias . ' días' ?></span>
+                <small><?= $e($p->categoria) ?>, <?= (int)$p->stock ?> en stock</small>
+              </li>
+            <?php endforeach; ?>
           </ul>
-        <?php else: ?><div class="vacio-filtro">Todos los productos se vendieron en los últimos 30 días.</div><?php endif; ?>
+        <?php else: ?>
+          <div class="vacio-filtro">Todos los productos se vendieron en los últimos 30 días.</div>
+        <?php endif; ?>
       </section>
     </div>
 
   <?php else:
-      $totalMetodos = array_sum(array_map(fn($m) => $m->monto, $est['metodos'])) ?: 1; ?>
+      $sumaMetodos = array_sum(array_map(fn($m) => (float)$m->monto, $est['metodos'] ?? []));
+      $totalMetodos = $sumaMetodos > 0 ? $sumaMetodos : 1;
+  ?>
     <div class="rejilla-2">
-      <?php $barras('t-met', 'Cobros por método', array_map(fn($m) => ['n' => $e($m->nombre), 'v' => $m->monto, 'vt' => $usd($m->monto), 'vs' => round($m->monto / $totalMetodos * 100) . '% del total'], $est['metodos']), 'No hay cobros verificados en estas fechas.'); ?>
-      <?php $barras('t-prov', 'Compras por proveedor', array_map(fn($p) => ['n' => $e($p->razon_social), 's' => (int) $p->compras . ((int) $p->compras === 1 ? ' compra' : ' compras'), 'v' => $p->total, 'vt' => $usd($p->total), 'c' => 'marino'], $est['proveedores']), 'No hay compras en estas fechas.'); ?>
+      <?php 
+        $filasMetodos = array_map(function($m) use ($e, $usd, $totalMetodos) {
+            $montoMet = (float)$m->monto;
+            return [
+                'n'  => $e($m->nombre),
+                'v'  => $montoMet,
+                'vt' => $usd($montoMet),
+                'vs' => round(($montoMet / $totalMetodos) * 100) . '% del total'
+            ];
+        }, $est['metodos'] ?? []);
+
+        $barras('t-met', 'Cobros por método', $filasMetodos, 'No hay cobros verificados en estas fechas.'); 
+
+        $filasProveedores = array_map(function($p) use ($e, $usd) {
+            return [
+                'n'  => $e($p->razon_social),
+                's'  => (int)$p->compras . ((int)$p->compras === 1 ? ' compra' : ' compras'),
+                'v'  => (float)$p->total,
+                'vt' => $usd($p->total),
+                'c'  => 'marino'
+            ];
+        }, $est['proveedores'] ?? []);
+
+        $barras('t-prov', 'Compras por proveedor', $filasProveedores, 'No hay compras en estas fechas.'); 
+      ?>
     </div>
   <?php endif; ?>
 </section>
