@@ -30,7 +30,7 @@ class VentaController {
     // 1. PUNTO DE VENTA (POS TIENDA FÍSICA)
     // =========================================================================
     public function puntoVenta() {
-       $sqlP = "SELECT p.id, p.codigo, p.nombre_producto, p.precio, p.costo_compra,
+        $sqlP = "SELECT p.id, p.codigo, p.nombre_producto, p.precio, p.costo_compra,
                         p.stock, p.stock_minimo, p.imagen, p.id_categoria,
                         c.nombre_categoria, c.id_padre,
                         cp.nombre_categoria AS nombre_categoria_padre
@@ -103,7 +103,7 @@ class VentaController {
 
             $total = (float)$_POST['total'];
             $vuelto = (float)($_POST['vuelto'] ?? 0);
-            $vueltoMoneda = $_POST['vuelto_moneda'] ?? 'USD';
+            $vueltoMoneda = $_POST['vuelto_moneda'] ?? ($vuelto > 0 ? 'USD' : 'ninguno');
 
             $stmtV = $this->db->prepare("
                 INSERT INTO ventas (id_usuario, origen_venta, vendedor_id, total, vuelto, vuelto_moneda, estado, fecha)
@@ -196,7 +196,8 @@ class VentaController {
                 $esEfectivo = stripos($mObj->nombre ?? '', 'efectivo') !== false || empty($mObj->requiere_referencia);
 
                 if ($esEfectivo) {
-                    $stmtP->execute([$idVenta, $mId, 'Caja Física', $mObj->moneda, $mnt, $tsa, 'No aplica', 'Cobro en efectivo', 'aprobado', $vendedorId, date('Y-m-d H:i:s')]);
+                    $bancoCaja = ($mObj->moneda === 'USD') ? 'Caja Divisas' : 'Caja Bolívares';
+                    $stmtP->execute([$idVenta, $mId, $bancoCaja, $mObj->moneda, $mnt, $tsa, 'No aplica', 'Cobro en efectivo', 'aprobado', $vendedorId, date('Y-m-d H:i:s')]);
                     $pagosComprobante[] = [
                         'metodo'     => $mObj->nombre ?? 'Efectivo',
                         'monto'      => $mnt,
@@ -233,13 +234,9 @@ class VentaController {
                     ];
                 }
             }
-
-            if ($todosAprobados) {
-                $stmtUpdV = $this->db->prepare("UPDATE ventas SET estado = 'retirado', id_metodo_pago = ? WHERE id = ?");
-                $stmtUpdV->execute([$primerMetodoId, $idVenta]);
-            } else {
-                $stmtUpdV = $this->db->prepare("UPDATE ventas SET id_metodo_pago = ? WHERE id = ?");
-                $stmtUpdV->execute([$primerMetodoId, $idVenta]);
+if ($todosAprobados) {
+                $stmtUpdV = $this->db->prepare("UPDATE ventas SET estado = 'retirado' WHERE id = ?");
+                $stmtUpdV->execute([$idVenta]);
             }
 
             $this->db->commit();
@@ -334,7 +331,7 @@ class VentaController {
         $sql = "SELECT v.id, v.fecha, 
                        CONCAT(COALESCE(u.nombre, 'Consumidor'), ' ', COALESCE(u.apellido, '')) AS nombre_cliente,
                        v.origen_venta, 
-                       COALESCE(mp.nombre, (
+                       COALESCE((
                            SELECT mp2.nombre 
                            FROM pagos_registro pr2 
                            INNER JOIN metodos_pago mp2 ON pr2.id_metodo_pago = mp2.id 
@@ -344,7 +341,6 @@ class VentaController {
                        v.total, v.estado
                 FROM ventas v
                 LEFT JOIN usuarios u ON v.id_usuario = u.id
-                LEFT JOIN metodos_pago mp ON v.id_metodo_pago = mp.id
                 WHERE " . implode(' AND ', $where) . "
                 ORDER BY v.id DESC";
 
@@ -601,9 +597,13 @@ class VentaController {
     // 5. RETIRO DE PEDIDOS
     // =========================================================================
     public function retiroPedidos() {
+        require_once 'models/BcvService.php';
+        $bcv = new BcvService($this->db);
+        $tasaActual = $bcv->obtenerTasaActiva() ?: 526.87;
+
         $sql = "SELECT v.id, v.fecha, CONCAT(COALESCE(u.nombre, 'Cliente'), ' ', COALESCE(u.apellido, '')) AS nombre_cliente,
                        u.telefono, COALESCE(mp.nombre, 'Mixto') AS nombre_metodo, v.total,
-                       ROUND(v.total * 526.87, 2) AS total_bs, v.estado, v.fecha_entrega, v.retirado_por
+                       ROUND(v.total * {$tasaActual}, 2) AS total_bs, v.estado, v.fecha_entrega, v.retirado_por
                 FROM ventas v
                 LEFT JOIN usuarios u ON v.id_usuario = u.id
                 LEFT JOIN metodos_pago mp ON v.id_metodo_pago = mp.id
@@ -658,7 +658,7 @@ class VentaController {
 
         $sqlD = "SELECT dv.*, 
                         p.nombre_producto, 
-                        p.nombre_producto AS producto_nombre,
+                        p.nombre_producto AS producto_nombre, 
                         p.codigo, 
                         p.imagen 
                  FROM detalle_ventas dv
