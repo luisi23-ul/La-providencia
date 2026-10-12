@@ -102,6 +102,21 @@ $categorias = array_values(array_unique(array_filter(array_map(fn($p) => $p->nom
   </form>
 </dialog>
 
+<dialog class="modal chico" id="modal-variante" aria-labelledby="mv-titulo">
+  <form method="dialog" id="mv-form">
+    <header class="modal-cab"><span class="modal-ic"><svg class="i"><use href="#i-etiqueta"/></svg></span><div><h3 id="mv-titulo"></h3><p id="mv-precio"></p></div><button type="button" class="ic-btn" data-cerrar aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button></header>
+    <div class="modal-cuerpo mv-cuerpo">
+      <fieldset class="mv-grupo" id="mv-g-talla"><legend>Talla</legend><div class="mv-ops" id="mv-tallas"></div></fieldset>
+      <fieldset class="mv-grupo" id="mv-g-color"><legend>Color</legend><div class="mv-ops" id="mv-colores"></div></fieldset>
+      <p class="mv-quedan" id="mv-quedan" aria-live="polite"></p>
+    </div>
+    <footer class="modal-pie">
+      <button type="button" class="btn btn-sec" data-cerrar>Cancelar</button>
+      <button type="submit" class="btn btn-pri" id="mv-agregar" disabled>Agregar al ticket</button>
+    </footer>
+  </form>
+</dialog>
+
 <dialog class="modal chico" id="modal-espera" aria-labelledby="mes-titulo">
   <form method="dialog">
     <header class="modal-cab"><span class="modal-ic"><svg class="i"><use href="#i-historial"/></svg></span><div><h3 id="mes-titulo">Ventas en espera</h3><p>Tickets aparcados mientras atiendes a otro cliente.</p></div><button type="button" class="ic-btn" data-cerrar aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button></header>
@@ -157,6 +172,7 @@ document.addEventListener('change', function(e) {
         'min' => (int) ($p->stock_minimo ?? 5),
         'cat' => $p->nombre_categoria ?? '',
         'img' => !empty($p->imagen) ? 'public/uploads/' . $p->imagen : '',
+        'v' => array_values(array_map(fn($x) => [(int) $x->id, trim($x->talla ?? ''), trim(($x->color ?? '') . (!empty($x->modelo) ? ' ' . $x->modelo : '')), (int) $x->stock], array_filter($p->variantes ?? [], fn($x) => (int) $x->stock > 0))),
     ], $productos),
     'metodos' => array_values(array_map(fn($m) => [
         'id' => (int) $m->id,

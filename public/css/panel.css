@@ -2163,3 +2163,41 @@ body:has(.panel.modo-pos) .avisos { top: 76px; }
   .tabla-cat tr.cat-sub .cat-nom { padding-left: 10px; }
 }
 .cat-mas { font-weight: 700; color: var(--marca); background: var(--marca-tenue); border-color: var(--marca-borde); cursor: default; }
+.mv-cuerpo { display: flex; flex-direction: column; gap: 18px; }
+.mv-grupo { border: 0; margin: 0; padding: 0; min-width: 0; }
+.mv-grupo legend { font-family: 'Outfit', sans-serif; font-size: 13px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--texto-2); margin-bottom: 8px; padding: 0; }
+.mv-ops { display: flex; flex-wrap: wrap; gap: 8px; }
+.mv-ops .chip-btn { min-width: 52px; min-height: 44px; justify-content: center; font-size: 15px; display: inline-flex; align-items: center; gap: 8px; }
+.mv-ops .chip-btn:disabled { opacity: .4; text-decoration: line-through; cursor: not-allowed; }
+.mv-n { font-size: 12.5px; font-weight: 600; padding: 1px 7px; border-radius: 99px; background: var(--fondo); color: var(--texto-2); }
+.chip-btn[aria-pressed="true"] .mv-n { background: rgba(255,255,255,.18); color: #fff; }
+.mv-espera { font-size: 14px; color: var(--texto-3); padding: 10px 0; }
+.mv-quedan { margin: 0; font-size: 14px; color: var(--texto-2); min-height: 20px; }
+.pl-var { display: block; font-family: 'Open Sans', sans-serif; font-size: 13px; font-weight: 600; color: var(--marca); margin-top: 1px; }
+.pl-editor.pe { display: flex; flex-direction: column; gap: 12px; padding: 12px; }
+.pe-prenda { display: flex; flex-direction: column; gap: 10px; padding-bottom: 12px; border-bottom: 1px solid var(--linea); }
+.pe-campo { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.pe-et { font-size: 13px; font-weight: 600; color: var(--texto-2); line-height: 1.2; }
+.pe-seg { display: flex; flex-wrap: wrap; gap: 3px; padding: 3px; border-radius: 10px; background: var(--fondo); align-self: flex-start; max-width: 100%; }
+.pe-seg button { flex: 0 0 auto; min-width: 48px; min-height: 34px; padding: 0 10px; border: 0; border-radius: 7px; background: none; font: 600 14px/1 'Open Sans', sans-serif; color: var(--texto-2); cursor: pointer; transition: background-color 150ms ease, color 150ms ease; }
+.pe-seg button:hover:not(:disabled):not([aria-pressed="true"]) { background: var(--tarjeta); color: var(--texto); }
+.pe-seg button[aria-pressed="true"] { background: var(--oscuro); color: #fff; }
+.pe-seg button:disabled { color: var(--texto-3); text-decoration: line-through; cursor: not-allowed; }
+.pe-seg button:focus-visible { outline: 2px solid var(--marca); outline-offset: 1px; }
+.pe-campos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.pe-campos.uno { grid-template-columns: minmax(0, 1fr); }
+.pe-campo input { width: 100%; min-height: 40px; padding: 6px 10px; font-family: var(--f-num); font-size: 15px; }
+.pe-nota { margin: -4px 0 0; font-size: 13px; color: var(--texto-2); }
+.pe-nota b { font-weight: 700; color: var(--texto); }
+.pe-acc { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.pe-acc .btn { min-height: 40px; padding: 0 22px; }
+.pe-quitar { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 10px 0 6px; border: 0; border-radius: 8px; background: none; font: 600 14px 'Open Sans', sans-serif; color: var(--rojo); cursor: pointer; }
+.pe-quitar:hover { background: var(--rojo-suave); }
+.pe-quitar svg.i { width: 17px; height: 17px; }
+.pv-prod .cod { white-space: normal; overflow: visible; text-overflow: clip; }
+#pv-lineas .pv-linea { position: relative; isolation: isolate; border-left-color: var(--acento); background: linear-gradient(90deg, var(--ambar-suave), var(--tarjeta) 70%); }
+#pv-lineas .pv-linea::after { content: ""; position: absolute; inset: 0; z-index: -1; background: radial-gradient(circle, color-mix(in srgb, var(--acento) 40%, transparent) 1.3px, transparent 1.9px) 100% 0 / 14px 14px; -webkit-mask: radial-gradient(160px 90px at 100% 0, #000, transparent); mask: radial-gradient(160px 90px at 100% 0, #000, transparent); pointer-events: none; }
+#pv-lineas .pv-linea:hover { background: linear-gradient(90deg, #fbe7c4, var(--tarjeta) 75%); }
+#pv-lineas .pv-linea.abierta { background: linear-gradient(180deg, var(--ambar-suave), #fffaf1); border-left-color: var(--acento); }
+#pv-lineas .pv-linea .pl-var { color: var(--ambar); }
+#pv-lineas .pl-editor { border-color: #f0d9ae; }
