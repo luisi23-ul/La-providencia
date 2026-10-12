@@ -987,4 +987,52 @@ class AdminControllers {
 
         require_once 'views/seccion_graficos.php';
     }
+
+    public function metodosPago() {
+        require_once 'models/MetodoPagoModel.php';
+        $metodos = (new MetodoPagoModel($this->db))->listar();
+        require_once 'views/metodos_pago.php';
+    }
+
+    public function guardarMetodoPago() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header("Location: index.php?action=metodos_pago");
+            exit();
+        }
+        require_once 'models/MetodoPagoModel.php';
+        $metodoModel = new MetodoPagoModel($this->db);
+
+        $id = (int)($_POST['id'] ?? 0);
+        $nombre = trim($_POST['nombre'] ?? '');
+
+        if ($nombre === '') {
+            $_SESSION['aviso'] = 'Escribe el nombre del método.';
+        } elseif ($metodoModel->existeNombre($nombre, $id)) {
+            $_SESSION['aviso'] = 'Ya existe un método llamado ' . $nombre . '.';
+        } else {
+            $metodoModel->guardar([
+                'id' => $id,
+                'nombre' => $nombre,
+                'moneda' => ($_POST['moneda'] ?? 'Bs') === 'USD' ? 'USD' : 'Bs',
+                'requiere_referencia' => isset($_POST['requiere_referencia']) ? 1 : 0,
+                'en_tienda' => isset($_POST['en_tienda']) ? 1 : 0,
+                'en_online' => isset($_POST['en_online']) ? 1 : 0,
+                'datos' => trim($_POST['datos'] ?? '')
+            ]);
+            $_SESSION['aviso'] = $id ? 'Método actualizado.' : 'Método creado.';
+        }
+        header("Location: index.php?action=metodos_pago");
+        exit();
+    }
+
+    public function cambiarEstadoMetodo() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['id'])) {
+            require_once 'models/MetodoPagoModel.php';
+            $activo = (int)($_POST['activo'] ?? 0) === 1 ? 1 : 0;
+            (new MetodoPagoModel($this->db))->cambiarEstado((int)$_POST['id'], $activo);
+            $_SESSION['aviso'] = $activo ? 'Método activado.' : 'Método apagado.';
+        }
+        header("Location: index.php?action=metodos_pago");
+        exit();
+    }
 }

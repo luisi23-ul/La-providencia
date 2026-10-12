@@ -335,7 +335,9 @@ switch ($action) {
     case 'anular_compra':            $compraC->anular(); break;
 
     // Panel Admin: Clientes y Métodos de Pago
-    case 'metodos_pago':         include "views/metodos_pago.php"; break;
+    case 'metodos_pago':         $adminC->metodosPago(); break;
+    case 'guardar_metodo_pago':  $adminC->guardarMetodoPago(); break;
+    case 'cambiar_estado_metodo': $adminC->cambiarEstadoMetodo(); break;
     case 'lista_clientes':       $usuarioC->listarClientes(); break;
     case 'cambiarEstadoCliente': $usuarioC->cambiarEstadoCliente(); break;
 

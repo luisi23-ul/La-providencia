@@ -113,4 +113,30 @@ class MetodoPagoModel {
             'dias_con_cobros'  => count($diasUnicos)
         ];
     }
+
+    public function listar() {
+        return $this->db->query("SELECT * FROM metodos_pago ORDER BY id ASC")->fetchAll(PDO::FETCH_OBJ);
+    }
+
+    public function existeNombre($nombre, $id = 0) {
+        $stmt = $this->db->prepare("SELECT COUNT(*) FROM metodos_pago WHERE LOWER(nombre) = LOWER(?) AND id != ?");
+        $stmt->execute([$nombre, (int)$id]);
+        return $stmt->fetchColumn() > 0;
+    }
+
+    public function guardar($datos) {
+        $valores = [$datos['nombre'], $datos['moneda'], $datos['requiere_referencia'], $datos['en_tienda'], $datos['en_online'], $datos['datos']];
+        if (empty($datos['id'])) {
+            $stmt = $this->db->prepare("INSERT INTO metodos_pago (nombre, moneda, requiere_referencia, en_tienda, en_online, datos, activo) VALUES (?, ?, ?, ?, ?, ?, 1)");
+            return $stmt->execute($valores);
+        }
+        $valores[] = (int)$datos['id'];
+        $stmt = $this->db->prepare("UPDATE metodos_pago SET nombre = ?, moneda = ?, requiere_referencia = ?, en_tienda = ?, en_online = ?, datos = ? WHERE id = ?");
+        return $stmt->execute($valores);
+    }
+
+    public function cambiarEstado($id, $activo) {
+        $stmt = $this->db->prepare("UPDATE metodos_pago SET activo = ? WHERE id = ?");
+        return $stmt->execute([(int)$activo, (int)$id]);
+    }
 }
