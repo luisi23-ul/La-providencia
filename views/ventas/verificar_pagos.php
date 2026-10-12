@@ -8,6 +8,9 @@ include __DIR__ . '/../admin/_abrir.php';
 $estado = $_GET['estado'] ?? 'pendiente';
 $fecha = $_GET['fecha'] ?? '';
 $tabs = ['pendiente' => 'Por verificar', 'aprobado' => 'Aprobados', 'rechazado' => 'Rechazados'];
+
+$db = Database::connect();
+$metodosList = $db->query("SELECT id, nombre FROM metodos_pago ORDER BY nombre ASC")->fetchAll(PDO::FETCH_OBJ);
 ?>
 <section class="contenido" id="p-verificar_pagos">
   <header class="cab">
@@ -72,6 +75,56 @@ $tabs = ['pendiente' => 'Por verificar', 'aprobado' => 'Aprobados', 'rechazado' 
   </form>
 </dialog>
 
+<!-- MODAL PARA EDITAR PAGO / ORDEN -->
+<dialog class="modal mediano" id="modal-editar-pago" aria-labelledby="me-titulo">
+  <form method="POST" action="index.php?action=editar_pago_verificacion">
+    <input type="hidden" name="id_pago" id="me-id-pago">
+    <input type="hidden" name="id_venta" id="me-id-venta">
+    <input type="hidden" name="tasa_cambio" id="me-tasa" value="<?= $tasa ?>">
+
+    <header class="modal-cab">
+      <span class="modal-ic"><svg class="i"><use href="#i-editar"/></svg></span>
+      <div>
+        <h3 id="me-titulo">Editar datos del pago</h3>
+        <p id="me-subtitulo">Ajusta los datos bancarios o cantidades de prendas del pedido.</p>
+      </div>
+    </header>
+
+    <div class="modal-cuerpo" style="display: flex; flex-direction: column; gap: 12px;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="campo">
+          <label for="me-metodo">Forma de Pago <span class="ob">*</span></label>
+          <select id="me-metodo" name="id_metodo_pago" required>
+            <?php foreach ($metodosList as $m): ?>
+              <option value="<?= $m->id ?>"><?= htmlspecialchars($m->nombre) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="campo">
+          <label for="me-banco">Banco Emisor / Destino</label>
+          <input type="text" id="me-banco" name="banco" placeholder="Ej.: Banesco, Banco de Venezuela">
+        </div>
+      </div>
+
+      <div class="campo">
+        <label for="me-ref">Número de Referencia</label>
+        <input type="text" id="me-ref" name="referencia" placeholder="Ej.: 123456">
+      </div>
+
+      <div class="campo" style="border-top: 1px solid var(--borde, #e5e5e5); padding-top: 10px;">
+        <label style="font-weight: 600; margin-bottom: 6px; display: block;">Productos del pedido (cantidades):</label>
+        <div id="me-lista-prods" style="display: flex; flex-direction: column; gap: 6px; max-height: 160px; overflow-y: auto;"></div>
+        <span class="ayuda">* Si colocas la cantidad en 0 se elimina el producto y el total se recalcula.</span>
+      </div>
+    </div>
+
+    <footer class="modal-pie">
+      <button type="button" class="btn btn-sec" data-cerrar>Cancelar</button>
+      <button type="submit" class="btn btn-ok">Guardar Cambios</button>
+    </footer>
+  </form>
+</dialog>
+
 <form id="form-aprobar" method="POST" action="index.php?action=aprobar_pago" hidden><input type="hidden" name="id" id="ap-id"></form>
 
 <?php
@@ -102,6 +155,7 @@ $titularDe = function ($obs) {
         'venta' => (int) $p->id_venta,
         'cliente' => $p->cliente,
         'metodo' => $p->metodo,
+        'id_metodo' => (int) ($p->id_metodo_pago ?? 0),
         'moneda' => $p->moneda ?? 'Bs',
         'monto' => (float) $p->monto,
         'tasa' => (float) ($p->tasa_cambio ?? 0) > 1 ? (float) $p->tasa_cambio : (float) $tasa,

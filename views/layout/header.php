@@ -7,7 +7,24 @@ require_once __DIR__ . '/../../models/BcvService.php';
 $bcvService = new BcvService();
 $tasaTienda = $bcvService->obtenerTasaActiva() ?: ((float) ($sistema->tasa_manual ?? 0) ?: 526.87);
 
-$waTienda = preg_replace('/\D/', '', (string) ($sistema->whatsapp ?? ''));
+// WhatsApp con respaldo si no está definido en el sistema
+// WhatsApp de la tienda: 04127818865 en formato internacional
+$waNumeroConfig = preg_replace('/\D/', '', (string) ($sistema->whatsapp ?? ''));
+
+// Si no está configurado en la BD, usamos el número directo
+if (empty($waNumeroConfig)) {
+    $waTienda = '584127818865';
+} else {
+    // Si viene con 0412..., le quitamos el 0 y le agregamos 58
+    if (str_starts_with($waNumeroConfig, '0')) {
+        $waTienda = '58' . substr($waNumeroConfig, 1);
+    } elseif (!str_starts_with($waNumeroConfig, '58')) {
+        $waTienda = '58' . $waNumeroConfig;
+    } else {
+        $waTienda = $waNumeroConfig;
+    }
+}
+
 $accionActual = $action ?? 'inicio';
 $seccionTienda = [
     'inicio' => 'inicio', 'ver_catalogo' => 'catalogo', 'ver_producto' => 'catalogo',

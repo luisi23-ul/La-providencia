@@ -41,7 +41,6 @@ class VentaController {
                  ORDER BY p.nombre_producto ASC";
         $productos = $this->db->query($sqlP)->fetchAll(PDO::FETCH_OBJ);
 
-        // Obtener variantes (talla, color, modelo, stock) de cada producto
         $stmtVar = $this->db->prepare("SELECT id, id_producto, talla, color, modelo, stock 
                                        FROM producto_variantes 
                                        WHERE id_producto = ? AND stock > 0");
@@ -134,7 +133,7 @@ class VentaController {
                 $cnt   = (int)$cants[$i];
                 $prc   = (float)$precios[$i];
                 $desc  = (float)($descuentos[$i] ?? 0);
-                $subt  = ($cnt * $prc) * (1 - ($desc / 100));
+                $subt  = round(($cnt * $prc) * (1 - ($desc / 100)), 2);
 
                 $stmtProd = $this->db->prepare("SELECT costo_compra, stock, stock_online, nombre_producto FROM productos WHERE id = ?");
                 $stmtProd->execute([$pId]);
@@ -234,7 +233,8 @@ class VentaController {
                     ];
                 }
             }
-if ($todosAprobados) {
+
+            if ($todosAprobados) {
                 $stmtUpdV = $this->db->prepare("UPDATE ventas SET estado = 'retirado' WHERE id = ?");
                 $stmtUpdV->execute([$idVenta]);
             }
@@ -374,6 +374,7 @@ if ($todosAprobados) {
                        u.cedula AS cliente_cedula,
                        u.telefono AS cliente_telefono,
                        COALESCE(mp.nombre, 'Sin método') AS metodo, 
+                       pr.id_metodo_pago,
                        mp.requiere_referencia,
                        pr.moneda, pr.monto, pr.tasa_cambio, pr.referencia, pr.banco,
                        v.origen_venta AS origen, pr.comprobante_img, pr.fecha_pago, pr.estado_verificacion,
@@ -400,50 +401,164 @@ if ($todosAprobados) {
         require_once 'views/ventas/verificar_pagos.php';
     }
 
-    public function aprobarPago() {
-        $idPago = (int)($_POST['id'] ?? $_GET['id'] ?? 0);
-        $idAdmin = $_SESSION['id_usuario'] ?? null;
-
-        if ($idPago > 0) {
-            $stmtP = $this->db->prepare("SELECT id_venta, monto, id_metodo_pago FROM pagos_registro WHERE id = ?");
-            $stmtP->execute([$idPago]);
-            $pago = $stmtP->fetch(PDO::FETCH_OBJ);
-
-            if ($pago) {
-                $stmtUpd = $this->db->prepare("
-                    UPDATE pagos_registro 
-                    SET estado_verificacion = 'aprobado', verificado_por = ?, fecha_verificacion = NOW() 
-                    WHERE id = ?
-                ");
-                $stmtUpd->execute([$idAdmin, $idPago]);
-
-                $stmtTot = $this->db->prepare("SELECT total, origen_venta FROM ventas WHERE id = ?");
-                $stmtTot->execute([$pago->id_venta]);
-                $ventaActual = $stmtTot->fetch(PDO::FETCH_OBJ);
-
-                $stmtAprob = $this->db->prepare("SELECT COALESCE(SUM(monto), 0) FROM pagos_registro WHERE id_venta = ? AND estado_verificacion = 'aprobado'");
-                $stmtAprob->execute([$pago->id_venta]);
-                $totalAprobado = (float)$stmtAprob->fetchColumn();
-
-                if ($totalAprobado >= (float)$ventaActual->total) {
-                    $nuevoEstado = ($ventaActual->origen_venta === 'tienda_fisica') ? 'retirado' : 'pagado';
-                    $stmtVentaUpd = $this->db->prepare("UPDATE ventas SET estado = ?, id_metodo_pago = ? WHERE id = ?");
-                    $stmtVentaUpd->execute([$nuevoEstado, $pago->id_metodo_pago, $pago->id_venta]);
-                }
-
-                $this->log('Ventas', 'VERIFICACION', "Aprobó pago ID: {$idPago} venta #{$pago->id_venta}");
-
-                $_SESSION['alerta'] = [
-                    'tipo' => 'success',
-                    'titulo' => '¡Pago aprobado!',
-                    'texto' => "El pago ID #{$idPago} fue verificado y sumado a Pagos por banco.",
-                    'deshacer_id' => $idPago
-                ];
-            }
+    // =========================================================================
+    // EDITAR DATOS DE PAGO Y PRODUCTOS DESDE VERIFICACIÓN
+    // =========================================================================
+    public function editarPagoVerificacion() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header("Location: index.php?action=verificar_pagos");
+            exit();
         }
 
-        header("Location: index.php?action=verificar_pagos&estado=pendiente");
-        exit();
+        $idPago       = (int)($_POST['id_pago'] ?? 0);
+        $idVenta      = (int)($_POST['id_venta'] ?? 0);
+        $idMetodoPago = (int)($_POST['id_metodo_pago'] ?? 0);
+        $banco        = trim($_POST['banco'] ?? 'No Indicado');
+        $referencia   = trim($_POST['referencia'] ?? 'Sin referencia');
+        $tasaCambio   = (float)($_POST['tasa_cambio'] ?? 875.65);
+        $productos    = $_POST['productos'] ?? [];
+
+        if ($idPago <= 0 || $idVenta <= 0) {
+            header("Location: index.php?action=verificar_pagos");
+            exit();
+        }
+
+        try {
+            $this->db->beginTransaction();
+
+            $nuevoTotalUsd = 0;
+            if (!empty($productos)) {
+                $this->db->prepare("DELETE FROM detalle_ventas WHERE id_venta = ?")->execute([$idVenta]);
+
+                $stmtProd = $this->db->prepare("SELECT precio FROM productos WHERE id = ?");
+                $stmtDet  = $this->db->prepare("INSERT INTO detalle_ventas (id_venta, id_producto, cantidad, precio_unitario, subtotal) VALUES (?, ?, ?, ?, ?)");
+
+                foreach ($productos as $idProd => $cant) {
+                    $cant = (int)$cant;
+                    if ($cant <= 0) continue;
+
+                    $stmtProd->execute([$idProd]);
+                    $precio = (float)($stmtProd->fetchColumn() ?: 0);
+                    $subtotal = round($precio * $cant, 2);
+                    $nuevoTotalUsd += $subtotal;
+
+                    $stmtDet->execute([$idVenta, $idProd, $cant, $precio, $subtotal]);
+                }
+
+                $stmtUpVenta = $this->db->prepare("UPDATE ventas SET total = ? WHERE id = ?");
+                $stmtUpVenta->execute([$nuevoTotalUsd, $idVenta]);
+            } else {
+                $stmtT = $this->db->prepare("SELECT total FROM ventas WHERE id = ?");
+                $stmtT->execute([$idVenta]);
+                $nuevoTotalUsd = (float)$stmtT->fetchColumn();
+            }
+
+            $stmtM = $this->db->prepare("SELECT nombre FROM metodos_pago WHERE id = ?");
+            $stmtM->execute([$idMetodoPago]);
+            $nomMetodo = $stmtM->fetchColumn() ?: '';
+
+            $esDolar = (stripos($nomMetodo, '$') !== false || stripos($nomMetodo, 'divisas') !== false);
+            $moneda  = $esDolar ? 'USD' : 'VES';
+            $monto   = $esDolar ? $nuevoTotalUsd : round($nuevoTotalUsd * $tasaCambio, 2);
+
+            $stmtUpPago = $this->db->prepare("
+                UPDATE pagos_registro 
+                SET id_metodo_pago = ?,
+                    moneda = ?,
+                    monto = ?,
+                    tasa_cambio = ?,
+                    referencia = ?,
+                    banco = ?
+                WHERE id = ?
+            ");
+            $stmtUpPago->execute([
+                $idMetodoPago,
+                $moneda,
+                $monto,
+                $tasaCambio,
+                $referencia,
+                $banco,
+                $idPago
+            ]);
+
+            $this->db->commit();
+            header("Location: index.php?action=verificar_pagos&msg=actualizado");
+            exit();
+
+        } catch (\Throwable $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            header("Location: index.php?action=verificar_pagos&error=" . urlencode($e->getMessage()));
+            exit();
+        }
+    }
+
+    // =========================================================================
+    // APROBAR PAGO Y DESCONTAR INVENTARIO
+    // =========================================================================
+    public function aprobarPago() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header("Location: index.php?action=verificar_pagos");
+            exit();
+        }
+
+        $idPago = (int)($_POST['id'] ?? 0);
+        $idAdmin = $_SESSION['id_usuario'] ?? $_SESSION['id'] ?? 1;
+
+        if ($idPago <= 0) {
+            header("Location: index.php?action=verificar_pagos");
+            exit();
+        }
+
+        try {
+            $this->db->beginTransaction();
+
+            $stmtP = $this->db->prepare("SELECT id_venta FROM pagos_registro WHERE id = ? LIMIT 1");
+            $stmtP->execute([$idPago]);
+            $idVenta = (int)$stmtP->fetchColumn();
+
+            if (!$idVenta) {
+                throw new Exception("Pago no encontrado.");
+            }
+
+            $stmtAprobar = $this->db->prepare("
+                UPDATE pagos_registro 
+                SET estado_verificacion = 'aprobado',
+                    verificado_por = ?,
+                    fecha_verificacion = NOW()
+                WHERE id = ?
+            ");
+            $stmtAprobar->execute([$idAdmin, $idPago]);
+
+            $stmtV = $this->db->prepare("UPDATE ventas SET estado = 'pagado' WHERE id = ?");
+            $stmtV->execute([$idVenta]);
+
+            $ventaModel = new VentaModel();
+            $ventaModel->descontarStockDeVenta($idVenta);
+
+            $this->db->commit();
+
+            $_SESSION['alerta'] = [
+                'tipo'   => 'success',
+                'titulo' => 'Pago aprobado',
+                'texto'  => 'El pago fue conciliado y el stock se descontó correctamente.'
+            ];
+            header("Location: index.php?action=verificar_pagos");
+            exit();
+
+        } catch (\Throwable $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            $_SESSION['alerta'] = [
+                'tipo'   => 'error',
+                'titulo' => 'Error al aprobar',
+                'texto'  => $e->getMessage()
+            ];
+            header("Location: index.php?action=verificar_pagos");
+            exit();
+        }
     }
 
     public function rechazarPago() {
@@ -575,7 +690,6 @@ if ($todosAprobados) {
         $stmt->execute($params);
         $pagosRecibidos = $stmt->fetchAll(PDO::FETCH_OBJ);
 
-        // Preparamos y limpiamos el titular para cada pago
         foreach ($pagosRecibidos as $p) {
             $titularLimpio = '';
             if (!empty($p->observacion)) {
@@ -594,53 +708,80 @@ if ($todosAprobados) {
     }
 
     // =========================================================================
-    // 5. RETIRO DE PEDIDOS
+    // 5. RETIRO DE PEDIDOS (ENTREGA DE VENTAS PAGADAS)
     // =========================================================================
     public function retiroPedidos() {
-        require_once 'models/BcvService.php';
-        $bcv = new BcvService($this->db);
-        $tasaActual = $bcv->obtenerTasaActiva() ?: 526.87;
+        $estadoTab = $_GET['estado'] ?? 'por_retirar';
 
-        $sql = "SELECT v.id, v.fecha, CONCAT(COALESCE(u.nombre, 'Cliente'), ' ', COALESCE(u.apellido, '')) AS nombre_cliente,
-                       u.telefono, COALESCE(mp.nombre, 'Mixto') AS nombre_metodo, v.total,
-                       ROUND(v.total * {$tasaActual}, 2) AS total_bs, v.estado, v.fecha_entrega, v.retirado_por
+        // Si la pestaña es entregados buscamos 'entregado' o 'retirado', sino 'pagado'
+        $estadoSql = ($estadoTab === 'entregados') ? "v.estado IN ('entregado', 'retirado')" : "v.estado = 'pagado'";
+
+        $sql = "SELECT v.id, 
+                       v.id AS id_venta,
+                       CONCAT(COALESCE(u.nombre, 'Cliente'), ' ', COALESCE(u.apellido, '')) AS cliente,
+                       COALESCE(u.nombre, 'Cliente') AS nombre_cliente,
+                       u.cedula AS cliente_cedula,
+                       u.telefono AS cliente_telefono,
+                       v.total,
+                       v.fecha,
+                       v.estado,
+                       COALESCE(mp.nombre, 'Pago Móvil / Transferencia') AS metodo_pago,
+                       pr.referencia,
+                       pr.banco
                 FROM ventas v
                 LEFT JOIN usuarios u ON v.id_usuario = u.id
-                LEFT JOIN metodos_pago mp ON v.id_metodo_pago = mp.id
-                WHERE v.estado IN ('pagado', 'retirado') AND v.deleted_at IS NULL
-                ORDER BY v.id DESC";
-        $ventas = $this->db->query($sql)->fetchAll(PDO::FETCH_OBJ);
+                LEFT JOIN pagos_registro pr ON pr.id_venta = v.id
+                LEFT JOIN metodos_pago mp ON pr.id_metodo_pago = mp.id
+                WHERE {$estadoSql}
+                GROUP BY v.id
+                ORDER BY v.fecha DESC";
 
-        require_once 'views/retiro_pedidos.php';
+        $pedidos = $this->db->query($sql)->fetchAll(PDO::FETCH_OBJ);
+
+        // Se declaran con los distintos nombres de variable para compatibilidad con la vista
+        $retiros = $pedidos;
+        $ventas  = $pedidos;
+
+        if (file_exists('views/ventas/retiro_pedidos.php')) {
+            require_once 'views/ventas/retiro_pedidos.php';
+        } elseif (file_exists('views/retiro_pedidos.php')) {
+            require_once 'views/retiro_pedidos.php';
+        }
     }
 
-    public function procesarRetiro($id = null) {
-        $idVenta = (int)($_GET['id'] ?? $id ?? 0);
-        $retira = $_GET['retira'] ?? 'cliente';
-        $retiradoPor = trim($_GET['retirado_por'] ?? '');
-        $retiradoCedula = trim($_GET['retirado_cedula'] ?? '');
+   public function procesarRetiro($id = null) {
+        $id = (int)($id ?? $_GET['id'] ?? $_POST['id'] ?? 0);
+        if ($id > 0) {
+            // Actualizamos a 'retirado' para que coincida con el estado estándar del sistema
+            $stmt = $this->db->prepare("UPDATE ventas SET estado = 'retirado' WHERE id = ?");
+            $stmt->execute([$id]);
 
-        if ($idVenta > 0) {
-            $stmt = $this->db->prepare("
-                UPDATE ventas 
-                SET estado = 'retirado', fecha_entrega = NOW(), retirado_por = ?, retirado_cedula = ?
-                WHERE id = ?
-            ");
-            $nombreEntrega = ($retira === 'cliente') ? 'Titular de la cuenta' : $retiradoPor;
-            $stmt->execute([$nombreEntrega, $retiradoCedula, $idVenta]);
-
-            $this->log('Ventas', 'UPDATE', "Pedido entregado #{$idVenta} a: {$nombreEntrega}");
+            $_SESSION['alerta'] = [
+                'tipo' => 'success',
+                'titulo' => 'Pedido Retirado',
+                'texto' => 'El pedido fue marcado como retirado satisfactoriamente.'
+            ];
         }
-
         header("Location: index.php?action=retiro_pedidos");
         exit();
     }
-
     // =========================================================================
     // 6. DETALLE DE VENTA
     // =========================================================================
     public function verDetalle($id = null) {
         $idVenta = (int)($_GET['id'] ?? $id ?? 0);
+
+        if (isset($_GET['formato']) && $_GET['formato'] === 'json') {
+            header('Content-Type: application/json');
+            $sqlD = "SELECT dv.*, p.nombre_producto, p.nombre_producto AS producto_nombre, p.precio
+                     FROM detalle_ventas dv
+                     INNER JOIN productos p ON dv.id_producto = p.id
+                     WHERE dv.id_venta = ?";
+            $stmtD = $this->db->prepare($sqlD);
+            $stmtD->execute([$idVenta]);
+            echo json_encode(['ok' => true, 'detalles' => $stmtD->fetchAll(PDO::FETCH_OBJ)]);
+            exit();
+        }
 
         $sqlV = "SELECT v.*, 
                         COALESCE(u.nombre, 'Consumidor Final') AS nombre,
@@ -679,7 +820,11 @@ if ($todosAprobados) {
         $stmtP->execute([$idVenta]);
         $pagos = $stmtP->fetchAll(PDO::FETCH_OBJ);
 
-        require_once 'views/detalle_venta.php';
+        if (file_exists('views/ventas/detalle_venta.php')) {
+            require_once 'views/ventas/detalle_venta.php';
+        } else {
+            require_once 'views/detalle_venta.php';
+        }
     }
 
     // =========================================================================

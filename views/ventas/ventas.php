@@ -16,17 +16,18 @@ $estados = [
     'pendiente'  => ['pend', 'Pendiente de pago'],
     'pagado'     => ['az', 'Pagado, por retirar'],
     'retirado'   => ['ok', 'Retirado'],
-    'entregado'  => ['ok', 'Entregado'],
+    'entregado'  => ['ok', 'Retirado'],
     'completado' => ['ok', 'Completado'],
     'cancelado'  => ['agot', 'Cancelado']
 ];
 
 // Cálculo de métricas sobre las ventas filtradas
-$validas = array_filter($ventas, fn($v) => $v->estado !== 'cancelado');
+$validas = array_filter($ventas, fn($v) => ($v->estado ?? '') !== 'cancelado');
 $total = array_sum(array_map(fn($v) => (float)$v->total, $validas));
 $tienda = array_sum(array_map(fn($v) => (float)$v->total, array_filter($validas, fn($v) => ($v->origen_venta ?? '') === 'tienda_fisica')));
-$porCobrar = array_sum(array_map(fn($v) => (float)$v->total, array_filter($ventas, fn($v) => $v->estado === 'pendiente')));
+$porCobrar = array_sum(array_map(fn($v) => (float)$v->total, array_filter($ventas, fn($v) => ($v->estado ?? '') === 'pendiente')));
 $pctTienda = $total > 0 ? round(($tienda / $total) * 100) : 0;
+$pctOnline = $total > 0 ? (100 - $pctTienda) : 0;
 ?>
 <section class="contenido">
   <header class="cab">
@@ -64,7 +65,7 @@ $pctTienda = $total > 0 ? round(($tienda / $total) * 100) : 0;
   <section class="mini-kpis" aria-label="Resumen del periodo">
     <div><span class="mk-ic"><svg class="i"><use href="#i-dolar"/></svg></span><span>Vendido</span><b><?= $usd($total) ?></b><small><?= $bs($total) ?></small></div>
     <div class="mk-oscuro"><span class="mk-ic"><svg class="i"><use href="#i-recibo"/></svg></span><span>Ventas</span><b><?= count($validas) ?></b><small>ticket promedio <?= $usd(count($validas) ? $total / count($validas) : 0) ?></small></div>
-    <div class="mk-claro"><span class="mk-ic"><svg class="i"><use href="#i-tienda"/></svg></span><span>Tienda / Online</span><b><?= $pctTienda ?>% / <?= $total ? (100 - $pctTienda) : 0 ?>%</b><small><?= $usd($tienda) ?> en tienda</small><span class="mk-barra" aria-hidden="true"><i style="width: <?= $pctTienda ?>%"></i><i style="width: <?= $total ? 100 - $pctTienda : 0 ?>%"></i></span></div>
+    <div class="mk-claro"><span class="mk-ic"><svg class="i"><use href="#i-tienda"/></svg></span><span>Tienda / Online</span><b><?= $pctTienda ?>% / <?= $pctOnline ?>%</b><small><?= $usd($tienda) ?> en tienda</small><span class="mk-barra" aria-hidden="true"><i style="width: <?= $pctTienda ?>%"></i><i style="width: <?= $pctOnline ?>%"></i></span></div>
     <div class="mk-ambar"><span class="mk-ic"><svg class="i"><use href="#i-alerta"/></svg></span><span>Por cobrar</span><b><?= $usd($porCobrar) ?></b><small>pagos sin verificar</small></div>
   </section>
 
@@ -84,7 +85,8 @@ $pctTienda = $total > 0 ? round(($tienda / $total) * 100) : 0;
         </thead>
         <tbody>
         <?php foreach ($ventas as $v): 
-          $es = $estados[$v->estado] ?? ['pend', $v->estado]; 
+          $keyEstado = strtolower(trim($v->estado ?? 'pendiente'));
+          $es = $estados[$keyEstado] ?? ['pend', ucfirst($keyEstado)]; 
           $origen = ($v->origen_venta ?? 'online') === 'online' ? 'Online' : 'Tienda'; 
         ?>
           <tr>
