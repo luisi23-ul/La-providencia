@@ -616,11 +616,11 @@ class AdminControllers {
         $datosEstadisticas = $this->productoModelo->obtenerEstadisticasGenerales();
         require_once 'views/grafico_tortas.php';
     }
-    public function verReporte() {
+   public function verReporte() {
         require_once 'models/MetodoPagoModel.php';
-        $metodoModel = new MetodoPagoModel();
+        $metodoModel = new MetodoPagoModel($this->db);
 
-        $idMetodo = (int)($_GET['metodo'] ?? 1);
+        $idMetodo = (int)($_GET['metodo'] ?? 4);
         $metodo = $metodoModel->obtenerPorId($idMetodo);
 
         if (!$metodo) {
@@ -629,37 +629,37 @@ class AdminControllers {
             exit();
         }
 
-        // Filtro rápido de fecha
-        $rango = $_GET['rango'] ?? 'este_mes';
-        $desde = $_GET['desde'] ?? '';
-        $hasta = $_GET['hasta'] ?? '';
+        $metodoId     = (int)$metodo->id;
+        $metodoNombre = $metodo->nombre ?? 'Pago Móvil';
 
-        if ($rango === 'hoy') {
-            $desde = $hasta = date('Y-m-d');
-        } elseif ($rango === 'ayer') {
-            $desde = $hasta = date('Y-m-d', strtotime('-1 day'));
-        } elseif ($rango === '7dias') {
-            $desde = date('Y-m-d', strtotime('-6 days'));
-            $hasta = date('Y-m-d');
-        } elseif ($rango === 'este_mes') {
-            $desde = date('Y-m-01');
-            $hasta = date('Y-m-t');
-        }
-
+        // Fechas
+        $desde = $_GET['desde'] ?? date('Y-m-01');
+        $hasta = $_GET['hasta'] ?? date('Y-m-d');
         $bancoSel  = trim($_GET['banco'] ?? '');
         $estadoSel = trim($_GET['estado'] ?? '');
 
-        // Obtener datos del modelo
-        $bancosDisponibles = $metodoModel->obtenerBancosDisponibles();
-        $listaPagos        = $metodoModel->obtenerReportePagos($idMetodo, $desde, $hasta, $bancoSel, $estadoSel);
-        $totales           = $metodoModel->obtenerResumenTotales($idMetodo, $desde, $hasta, $bancoSel, $estadoSel);
+        // Consultar los pagos registrados en la BD
+        $listaBruta = $metodoModel->obtenerReportePagos($metodoId, '', '', $bancoSel, $estadoSel);
 
-        $aviso = $_SESSION['aviso'] ?? null;
-        unset($_SESSION['aviso']);
+        // Mapear los datos al formato que espera views/ventas/cobrado_metodo.php
+        $ventas = [];
+        $tasa = 1;
 
-        require_once 'views/ver_reporte.php';
+        foreach ($listaBruta as $p) {
+            $tasa = (float)($p->tasa_cambio ?? 1);
+            $ventas[] = (object)[
+                'id'             => (int)$p->id_venta,
+                'fecha'          => $p->fecha_pago,
+                'nombre_cliente' => !empty(trim($p->cliente_nombre)) ? $p->cliente_nombre : 'Consumidor final',
+                'total'          => (float)($p->monto ?? 0),
+                'total_bs'       => (float)($p->monto_bs ?? 0),
+                'banco'          => $p->banco ?? '',
+                'referencia'     => $p->referencia ?? ''
+            ];
+        }
+
+        require_once 'views/ventas/cobrado_metodo.php';
     }
-
     public function confirmarPago() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             require_once 'models/MetodoPagoModel.php';

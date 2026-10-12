@@ -149,9 +149,8 @@ switch ($action) {
     case 'confirmar_pago':       $ventaC->confirmarPago($_GET['id'] ?? null); break;
     case 'procesar_retiro':      $ventaC->procesarRetiro($_GET['id'] ?? null); break;
     case 'detalle_venta':        $ventaC->verDetalle($_GET['id'] ?? null); break;
-    case 'ver_reporte':
-        $id_metodo = isset($_GET['metodo']) ? intval($_GET['metodo']) : 0;
-        $ventaC->manejarReporte($id_metodo);
+  case 'ver_reporte':
+        $adminC->verReporte();
         break;
 
     // Panel Admin: Compras y Proveedores
