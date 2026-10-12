@@ -158,15 +158,49 @@ public function ingresar() {
     }
 
 public function listarClientes() {
-    $modelo = new UsuarioModels($this->db);
-    
-   
-    $clientes = $modelo->obtenerClientes(); 
-    
-   
-    require_once 'views/admin_clientes.php';
-}
+        try {
+            // Consulta para obtener todos los clientes (rol = 3) junto con su conteo de compras y total gastado
+            $sql = "SELECT 
+                        u.*,
+                        COUNT(DISTINCT v.id) AS compras,
+                        COALESCE(SUM(v.total), 0) AS total_compras
+                    FROM usuarios u
+                    LEFT JOIN ventas v 
+                           ON v.id_usuario = u.id 
+                          AND (v.estado IN ('retirado', 'pagado', 'completada', 'aprobada') OR v.estado IS NULL)
+                    WHERE u.id_rol = 3
+                    GROUP BY u.id
+                    ORDER BY u.id DESC";
 
+            $stmt = $this->db->query($sql);
+            $clientes = $stmt->fetchAll(PDO::FETCH_OBJ);
+
+            // Respaldo: si por caja se registraron ventas sin id_usuario pero con coincidencia de nombre o cédula
+            foreach ($clientes as $c) {
+                if ((int)$c->compras === 0 && !empty($c->nombre)) {
+                    $nombreCompleto = trim($c->nombre . ' ' . ($c->apellido ?? ''));
+                    $sqlExtra = "SELECT COUNT(id) AS compras, COALESCE(SUM(total), 0) AS total_compras 
+                                 FROM ventas 
+                                 WHERE (nombre_cliente LIKE ? OR nombre_cliente LIKE ?)
+                                   AND (estado IN ('retirado', 'pagado', 'completada', 'aprobada') OR estado IS NULL)";
+                    $stmtEx = $this->db->prepare($sqlExtra);
+                    $stmtEx->execute(['%' . $c->nombre . '%', '%' . $nombreCompleto . '%']);
+                    $resEx = $stmtEx->fetch(PDO::FETCH_OBJ);
+                    if ($resEx && (int)$resEx->compras > 0) {
+                        $c->compras = (int)$resEx->compras;
+                        $c->total_compras = (float)$resEx->total_compras;
+                    }
+                }
+            }
+        } catch (Exception $e) {
+            // Fallback por si la estructura tiene alguna particularidad
+            require_once 'models/UsuarioModels.php';
+            $modelo = new UsuarioModels($this->db);
+            $clientes = $modelo->obtenerClientes();
+        }
+
+        require_once 'views/admin_clientes.php';
+    }
 public function cambiarEstadoCliente() {
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $id = $_GET['id'];
