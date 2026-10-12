@@ -2,7 +2,45 @@
 $permisosUsuario = $_SESSION['permisos'] ?? [];
 $rol = $_SESSION['rol'] ?? 0;
 $panelMaster = $panelMaster ?? false;
-$puede = fn($codigo) => $rol == 1 || in_array($codigo, $permisosUsuario);
+// Mapeo de sinónimos: lo que pide el menú => lo que existe en la tabla permisos
+$equivalencias = [
+    'gestionar_productos' => ['gestionar_productos', 'listar_productos', 'cargar_producto'],
+    'categorias'          => ['categorias', 'gestionar_categorias'],
+    'ajustes_inventario'  => ['ajustes_inventario', 'ajustes_stock'],
+    'kardex'              => ['kardex', 'ver_kardex'],
+    'ventas'              => ['ventas', 'listar_ventas'],
+    'pagos'               => ['pagos', 'verificar_pagos', 'pagos_banco'],
+    'retiros'             => ['retiros', 'retiro_pedidos'],
+    'punto_venta'         => ['punto_venta'],
+    'proveedores'         => ['proveedores', 'gestionar_proveedores'],
+    'compras'             => ['compras', 'gestionar_compras'],
+    'clientes'            => ['clientes', 'gestionar_clientes'],
+    'metodos_pago'        => ['metodos_pago', 'gestionar_metodos_pago'],
+    'graficos'            => ['graficos', 'ver_estadisticas']
+];
+
+$puede = function($codigo) use ($rol, $permisosUsuario, $equivalencias) {
+    // Rol Master o comodín total
+    if ((int)$rol === 1 || in_array('*', $permisosUsuario, true)) {
+        return true;
+    }
+
+    // Coincidencia directa
+    if (in_array($codigo, $permisosUsuario, true)) {
+        return true;
+    }
+
+    // Comprobación por tabla de equivalencias
+    if (isset($equivalencias[$codigo])) {
+        foreach ($equivalencias[$codigo] as $posibleCodigo) {
+            if (in_array($posibleCodigo, $permisosUsuario, true)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+};
 $e = fn($v) => htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8');
 $usd = fn($v) => '$' . number_format((float) $v, 2);
 $tasa = $tasa ?? 526.8694;

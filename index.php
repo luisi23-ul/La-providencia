@@ -63,21 +63,23 @@ if ($action == 'cerrar_sesion')           { $usuarioC->cerrarSesion(); exit(); }
 // -----------------------------------------------------------------------------
 if (in_array($action, $acciones_master)) {
     if (isset($_SESSION['rol']) && ($_SESSION['rol'] == 1 || $_SESSION['rol'] == 2)) {
-        switch ($action) {
-            case 'dashboard_master':         $masterC->mostrarDashboard_master(); break;
-            case 'gestionar_admins':          $masterC->gestionarAdmins(); break;
-            case 'nuevo_admin':               include "views/nuevo_admin.php"; break;
-            case 'guardar_nuevo_admin':       $masterC->crearAdmin(); break;
-            case 'editar_admin':              $masterC->editarAdmin(); break;
-            case 'actualizar_admin':          $masterC->actualizarAdmin(); break;
-            case 'eliminar_admin':            $masterC->eliminarAdmin($_GET['id'] ?? null); break;
-            case 'listado_administradores':   $masterC->listarAdministradores(); break;
-            case 'toggle_admin':              $masterC->toggleAdmin(); break;
-            case 'configuracion_sistema':     $masterC->vistaConfiguracion(); break;
-            case 'actualizar_configuracion':  $masterC->actualizarConfiguracion(); break;
-            case 'roles_permisos':            include 'views/master/roles_permisos.php'; break;
-            case 'auditoria':                 include 'views/master/auditoria.php'; break;
-        }
+       switch ($action) {
+                case 'dashboard_master':        $masterC->mostrarDashboard_master(); break;
+                case 'gestionar_admins':         $masterC->gestionarAdmins(); break;
+                case 'nuevo_admin':              $masterC->nuevoAdmin(); break;
+                case 'guardar_nuevo_admin':      $masterC->crearAdmin(); break;
+                case 'editar_admin':             $masterC->editarAdmin(); break;
+                case 'actualizar_admin':         $masterC->actualizarAdmin(); break;
+                case 'eliminar_admin':           $masterC->eliminarAdmin($_GET['id'] ?? null); break;
+                case 'listado_administradores':  $masterC->listarAdministradores(); break;
+                case 'toggle_admin':             $masterC->toggleAdmin(); break;
+                case 'configuracion_sistema':    $masterC->vistaConfiguracion(); break;
+                case 'actualizar_configuracion': $masterC->actualizarConfiguracion(); break;
+                case 'roles_permisos':           $masterC->rolesPermisos(); break;
+                case 'guardar_permisos':         $masterC->guardarPermisos(); break;
+                case 'guardar_rol':              $masterC->guardarRol(); break;
+                case 'auditoria':                $masterC->auditoria(); break;
+            }
         ob_end_flush();
         exit();
     } else {

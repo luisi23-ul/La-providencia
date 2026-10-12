@@ -36,7 +36,18 @@ $grupos = $panelMaster ? [
 $contadores = $contadores ?? [];
 $nombreUsuario = $_SESSION['nombre'] ?? 'Usuario';
 $iniciales = strtoupper(implode('', array_map(fn($p) => mb_substr($p, 0, 1), array_slice(preg_split('/\s+/', trim($nombreUsuario)), 0, 2))));
-$nombresRol = [1 => 'Master', 2 => 'Administrador', 4 => 'Vendedor', 5 => 'Cajero'];
+// Obtener el nombre del rol dinámicamente si no está en sesión
+$rolNombre = $_SESSION['nombre_rol'] ?? null;
+if (!$rolNombre) {
+    try {
+        $stmtR = $GLOBALS['db']->prepare("SELECT nombre_rol FROM roles WHERE id = ?");
+        $stmtR->execute([(int)$rol]);
+        $rolNombre = $stmtR->fetchColumn() ?: 'Personal';
+        $_SESSION['nombre_rol'] = $rolNombre;
+    } catch (Exception $e) {
+        $rolNombre = 'Personal';
+    }
+}
 ?>
 <aside class="lateral" aria-label="Menú del panel">
   <div class="marca"><span class="marca-logo"><?= $e($inicialTienda) ?></span><div><strong><?= $e($nombreTienda) ?></strong><span><?= $panelMaster ? 'Panel Master' : 'Panel Admin' ?></span></div></div>
