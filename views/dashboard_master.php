@@ -4,10 +4,16 @@ $tituloPagina = 'Inicio Master';
 $panelMaster = true;
 $resumen = $resumen ?? [];
 $actividad = $actividad ?? [];
+
+// Definición de tasa y funciones de formato de moneda si no vienen desde _abrir.php
+$tasa = $tasa ?? 526.87;
+$usd  = $usd ?? fn($v) => '$' . number_format((float) $v, 2);
+$bs   = $bs ?? fn($v) => number_format((float) $v * (float) $tasa, 2, ',', '.') . ' Bs';
+
 include __DIR__ . '/admin/_abrir.php';
 $activos = (int) ($resumen['personal_activo'] ?? 0);
 $cuentas = (int) ($resumen['cuentas'] ?? 0);
-$inactivas = $cuentas - $activos;
+$inactivas = max(0, $cuentas - $activos);
 $nombresRoles = $resumen['roles'] ?? [];
 $ultimoRol = array_pop($nombresRoles);
 $listaRoles = $nombresRoles ? implode(', ', $nombresRoles) . ' y ' . $ultimoRol : (string) $ultimoRol;

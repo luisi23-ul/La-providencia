@@ -230,25 +230,50 @@ class MasterController {
 
     public function actualizarConfiguracion() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            require_once 'models/ConfiguracionModel.php';
+            $modeloConfig = new ConfiguracionModel($this->db);
+
             $datos = $_POST;
 
-            if (isset($_FILES['logo']) && $_FILES['logo']['error'] === 0) {
+            // Procesar modo de tasa y valor manual
+            $datos['tasa_modo'] = $_POST['tasa_modo'] ?? 'bcv';
+            $datos['tasa_manual'] = (float) str_replace(',', '.', $_POST['tasa_manual'] ?? 0);
+
+            // Manejo de la subida de logo si se seleccionó uno nuevo
+            if (isset($_FILES['logo']) && $_FILES['logo']['error'] === UPLOAD_ERR_OK) {
                 $nombreArchivo = 'logo_' . time() . '.png';
                 $rutaDestino = 'public/img/' . $nombreArchivo;
-                move_uploaded_file($_FILES['logo']['tmp_name'], $rutaDestino);
-                $datos['logo_path'] = $rutaDestino;
+                if (move_uploaded_file($_FILES['logo']['tmp_name'], $rutaDestino)) {
+                    $datos['logo_path'] = $rutaDestino;
+                }
             } else {
                 $datos['logo_path'] = $_POST['logo_path_actual'] ?? '';
             }
 
-            $this->modeloConfig->actualizar($datos);
-            $this->registrarAuditoria("Actualización de la configuración general de la tienda", "Configuración");
+            // Si se eligió modo automático BCV, actualizar tasa inmediatamente
+            if ($datos['tasa_modo'] === 'bcv') {
+                require_once 'models/BcvService.php';
+                $bcvService = new BcvService($this->db);
+                $nuevaTasa = $bcvService->consultarApiBcv();
+                if ($nuevaTasa > 0) {
+                    $bcvService->actualizarTasaBcvEnBD($nuevaTasa);
+                }
+            }
 
-            header("Location: index.php?action=configuracion_sistema&status=ok");
+            // Guardar en la tabla sistema
+            $modeloConfig->actualizar($datos);
+
+            // Registrar en auditoría
+            $modoTexto = ($datos['tasa_modo'] === 'manual') ? "manual ({$datos['tasa_manual']} Bs)" : "automática (BCV)";
+            $this->registrarAuditoria("Actualizó la configuración del sistema (Tasa: {$modoTexto})", "Configuración", "UPDATE");
+
+            if (session_status() === PHP_SESSION_NONE) session_start();
+            $_SESSION['aviso'] = ['Configuración guardada correctamente.', 'ok'];
+
+            header("Location: index.php?action=configuracion_sistema");
             exit();
         }
     }
-
     /* =========================================================================
        4. ROLES Y PERMISOS
        ========================================================================= */
@@ -376,5 +401,33 @@ class MasterController {
         } catch (Exception $e) {}
 
         include 'views/master/auditoria.php';
+    }
+    /**
+     * Registra un evento en la tabla auditoria_logs
+     */
+    private function registrarAuditoria($descripcion, $modulo = 'General', $accion = 'UPDATE') {
+        try {
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
+            $idUsuario = $_SESSION['id_usuario'] ?? null;
+            $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+            if ($ip === '::1') {
+                $ip = '127.0.0.1';
+            }
+
+            $sql = "INSERT INTO auditoria_logs (id_usuario, modulo, accion, descripcion, ip, fecha) 
+                    VALUES (:id_usuario, :modulo, :accion, :descripcion, :ip, NOW())";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([
+                ':id_usuario'   => $idUsuario,
+                ':modulo'       => $modulo,
+                ':accion'       => $accion,
+                ':descripcion'  => $descripcion,
+                ':ip'           => $ip
+            ]);
+        } catch (Exception $e) {
+            // Evitar interrumpir la ejecución si falla el log
+        }
     }
 }

@@ -2,6 +2,7 @@
 $permisosUsuario = $_SESSION['permisos'] ?? [];
 $rol = $_SESSION['rol'] ?? 0;
 $panelMaster = $panelMaster ?? false;
+
 // Mapeo de sinónimos: lo que pide el menú => lo que existe en la tabla permisos
 $equivalencias = [
     'gestionar_productos' => ['gestionar_productos', 'listar_productos', 'cargar_producto'],
@@ -41,10 +42,15 @@ $puede = function($codigo) use ($rol, $permisosUsuario, $equivalencias) {
 
     return false;
 };
+
 $e = fn($v) => htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8');
 $usd = fn($v) => '$' . number_format((float) $v, 2);
-$tasa = $tasa ?? 526.8694;
-$bs = fn($v) => number_format((float) $v * $tasa, 2) . ' Bs';
+
+require_once __DIR__ . '/../../models/BcvService.php';
+$bcvService = new BcvService();
+$tasa = $bcvService->obtenerTasaActiva() ?: 875.65;
+$bs = fn($v) => number_format((float) $v * (float) $tasa, 2, ',', '.') . ' Bs';
+
 if (empty($aviso) && !empty($_SESSION['aviso'])) {
     $avisoSesion = $_SESSION['aviso'];
     unset($_SESSION['aviso']);
