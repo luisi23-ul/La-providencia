@@ -75,9 +75,9 @@ public function verificarUsuario($email, $password) {
 }
 
 public function buscarUsuarioModel($datos) {
-    $sql = "SELECT id, nombre, clave, id_rol, permisos, estado 
-            FROM usuarios 
-            WHERE correo = :correo"; 
+        $sql = "SELECT id, nombre, clave, id_rol, estado
+                FROM usuarios
+                WHERE correo = :correo";
     
     $stmt = $this->db->prepare($sql);
     $stmt->execute([":correo" => $datos["correo"]]);
