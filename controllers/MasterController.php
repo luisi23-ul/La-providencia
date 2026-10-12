@@ -326,49 +326,55 @@ class MasterController {
        5. AUDITORÍA DEL SISTEMA
        ========================================================================= */
     public function auditoria() {
-        $desde = $_GET['desde'] ?? date('Y-m-d', strtotime('-6 days'));
-        $hasta = $_GET['hasta'] ?? date('Y-m-d');
-        $usuarioFiltro = $_GET['usuario'] ?? '';
-        $moduloFiltro  = $_GET['modulo'] ?? '';
+        date_default_timezone_set('America/Caracas');
+        
+        $q             = trim($_GET['q'] ?? '');
+        $usuarioFiltro = trim($_GET['usuario'] ?? '');
+        $moduloFiltro  = trim($_GET['modulo'] ?? '');
+        $desde         = $_GET['desde'] ?? date('Y-m-d', strtotime('-6 days'));
+        $hasta         = $_GET['hasta'] ?? date('Y-m-d');
 
-        $logs = [];
+        // 1. Cargar usuarios del personal para el selector de filtro
+        $usuarios = [];
         try {
-            $sql = "SELECT a.*, COALESCE(u.nombre, 'Sistema') AS usuario_nombre, u.correo
+            $stmtU = $this->db->query("SELECT id, nombre, apellido FROM usuarios WHERE id_rol != 3 ORDER BY nombre ASC");
+            $usuarios = $stmtU->fetchAll(PDO::FETCH_OBJ);
+        } catch (Exception $e) {}
+
+        // 2. Módulos disponibles en el sistema
+        $modulos = ['Ventas', 'Pagos', 'Inventario', 'Compras', 'Personal', 'Configuración', 'Roles y Permisos', 'Sesión'];
+
+        // 3. Consultar los registros con filtros dinámicos
+        $registros = [];
+        try {
+            $sql = "SELECT a.*, COALESCE(u.nombre, 'Sistema') AS usuario 
                     FROM auditoria_logs a
                     LEFT JOIN usuarios u ON a.id_usuario = u.id
                     WHERE DATE(a.fecha) >= ? AND DATE(a.fecha) <= ?";
             $params = [$desde, $hasta];
 
-            if (!empty($usuarioFiltro)) {
-                $sql .= " AND a.id_usuario = ?";
-                $params[] = $usuarioFiltro;
+            if ($q !== '') {
+                $sql .= " AND a.descripcion LIKE ?";
+                $params[] = '%' . $q . '%';
             }
-            if (!empty($moduloFiltro)) {
+
+            if ($usuarioFiltro !== '') {
+                $sql .= " AND a.id_usuario = ?";
+                $params[] = (int)$usuarioFiltro;
+            }
+
+            if ($moduloFiltro !== '') {
                 $sql .= " AND a.modulo = ?";
                 $params[] = $moduloFiltro;
             }
 
             $sql .= " ORDER BY a.fecha DESC";
+            
             $stmt = $this->db->prepare($sql);
             $stmt->execute($params);
-            $logs = $stmt->fetchAll(PDO::FETCH_OBJ);
+            $registros = $stmt->fetchAll(PDO::FETCH_OBJ);
         } catch (Exception $e) {}
 
-       include 'views/master/auditoria.php';
-    }
-
-    /* =========================================================================
-       MÉTODO AUXILIAR PARA AUDITORÍA
-       ========================================================================= */
-    private function registrarAuditoria($descripcion, $modulo = 'General') {
-        try {
-            if (session_status() == PHP_SESSION_NONE) session_start();
-            $idUsuario = $_SESSION['id_usuario'] ?? null;
-            $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
-
-            $stmt = $this->db->prepare("INSERT INTO auditoria_logs (id_usuario, accion, modulo, descripcion, ip, fecha) 
-                                       VALUES (?, ?, ?, ?, ?, NOW())");
-            $stmt->execute([$idUsuario, 'ACTUALIZAR', $modulo, $descripcion, $ip]);
-        } catch (Exception $e) {}
+        include 'views/master/auditoria.php';
     }
 }
