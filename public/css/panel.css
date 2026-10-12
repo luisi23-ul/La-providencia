@@ -2201,3 +2201,34 @@ body:has(.panel.modo-pos) .avisos { top: 76px; }
 #pv-lineas .pv-linea.abierta { background: linear-gradient(180deg, var(--ambar-suave), #fffaf1); border-left-color: var(--acento); }
 #pv-lineas .pv-linea .pl-var { color: var(--ambar); }
 #pv-lineas .pl-editor { border-color: #f0d9ae; }
+.me-cuerpo { display: flex; flex-direction: column; gap: 14px; }
+.me-fila { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+#me-ref { font-family: var(--f-num); letter-spacing: .02em; }
+.me-prods { border: 1px solid var(--linea); border-radius: 12px; overflow: hidden; }
+.me-prods > header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 10px 14px; background: var(--fondo); border-bottom: 1px solid var(--linea); }
+.me-prods h4 { margin: 0; font-size: 14.5px; font-weight: 600; }
+#me-lista-prods { list-style: none; margin: 0; padding: 0; max-height: 236px; overflow-y: auto; }
+#me-lista-prods li { display: grid; grid-template-columns: minmax(0, 1fr) auto 84px; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--linea-2); }
+#me-lista-prods li:last-child { border-bottom: 0; }
+#me-lista-prods li.me-cargando { display: block; color: var(--texto-2); font-size: 14px; }
+.me-nom { display: flex; flex-direction: column; min-width: 0; }
+.me-nom b { font-weight: 600; font-size: 15px; overflow-wrap: anywhere; }
+.me-nom span { font-size: 13px; color: var(--texto-2); font-family: var(--f-num); }
+.me-step input { width: 44px; min-height: 32px; border: 0; padding: 0; text-align: center; font: 600 15px var(--f-num); background: transparent; -moz-appearance: textfield; }
+.me-step input::-webkit-inner-spin-button, .me-step input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.me-sub { text-align: right; font-family: var(--f-num); font-weight: 600; font-variant-numeric: tabular-nums; }
+#me-lista-prods li.fuera .me-nom b { color: var(--texto-3); text-decoration: line-through; }
+#me-lista-prods li.fuera .me-sub { color: var(--rojo); font-family: inherit; font-size: 13.5px; }
+.me-total { display: flex; justify-content: space-between; align-items: baseline; margin: 0; padding: 12px 14px; border-top: 1px solid var(--linea); background: var(--marca-tenue); }
+.me-total span { font-size: 14px; color: var(--texto-2); }
+.me-total b { font-family: var(--f-num); font-size: 17px; font-weight: 700; }
+@media (max-width: 560px) { .me-fila { grid-template-columns: minmax(0, 1fr); } #me-lista-prods li { grid-template-columns: minmax(0, 1fr) auto; } .me-sub { grid-column: 1 / -1; text-align: left; font-size: 13.5px; } }
+.vf-cab .vf-editar { min-height: 40px; padding: 0 16px; background: var(--tarjeta); color: var(--marca); border: 1.5px solid var(--marca); font-weight: 600; box-shadow: 0 1px 2px rgba(16, 40, 30, .12), 0 6px 14px -4px rgba(16, 40, 30, .28); transition: background-color 150ms ease, color 150ms ease, transform 120ms ease; }
+.vf-cab .vf-editar:hover { background: var(--marca); color: #fff; box-shadow: 0 2px 4px rgba(16, 40, 30, .16), 0 10px 20px -6px rgba(16, 40, 30, .38); }
+.vf-cab .vf-editar:active { transform: scale(.97); }
+.vf-cab .vf-editar:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; }
+.vf-cab .dv-cliente { margin-right: auto; }
+.vf-cab .dv-cliente small { text-transform: none; }
+.vf-cab-datos { flex: 1 0 100%; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 4px; }
+.vf-cab-datos dd a { color: var(--marca); }
+@media (max-width: 560px) { .vf-cab-datos { grid-template-columns: repeat(3, minmax(0, 1fr)); } .vf-cab-datos > div { padding-left: 10px; padding-right: 6px; } .vf-cab-datos dd { font-size: 14px; } }

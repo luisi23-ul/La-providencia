@@ -6,6 +6,7 @@
   if (!det) return;
   if (!pagos.length) { det.innerHTML = '<p class="vacio-filtro">Elige un pago de la lista.</p>'; return; }
 
+  var iniciales = function (n) { return String(n || '?').trim().split(/\s+/).slice(0, 2).map(function (w) { return w.charAt(0); }).join('').toUpperCase(); };
   var venta = function (p) { return '#' + String(p.venta).padStart(4, '0'); };
   var enUsd = function (p) { return p.moneda === 'USD' ? p.monto : p.monto / p.tasa; };
   var enBs = function (p) { return p.moneda === 'USD' ? p.monto * p.tasa : p.monto; };
@@ -44,17 +45,18 @@
     var p = pagos[i];
     document.querySelectorAll('[data-pago]').forEach(function (b) { b.setAttribute('aria-current', String(+b.getAttribute('data-pago') === i)); });
     var cab = '<button type="button" class="volver volver-cola" id="volver-cola"><svg class="i"><use href="#i-volver"/></svg>Volver a la lista</button>' +
-      '<header class="vf-cab"><div><small>Venta <a href="index.php?action=detalle_venta&amp;id=' + p.venta + '">' + venta(p) + '</a>' + (p.fecha ? ' · ' + esc(p.fecha) : '') + '</small><h3>' + esc(p.cliente) + '</h3></div>' +
-      '<span class="dv-chip neutro"><svg class="i"><use href="#i-' + icono(p) + '"/></svg>' + esc(p.metodo) + '</span></header>';
+      '<header class="vf-cab"><div class="dv-cliente"><span class="dv-av" aria-hidden="true">' + esc(iniciales(p.cliente)) + '</span><b>' + esc(p.cliente) + '</b><small>Cliente</small></div>' +
+      (p.estado === 'pendiente' ? '<button type="button" class="btn vf-editar" id="btn-editar-pago"><svg class="i"><use href="#i-editar"/></svg>Editar pago</button>' : '') +
+      '<dl class="dc-dl dc-dl-fila vf-cab-datos">' +
+        '<div><dt><svg class="i" aria-hidden="true"><use href="#i-' + icono(p) + '"/></svg>Método</dt><dd>' + esc(p.metodo) + '</dd></div>' +
+        '<div><dt><svg class="i" aria-hidden="true"><use href="#i-recibo"/></svg>Venta</dt><dd><a href="index.php?action=detalle_venta&amp;id=' + p.venta + '">' + venta(p) + '</a></dd></div>' +
+        '<div><dt><svg class="i" aria-hidden="true"><use href="#i-calendario"/></svg>Fecha</dt><dd>' + esc(p.fecha || 'Sin fecha') + '</dd></div>' +
+      '</dl></header>';
     var cuerpo;
     if (p.estado === 'pendiente') {
       cuerpo = '<div class="vf-cuerpo"><section class="vf-sec"><h4><span class="n">1</span>' + (p.es_efectivo ? 'Confirma el efectivo recibido' : 'Búscalo en tu banco') + '</h4>' +
         '<p>' + (p.es_efectivo ? 'Cuenta el dinero y confirma que coincide.' : 'Confirma que llegó un pago con estos datos.') + '</p>' + montos(p) + datos(p) + '</section>' + cuenta(p) + '</div>' +
-        '<footer class="vf-acc">' +
-          '<button type="button" class="btn btn-sec" id="btn-editar-pago" style="margin-right:auto;"><svg class="i"><use href="#i-editar"/></svg>Editar datos</button>' +
-          '<button type="button" class="btn btn-rech" id="btn-rechazar"><svg class="i"><use href="#i-x"/></svg>Rechazar</button>' +
-          '<button type="button" class="btn btn-ok" id="btn-aprobar"><svg class="i"><use href="#i-check"/></svg>Aprobar pago</button>' +
-        '</footer>';
+        '<footer class="vf-acc"><button type="button" class="btn btn-rech" id="btn-rechazar"><svg class="i"><use href="#i-x"/></svg>Rechazar</button><button type="button" class="btn btn-ok" id="btn-aprobar"><svg class="i"><use href="#i-check"/></svg>Aprobar pago</button></footer>';
     } else {
       var ok = p.estado === 'aprobado', quien = [p.por ? 'por ' + p.por : (p.es_efectivo && p.registrado_por ? 'por ' + p.registrado_por : ''), p.cuando || p.fecha].filter(Boolean).join(' · ');
       var titulo = ok ? (p.es_efectivo ? 'Cobrado en caja' : 'Pago aprobado') : 'Pago rechazado';
@@ -79,45 +81,57 @@
     var p = pagos[+det.getAttribute('data-actual')];
     if (e.target.closest('#btn-aprobar')) { document.getElementById('ap-id').value = p.id; document.getElementById('form-aprobar').submit(); return; }
     if (e.target.closest('#btn-rechazar')) { document.getElementById('mr-id').value = p.id; document.getElementById('mr-obs').value = ''; document.getElementById('modal-rechazo').showModal(); return; }
-    if (e.target.closest('#btn-editar-pago')) {
-      var modalEd = document.getElementById('modal-editar-pago');
-      document.getElementById('me-id-pago').value = p.id;
-      document.getElementById('me-id-venta').value = p.venta;
-      document.getElementById('me-subtitulo').textContent = 'Venta ' + venta(p) + ' — ' + p.cliente;
-      document.getElementById('me-banco').value = (p.banco && p.banco !== 'No Indicado') ? p.banco : '';
-      document.getElementById('me-ref').value = (p.ref || '').replace(/^Online\s*-\s*/i, '');
-      var selMet = document.getElementById('me-metodo');
-      for (var o = 0; o < selMet.options.length; o++) {
-        if (selMet.options[o].text.toLowerCase().trim() === (p.metodo || '').toLowerCase().trim() || selMet.options[o].value == p.id_metodo) {
-          selMet.selectedIndex = o; break;
-        }
-      }
-      var cProds = document.getElementById('me-lista-prods');
-      cProds.innerHTML = '<small style="color:#777;">Cargando productos...</small>';
-      fetch('index.php?action=detalle_venta&id=' + p.venta + '&formato=json')
-        .then(function (r) { return r.json(); })
-        .then(function (res) {
-          if (!res || !res.detalles || !res.detalles.length) {
-            cProds.innerHTML = '<small style="color:#888;">No hay productos para modificar.</small>';
-            return;
-          }
-          var h = '';
-          res.detalles.forEach(function (d) {
-            h += '<div style="display:flex;justify-content:space-between;align-items:center;background:#fff;padding:6px 10px;border-radius:4px;border:1px solid #ddd;">' +
-              '<span style="font-size:13px;">' + esc(d.producto_nombre || 'Producto #' + d.id_producto) + ' <small>($' + parseFloat(d.precio_unitario).toFixed(2) + ')</small></span>' +
-              '<div style="display:flex;align-items:center;gap:4px;"><label style="font-size:12px;">Cant:</label><input type="number" name="productos[' + d.id_producto + ']' + '" value="' + d.cantidad + '" min="0" style="width:50px;padding:2px 4px;text-align:center;"></div>' +
-              '</div>';
-          });
-          cProds.innerHTML = h;
-        })
-        .catch(function () {
-          cProds.innerHTML = '<small style="color:#888;">Artículos originales fijados.</small>';
-        });
-      modalEd.showModal();
-    }
+    if (e.target.closest('#btn-editar-pago')) abrirEditar(p);
   });
 
-  document.querySelectorAll('dialog [data-cerrar]').forEach(function (btn) {
-    btn.addEventListener('click', function () { btn.closest('dialog').close(); });
+  var meLista = document.getElementById('me-lista-prods');
+  function fijarSelect(sel, valor, texto) {
+    var op = [].filter.call(sel.options, function (o) { return o.value == valor || (texto && o.text.toLowerCase().trim() === texto.toLowerCase().trim()); })[0];
+    if (!op && texto) { op = new Option(texto, texto); sel.add(op); }
+    sel.value = op ? op.value : '';
+    if (sel._dsp) sel._dsp.refrescar();
+  }
+  function totalEditar() {
+    var t = 0;
+    meLista.querySelectorAll('li').forEach(function (li) {
+      var q = Math.max(0, parseInt(li.querySelector('input').value, 10) || 0), sub = q * +li.getAttribute('data-precio');
+      t += sub;
+      li.classList.toggle('fuera', q === 0);
+      li.querySelector('.me-sub').textContent = q ? usd(sub) : 'Se quita';
+      li.querySelector('[data-me-menos]').disabled = q === 0;
+    });
+    document.getElementById('me-total').textContent = meLista.children.length ? usd(t) + ' · ' + fmtBs(t * Panel.tasa) + ' Bs' : '—';
+  }
+  function abrirEditar(p) {
+    document.getElementById('me-id-pago').value = p.id;
+    document.getElementById('me-id-venta').value = p.venta;
+    document.getElementById('me-subtitulo').textContent = 'Venta ' + venta(p) + ' · ' + p.cliente;
+    fijarSelect(document.getElementById('me-metodo'), p.id_metodo, p.metodo);
+    fijarSelect(document.getElementById('me-banco'), '', p.banco && !/^no indicado$/i.test(p.banco) ? p.banco : '');
+    document.getElementById('me-ref').value = (p.ref || '').replace(/^Online\s*-\s*/i, '');
+    meLista.innerHTML = '<li class="me-cargando">Cargando productos…</li>';
+    document.getElementById('me-total').textContent = '—';
+    document.getElementById('modal-editar-pago').showModal();
+    fetch('index.php?action=detalle_venta&id=' + p.venta + '&formato=json')
+      .then(function (r) { return r.json(); })
+      .then(function (res) {
+        var d = res && res.detalles ? res.detalles : [];
+        if (!d.length) { meLista.innerHTML = '<li class="me-cargando">Este pedido no tiene productos.</li>'; return; }
+        meLista.innerHTML = d.map(function (x) {
+          var pr = +x.precio_unitario;
+          return '<li data-precio="' + pr + '"><div class="me-nom"><b>' + esc(x.producto_nombre || 'Producto #' + x.id_producto) + '</b><span>' + usd(pr) + ' c/u</span></div>' +
+            '<span class="stepper me-step"><button type="button" data-me-menos aria-label="Uno menos">−</button><input type="number" name="productos[' + (+x.id_producto) + ']" value="' + (+x.cantidad) + '" min="0" inputmode="numeric" aria-label="Cantidad de ' + esc(x.producto_nombre || '') + '"><button type="button" data-me-mas aria-label="Uno más">+</button></span>' +
+            '<span class="me-sub"></span></li>';
+        }).join('');
+        totalEditar();
+      })
+      .catch(function () { meLista.innerHTML = '<li class="me-cargando">No se pudieron cargar los productos. Puedes guardar solo los datos del pago.</li>'; });
+  }
+  meLista.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-me-menos], [data-me-mas]'); if (!b) return;
+    var inp = b.parentNode.querySelector('input');
+    inp.value = Math.max(0, (parseInt(inp.value, 10) || 0) + (b.hasAttribute('data-me-mas') ? 1 : -1));
+    totalEditar();
   });
+  meLista.addEventListener('input', totalEditar);
 })();
