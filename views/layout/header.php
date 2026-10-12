@@ -1,7 +1,12 @@
 <?php
 include __DIR__ . '/../_sistema.php';
 $e = fn($v) => htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8');
-$tasaTienda = (float) ($sistema->tasa_manual ?? 0) ?: 526.87;
+
+// Tasa activa dinámica (BCV o Manual)
+require_once __DIR__ . '/../../models/BcvService.php';
+$bcvService = new BcvService();
+$tasaTienda = $bcvService->obtenerTasaActiva() ?: ((float) ($sistema->tasa_manual ?? 0) ?: 526.87);
+
 $waTienda = preg_replace('/\D/', '', (string) ($sistema->whatsapp ?? ''));
 $accionActual = $action ?? 'inicio';
 $seccionTienda = [
@@ -23,6 +28,14 @@ $enlaceCuenta = $clienteSesion ? 'index.php?action=mis_pedidos' : 'index.php?act
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,600&family=Jost:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="public/vendor/tabler/tabler-icons.min.css">
 <link rel="stylesheet" href="public/css/tienda.css?v=<?= filemtime(__DIR__ . '/../../public/css/tienda.css') ?>">
+<style>
+  :root {
+    --color-primario: <?= $e($sistema->color_primario ?? '#1b34da') ?>;
+    --color-secundario: <?= $e($sistema->color_secundario ?? '#363c54') ?>;
+    --color-terciario: <?= $e($sistema->color_terciario ?? '#dcdcea') ?>;
+    --color-cuaternario: <?= $e($sistema->color_cuaternario ?? '#282b2f') ?>;
+  }
+</style>
 </head>
 <body class="tienda" id="tienda" data-tasa="<?= $e($tasaTienda) ?>" data-wa="<?= $e($waTienda) ?>" data-tienda="<?= $e($nombreTienda) ?>" data-sesion="<?= $clienteSesion ? '1' : '0' ?>">
   <div class="franja"><i class="ti ti-brand-whatsapp" aria-hidden="true"></i>Arma tu pedido y lo confirmamos por WhatsApp</div>
@@ -33,8 +46,12 @@ $enlaceCuenta = $clienteSesion ? 'index.php?action=mis_pedidos' : 'index.php?act
       <a href="#contacto">Contacto</a>
     </nav>
     <a class="logo" href="index.php?action=inicio" aria-label="<?= $e($nombreTienda) ?>, inicio"><?php
-      $partesNombre = explode(' ', $nombreTienda, 2);
-      ?><b><?= $e($partesNombre[0]) ?></b><?php if (!empty($partesNombre[1])): ?><small><?= $e($partesNombre[1]) ?></small><?php endif; ?></a>
+      if (!empty($sistema->logo_path) && file_exists($sistema->logo_path)): ?>
+        <img src="<?= $e($sistema->logo_path) ?>" alt="<?= $e($nombreTienda) ?>" style="max-height: 42px; object-fit: contain;">
+      <?php else:
+        $partesNombre = explode(' ', $nombreTienda, 2);
+        ?><b><?= $e($partesNombre[0]) ?></b><?php if (!empty($partesNombre[1])): ?><small><?= $e($partesNombre[1]) ?></small><?php endif; ?>
+      <?php endif; ?></a>
     <div class="cab-acc">
       <a class="ic oculta-m" href="index.php?action=ver_catalogo#buscar" aria-label="Buscar"><i class="ti ti-search"></i></a>
       <a class="ic oculta-m" href="<?= $enlaceCuenta ?>" aria-label="<?= $clienteSesion ? 'Mis pedidos' : 'Entrar a mi cuenta' ?>"><i class="ti ti-user"></i></a>
