@@ -825,5 +825,166 @@ class AdminControllers {
             exit();
         }
     }
- 
+
+    public function mostrarEstadisticas() {
+        $desde = $_GET['desde'] ?? date('Y-m-d', strtotime('-13 days'));
+        $hasta = $_GET['hasta'] ?? date('Y-m-d');
+        $agrupar = ($_GET['agrupar'] ?? 'dia') === 'mes' ? 'mes' : 'dia';
+        $tab = $_GET['tab'] ?? 'ventas';
+
+        // 1. Resumen general (Vendido, Ganancia estimada, Ventas totales, Tienda Física)
+        $resumen = ['vendido' => 0, 'ganancia' => 0, 'ventas' => 0, 'tienda' => 0];
+        try {
+            $sqlResumen = "SELECT 
+                            COALESCE(SUM(v.total), 0) AS vendido,
+                            COALESCE(SUM(v.total * 0.30), 0) AS ganancia,
+                            COUNT(DISTINCT v.id) AS ventas,
+                            COALESCE(SUM(CASE WHEN v.origen_venta = 'tienda_fisica' THEN v.total ELSE 0 END), 0) AS tienda
+                           FROM ventas v
+                           WHERE DATE(v.fecha) >= ? AND DATE(v.fecha) <= ?
+                             AND (v.estado IN ('retirado', 'pagado', 'completada', 'aprobada') OR v.estado IS NULL)";
+            $stmtRes = $this->db->prepare($sqlResumen);
+            $stmtRes->execute([$desde, $hasta]);
+            $res = $stmtRes->fetch(PDO::FETCH_ASSOC);
+            if ($res) $resumen = $res;
+        } catch (Exception $e) {}
+
+        // 2. Ventas agrupadas por día o mes (Tienda vs Online)
+        $dias = [];
+        try {
+            $formatoFecha = $agrupar === 'mes' ? '%Y-%m-01' : '%Y-%m-%d';
+            $sqlDias = "SELECT 
+                            DATE_FORMAT(v.fecha, '{$formatoFecha}') AS fecha,
+                            COALESCE(SUM(CASE WHEN v.origen_venta = 'tienda_fisica' THEN v.total ELSE 0 END), 0) AS tienda,
+                            COALESCE(SUM(CASE WHEN v.origen_venta != 'tienda_fisica' THEN v.total ELSE 0 END), 0) AS online
+                        FROM ventas v
+                        WHERE DATE(v.fecha) >= ? AND DATE(v.fecha) <= ?
+                          AND (v.estado IN ('retirado', 'pagado', 'completada', 'aprobada') OR v.estado IS NULL)
+                        GROUP BY DATE_FORMAT(v.fecha, '{$formatoFecha}')
+                        ORDER BY fecha ASC";
+            $stmtDias = $this->db->prepare($sqlDias);
+            $stmtDias->execute([$desde, $hasta]);
+            $dias = $stmtDias->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {}
+
+        // Detección de la columna de categorías
+        $colCat = 'nombre';
+        try {
+            $cols = $this->db->query("SHOW COLUMNS FROM categorias")->fetchAll(PDO::FETCH_COLUMN);
+            if (in_array('nombre_categoria', $cols)) {
+                $colCat = 'nombre_categoria';
+            } elseif (in_array('categoria', $cols)) {
+                $colCat = 'categoria';
+            }
+        } catch (Exception $e) {}
+
+        // 3. Ganancia por Categoría
+        $categorias = [];
+        try {
+            $sqlCat = "SELECT 
+                        COALESCE(c.{$colCat}, 'General') AS nombre,
+                        COALESCE(SUM(dv.total), 0) AS vendido,
+                        COALESCE(SUM(dv.total * 0.30), 0) AS ganancia
+                       FROM detalle_ventas dv
+                       INNER JOIN ventas v ON dv.id_venta = v.id
+                       INNER JOIN productos p ON dv.id_producto = p.id
+                       LEFT JOIN categorias c ON p.id_categoria = c.id
+                       WHERE DATE(v.fecha) >= ? AND DATE(v.fecha) <= ?
+                         AND (v.estado IN ('retirado', 'pagado', 'completada', 'aprobada') OR v.estado IS NULL)
+                       GROUP BY p.id_categoria, c.{$colCat}
+                       ORDER BY vendido DESC";
+            $stmtCat = $this->db->prepare($sqlCat);
+            $stmtCat->execute([$desde, $hasta]);
+            $categorias = $stmtCat->fetchAll(PDO::FETCH_OBJ);
+        } catch (Exception $e) {}
+
+        // 4. Productos más vendidos
+        $top = [];
+        try {
+            $sqlTop = "SELECT 
+                        p.nombre_producto AS nombre,
+                        COALESCE(c.{$colCat}, 'General') AS categoria,
+                        SUM(dv.cantidad) AS unidades,
+                        SUM(dv.total) AS monto,
+                        SUM(dv.total * 0.30) AS ganancia
+                       FROM detalle_ventas dv
+                       INNER JOIN ventas v ON dv.id_venta = v.id
+                       INNER JOIN productos p ON dv.id_producto = p.id
+                       LEFT JOIN categorias c ON p.id_categoria = c.id
+                       WHERE DATE(v.fecha) >= ? AND DATE(v.fecha) <= ?
+                         AND (v.estado IN ('retirado', 'pagado', 'completada', 'aprobada') OR v.estado IS NULL)
+                       GROUP BY p.id, p.nombre_producto, c.{$colCat}
+                       ORDER BY monto DESC
+                       LIMIT 5";
+            $stmtTop = $this->db->prepare($sqlTop);
+            $stmtTop->execute([$desde, $hasta]);
+            $top = $stmtTop->fetchAll(PDO::FETCH_OBJ);
+        } catch (Exception $e) {}
+
+        // 5. Productos sin movimiento
+        $sin_movimiento = [];
+        try {
+            $sqlSinMov = "SELECT 
+                            p.nombre_producto AS nombre,
+                            COALESCE(c.{$colCat}, 'General') AS categoria,
+                            p.stock,
+                            DATEDIFF(NOW(), MAX(v.fecha)) AS dias
+                          FROM productos p
+                          LEFT JOIN categorias c ON p.id_categoria = c.id
+                          LEFT JOIN detalle_ventas dv ON p.id = dv.id_producto
+                          LEFT JOIN ventas v ON dv.id_venta = v.id
+                          GROUP BY p.id, p.nombre_producto, c.{$colCat}, p.stock
+                          HAVING dias >= 30 OR dias IS NULL
+                          ORDER BY dias DESC
+                          LIMIT 6";
+            $stmtSinMov = $this->db->prepare($sqlSinMov);
+            $stmtSinMov->execute();
+            $sin_movimiento = $stmtSinMov->fetchAll(PDO::FETCH_OBJ);
+        } catch (Exception $e) {}
+
+        // 6. Cobros por método de pago
+        $metodos = [];
+        try {
+            $sqlMet = "SELECT 
+                        COALESCE(mp.nombre, 'Otro') AS nombre,
+                        COALESCE(SUM(pr.monto), 0) AS monto
+                       FROM pagos_registro pr
+                       INNER JOIN metodos_pago mp ON pr.id_metodo_pago = mp.id
+                       WHERE DATE(pr.fecha_pago) >= ? AND DATE(pr.fecha_pago) <= ?
+                       GROUP BY mp.id, mp.nombre
+                       ORDER BY monto DESC";
+            $stmtMet = $this->db->prepare($sqlMet);
+            $stmtMet->execute([$desde, $hasta]);
+            $metodos = $stmtMet->fetchAll(PDO::FETCH_OBJ);
+        } catch (Exception $e) {}
+
+        // 7. Compras por proveedor
+        $proveedores = [];
+        try {
+            $sqlProv = "SELECT 
+                        COALESCE(pr.razon_social, 'Proveedor') AS razon_social,
+                        COUNT(c.id) AS compras,
+                        COALESCE(SUM(c.total), 0) AS total
+                        FROM compras c
+                        INNER JOIN proveedores pr ON c.id_proveedor = pr.id
+                        WHERE DATE(c.fecha) >= ? AND DATE(c.fecha) <= ?
+                        GROUP BY pr.id, pr.razon_social
+                        ORDER BY total DESC";
+            $stmtProv = $this->db->prepare($sqlProv);
+            $stmtProv->execute([$desde, $hasta]);
+            $proveedores = $stmtProv->fetchAll(PDO::FETCH_OBJ);
+        } catch (Exception $e) {}
+
+        $estadisticas = [
+            'resumen'        => $resumen,
+            'dias'           => $dias,
+            'categorias'     => $categorias,
+            'top'            => $top,
+            'sin_movimiento' => $sin_movimiento,
+            'metodos'        => $metodos,
+            'proveedores'    => $proveedores
+        ];
+
+        require_once 'views/seccion_graficos.php';
+    }
 }
