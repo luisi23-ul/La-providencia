@@ -19,7 +19,6 @@ class ProductoModel {
         return (bool)$stmt->fetch();
     }
 
-    // PUNTO E: Uso de IFNULL para garantizar siempre las 5 partes
     public function obtenerTodos() {
         $sql = "SELECT p.*, 
                        c.nombre_categoria, 
@@ -30,8 +29,7 @@ class ProductoModel {
                                    IFNULL(pv.talla, ''), 
                                    IFNULL(pv.color, ''), 
                                    IFNULL(pv.modelo, ''), 
-                                   pv.stock, 
-                                   pv.stock_online
+                                   pv.stock
                                ) 
                                SEPARATOR '|'
                            )
@@ -109,12 +107,17 @@ class ProductoModel {
     }
 
     public function obtenerVariantesProducto($idProducto) {
-        $stmt = $this->db->prepare("SELECT * FROM producto_variantes WHERE id_producto = ? ORDER BY id ASC");
+        $stmt = $this->db->prepare("
+            SELECT id, id_producto, sku, talla, color, modelo, stock, precio 
+            FROM producto_variantes 
+            WHERE id_producto = ? 
+            ORDER BY id ASC
+        ");
         $stmt->execute([(int)$idProducto]);
         return $stmt->fetchAll(PDO::FETCH_OBJ);
     }
 
-   public function guardarCompleto($datos, $atributos = [], $variantes = []) {
+    public function guardarCompleto($datos, $atributos = [], $variantes = []) {
         $sql = "INSERT INTO productos (codigo, nombre_producto, descripcion, precio, costo_compra, stock, stock_minimo, imagen, id_categoria, estado)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)";
         $stmt = $this->db->prepare($sql);
@@ -132,16 +135,22 @@ class ProductoModel {
 
         $idProducto = (int)$this->db->lastInsertId();
 
-        // Guardar variantes o atributos si existen
-        if (!empty($variantes)) {
-            $stmtVar = $this->db->prepare("INSERT INTO producto_variantes (id_producto, sku, precio, stock) VALUES (?, ?, ?, ?)");
-            foreach ($variantes as $v) {
-                $stmtVar->execute([$idProducto, $v['sku'] ?? '', $v['precio'] ?? 0, $v['stock'] ?? 0]);
+        if (!empty($atributos) && is_array($atributos)) {
+            $stmtAtr = $this->db->prepare("INSERT INTO producto_atributos (id_producto, id_atributo, valor) VALUES (?, ?, ?)");
+            foreach ($atributos as $idAtr => $valor) {
+                if (trim($valor) !== '') {
+                    $stmtAtr->execute([$idProducto, (int)$idAtr, trim($valor)]);
+                }
             }
+        }
+
+        if (!empty($variantes)) {
+            $this->sincronizarVariantes($idProducto, $variantes);
         }
 
         return $idProducto;
     }
+
     public function actualizarCompleto($id, $datos, $atributos = [], $variantes = []) {
         $sql = "UPDATE productos SET 
                     codigo = ?, 
@@ -179,19 +188,16 @@ class ProductoModel {
             }
         }
 
-        // Siempre evaluar la sincronización de variantes al actualizar
         $this->sincronizarVariantes((int)$id, (array)$variantes);
 
         return true;
     }
 
-    // PUNTO A y PUNTO B: Sincronización blindada con Kardex y corrección en vacíos
     public function sincronizarVariantes($idProducto, array $variantes) {
         $idProducto = (int)$idProducto;
         $idUsuario = $_SESSION['id_usuario'] ?? 1;
 
-        // Verificar si el producto tenía variantes previamente
-        $stmtPrev = $this->db->prepare("SELECT id, talla, color, modelo, stock, stock_online FROM producto_variantes WHERE id_producto = ?");
+        $stmtPrev = $this->db->prepare("SELECT id, talla, color, modelo, stock FROM producto_variantes WHERE id_producto = ?");
         $stmtPrev->execute([$idProducto]);
         $previas = [];
         foreach ($stmtPrev->fetchAll(PDO::FETCH_OBJ) as $p) {
@@ -201,23 +207,22 @@ class ProductoModel {
 
         $idsMantener = [];
         $totalStock = 0;
-        $totalStockOnline = 0;
 
         $stmtIns = $this->db->prepare("
-            INSERT INTO producto_variantes (id_producto, sku, talla, color, modelo, stock, stock_online, precio)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO producto_variantes (id_producto, sku, talla, color, modelo, stock, precio)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         ");
 
         $stmtUpd = $this->db->prepare("
             UPDATE producto_variantes 
-            SET sku = ?, talla = ?, color = ?, modelo = ?, stock = ?, stock_online = ?, precio = ?
+            SET sku = ?, talla = ?, color = ?, modelo = ?, stock = ?, precio = ?
             WHERE id = ? AND id_producto = ?
         ");
 
         $stmtKardex = $this->db->prepare("
             INSERT INTO kardex_inventario 
             (id_producto, tipo_movimiento, canal, cantidad, stock_tienda_resultante, stock_online_resultante, observacion, id_usuario)
-            VALUES (?, 'ajuste', ?, ?, ?, ?, ?, ?)
+            VALUES (?, 'ajuste', 'general', ?, ?, 0, ?, ?)
         ");
 
         foreach ($variantes as $v) {
@@ -225,7 +230,6 @@ class ProductoModel {
             $color  = trim($v['color'] ?? '');
             $modelo = trim($v['modelo'] ?? '');
             $stk    = max(0, (int)($v['stock'] ?? 0));
-            $stkOn  = max(0, (int)($v['stock_online'] ?? 0));
             $varId  = !empty($v['id']) ? (int)$v['id'] : 0;
             $sku    = !empty($v['sku']) ? trim($v['sku']) : null;
             $precio = isset($v['precio']) && $v['precio'] !== '' ? (float)$v['precio'] : null;
@@ -237,36 +241,30 @@ class ProductoModel {
             if ($varId > 0 && isset($previas[$varId])) {
                 $viejo = $previas[$varId];
                 
-                // PUNTO B: Auditoría Kardex si hubo cambio en stock tienda
                 if ($stk !== (int)$viejo->stock) {
                     $dif = $stk - (int)$viejo->stock;
                     $desc = "Ajuste en edición: Talla {$talla}, Color {$color}, Modelo {$modelo}";
-                    $stmtKardex->execute([$idProducto, 'tienda', $dif, $stk, $stkOn, $desc, $idUsuario]);
+                    try {
+                        $stmtKardex->execute([$idProducto, $dif, $stk, $desc, $idUsuario]);
+                    } catch (\Exception $e) {}
                 }
 
-                // PUNTO B: Auditoría Kardex si hubo cambio en stock online
-                if ($stkOn !== (int)$viejo->stock_online) {
-                    $difOn = $stkOn - (int)$viejo->stock_online;
-                    $desc = "Ajuste online en edición: Talla {$talla}, Color {$color}, Modelo {$modelo}";
-                    $stmtKardex->execute([$idProducto, 'online', $difOn, $stk, $stkOn, $desc, $idUsuario]);
-                }
-
-                $stmtUpd->execute([$sku, $talla, $color, $modelo, $stk, $stkOn, $precio, $varId, $idProducto]);
+                $stmtUpd->execute([$sku, $talla, $color, $modelo, $stk, $precio, $varId, $idProducto]);
                 $idsMantener[] = $varId;
             } else {
-                $stmtIns->execute([$idProducto, $sku, $talla, $color, $modelo, $stk, $stkOn, $precio]);
+                $stmtIns->execute([$idProducto, $sku, $talla, $color, $modelo, $stk, $precio]);
                 $nuevoId = (int)$this->db->lastInsertId();
                 $idsMantener[] = $nuevoId;
 
-                // Si se agrega una nueva variante con existencias iniciales, registrar entrada
                 if ($stk > 0) {
                     $desc = "Entrada por nueva variante: Talla {$talla}, Color {$color}, Modelo {$modelo}";
-                    $stmtKardex->execute([$idProducto, 'tienda', $stk, $stk, $stkOn, $desc, $idUsuario]);
+                    try {
+                        $stmtKardex->execute([$idProducto, $stk, $stk, $desc, $idUsuario]);
+                    } catch (\Exception $e) {}
                 }
             }
 
             $totalStock += $stk;
-            $totalStockOnline += $stkOn;
         }
 
         if (!empty($idsMantener)) {
@@ -274,15 +272,13 @@ class ProductoModel {
             $this->db->prepare("DELETE FROM producto_variantes WHERE id_producto = ? AND id NOT IN ($inClause)")
                      ->execute([$idProducto]);
             
-            // Actualizar el stock total sumado
-            $this->db->prepare("UPDATE productos SET stock = ?, stock_online = ? WHERE id = ?")
-                     ->execute([$totalStock, $totalStockOnline, $idProducto]);
+            $this->db->prepare("UPDATE productos SET stock = ? WHERE id = ?")
+                     ->execute([$totalStock, $idProducto]);
         } else {
-            // PUNTO A: Si se borraron todas y el producto TENÍA variantes, poner a 0
             if ($teniaVariantes) {
                 $this->db->prepare("DELETE FROM producto_variantes WHERE id_producto = ?")
                          ->execute([$idProducto]);
-                $this->db->prepare("UPDATE productos SET stock = 0, stock_online = 0 WHERE id = ?")
+                $this->db->prepare("UPDATE productos SET stock = 0 WHERE id = ?")
                          ->execute([$idProducto]);
             }
         }
@@ -295,7 +291,7 @@ class ProductoModel {
 
     public function obtenerEstadisticasGenerales() {
         $totalProductos = $this->db->query("SELECT COUNT(*) FROM productos WHERE deleted_at IS NULL")->fetchColumn();
-        $totalStock = $this->db->query("SELECT SUM(stock + stock_online) FROM productos WHERE deleted_at IS NULL")->fetchColumn();
+        $totalStock = $this->db->query("SELECT SUM(stock) FROM productos WHERE deleted_at IS NULL")->fetchColumn();
         return [
             'total_productos' => (int)$totalProductos,
             'total_stock'     => (int)$totalStock

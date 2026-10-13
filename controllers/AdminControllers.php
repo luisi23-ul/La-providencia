@@ -348,7 +348,7 @@ class AdminControllers {
         require_once 'views/editar_producto.php';
     }
 
-    public function actualizar() {
+   public function actualizar() {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $db = $this->productoModelo->getDb();
             $id = (int)($_POST['id'] ?? 0);
@@ -399,7 +399,9 @@ class AdminControllers {
                 $db->beginTransaction();
 
                 $this->productoModelo->actualizarCompleto($id, $datos, $atributos, $variantes);
-                $this->log('Inventario', 'UPDATE', "Actualizó producto y variantes: {$nombre} (ID: {$id})");
+                if (method_exists($this, 'log')) {
+                    $this->log('Inventario', 'UPDATE', "Actualizó producto y variantes: {$nombre} (ID: {$id})");
+                }
 
                 $db->commit();
 
@@ -417,6 +419,7 @@ class AdminControllers {
             }
         }
     }
+
 
     public function eliminar() {
         $id = $_GET['id'] ?? null;
