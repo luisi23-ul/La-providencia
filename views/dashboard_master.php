@@ -5,7 +5,6 @@ $panelMaster = true;
 $resumen = $resumen ?? [];
 $actividad = $actividad ?? [];
 
-// Definición de tasa y funciones de formato de moneda si no vienen desde _abrir.php
 $tasa = $tasa ?? 526.87;
 $usd  = $usd ?? fn($v) => '$' . number_format((float) $v, 2);
 $bs   = $bs ?? fn($v) => number_format((float) $v * (float) $tasa, 2, ',', '.') . ' Bs';
@@ -21,41 +20,25 @@ $listaRoles = $nombresRoles ? implode(', ', $nombresRoles) . ' y ' . $ultimoRol 
 <section class="contenido">
   <header class="cab">
     <div class="cab-txt"><small>Panel Master</small><h2>Resumen del sistema</h2></div>
-    <div class="cab-acc"><a href="index.php?action=dashboard" class="btn btn-sec"><svg class="i"><use href="#i-inicio"/></svg>Ir al Panel Admin</a></div>
+    <div class="cab-acc"><a href="index.php?action=dashboard" class="btn btn-ir-admin"><svg class="i"><use href="#i-inicio"/></svg>Ir al Panel Admin</a></div>
   </header>
 
-  <section class="kpis" aria-label="Indicadores">
-    <a href="index.php?action=gestionar_admins" class="kpi">
-      <span class="kpi-cab">Personal activo<span class="kpi-ic vi"><svg class="i"><use href="#i-usuarios"/></svg></span></span>
-      <span class="kpi-val"><?= $activos ?></span>
-      <span class="kpi-sub">de <?= $cuentas ?> <?= $cuentas === 1 ? 'cuenta' : 'cuentas' ?></span>
-      <?php if ($inactivas > 0): ?><span class="kpi-pie"><?= $inactivas ?> <?= $inactivas === 1 ? 'cuenta desactivada' : 'cuentas desactivadas' ?></span><?php endif; ?>
-    </a>
-    <a href="index.php?action=roles_permisos" class="kpi">
-      <span class="kpi-cab">Roles<span class="kpi-ic az"><svg class="i"><use href="#i-escudo"/></svg></span></span>
-      <span class="kpi-val"><?= count($resumen['roles'] ?? []) ?></span>
-      <span class="kpi-sub"><?= $e($listaRoles) ?></span>
-    </a>
-    <a href="index.php?action=auditoria" class="kpi">
-      <span class="kpi-cab">Acciones registradas hoy<span class="kpi-ic am"><svg class="i"><use href="#i-lista"/></svg></span></span>
-      <span class="kpi-val"><?= (int) ($resumen['acciones_hoy'] ?? 0) ?></span>
-      <span class="kpi-sub">en la auditoría</span>
-    </a>
-    <a href="index.php?action=dashboard" class="kpi">
-      <span class="kpi-cab">Ventas de hoy<span class="kpi-ic az"><svg class="i"><use href="#i-dolar"/></svg></span></span>
-      <span class="kpi-val"><?= $usd($resumen['ventas_hoy'] ?? 0) ?></span>
-      <span class="kpi-sub"><?= $bs($resumen['ventas_hoy'] ?? 0) ?></span>
-    </a>
+  <section class="mini-kpis" aria-label="Indicadores">
+    <div><span class="mk-ic"><svg class="i"><use href="#i-usuarios"/></svg></span><span>Personal activo</span><b><?= $activos ?></b><small>de <?= $cuentas ?> <?= $cuentas === 1 ? 'cuenta' : 'cuentas' ?><?= $inactivas > 0 ? ' · ' . $inactivas . ($inactivas === 1 ? ' desactivada' : ' desactivadas') : '' ?></small></div>
+    <div class="mk-oscuro"><span class="mk-ic"><svg class="i"><use href="#i-escudo"/></svg></span><span>Roles</span><b><?= count($resumen['roles'] ?? []) ?></b><small><?= $e($listaRoles) ?></small></div>
+    <div class="mk-claro"><span class="mk-ic"><svg class="i"><use href="#i-lista"/></svg></span><span>Acciones hoy</span><b><?= (int) ($resumen['acciones_hoy'] ?? 0) ?></b><small>registradas en la auditoría</small></div>
+    <div class="mk-ambar"><span class="mk-ic"><svg class="i"><use href="#i-dolar"/></svg></span><span>Ventas de hoy</span><b><?= $usd($resumen['ventas_hoy'] ?? 0) ?></b><small><?= $bs($resumen['ventas_hoy'] ?? 0) ?></small></div>
   </section>
 
   <div class="rejilla-2">
     <section class="caja" aria-labelledby="mi-act">
-      <header class="caja-cab"><h3 id="mi-act">Actividad reciente</h3><a href="index.php?action=auditoria">Ver auditoría</a></header>
+      <header class="caja-cab"><h3 id="mi-act"><span class="fpx-ic"><svg class="i"><use href="#i-historial"/></svg></span>Actividad reciente</h3><a href="index.php?action=auditoria">Ver auditoría</a></header>
       <?php if ($actividad): ?>
-        <ul class="lista">
+        <ul class="lista mi-act">
           <?php foreach ($actividad as $a):
               $t = strtotime($a->fecha); ?>
             <li>
+              <span class="mi-av" aria-hidden="true"><?= $e(mb_strtoupper(mb_substr($a->usuario ?? 'S', 0, 1))) ?></span>
               <div class="quien"><b><?= $e($a->usuario ?? 'Sistema') ?></b><span><?= $e($a->descripcion) ?></span></div>
               <time class="muted" datetime="<?= date('c', $t) ?>" style="white-space:nowrap"><?= date('Y-m-d', $t) === date('Y-m-d') ? str_replace(['am', 'pm'], ['a. m.', 'p. m.'], date('g:i a', $t)) : date('d/m', $t) ?></time>
             </li>
@@ -66,11 +49,11 @@ $listaRoles = $nombresRoles ? implode(', ', $nombresRoles) . ' y ' . $ultimoRol 
       <?php endif; ?>
     </section>
     <section class="caja" aria-labelledby="mi-acc">
-      <header class="caja-cab"><h3 id="mi-acc">Accesos</h3></header>
+      <header class="caja-cab"><h3 id="mi-acc"><span class="fpx-ic"><svg class="i"><use href="#i-ajuste"/></svg></span>Accesos</h3></header>
       <nav class="mi-accesos" aria-labelledby="mi-acc">
-        <a href="index.php?action=gestionar_admins"><svg class="i"><use href="#i-usuarios"/></svg><span><b>Administradores</b><small>Crear cuentas, cambiar roles, desactivar</small></span></a>
-        <a href="index.php?action=roles_permisos"><svg class="i"><use href="#i-escudo"/></svg><span><b>Roles y permisos</b><small>Qué puede hacer cada rol</small></span></a>
-        <a href="index.php?action=configuracion_sistema"><svg class="i"><use href="#i-ajuste"/></svg><span><b>Configuración</b><small>Datos de la tienda, tasa, WhatsApp y página web</small></span></a>
+        <a href="index.php?action=gestionar_admins"><span class="mi-acc-ic"><svg class="i"><use href="#i-usuarios"/></svg></span><span><b>Administradores</b><small>Crear cuentas, cambiar roles, desactivar</small></span></a>
+        <a href="index.php?action=roles_permisos"><span class="mi-acc-ic"><svg class="i"><use href="#i-escudo"/></svg></span><span><b>Roles y permisos</b><small>Qué puede hacer cada rol</small></span></a>
+        <a href="index.php?action=configuracion_sistema"><span class="mi-acc-ic"><svg class="i"><use href="#i-ajuste"/></svg></span><span><b>Configuración</b><small>Datos de la tienda, tasa, WhatsApp y página web</small></span></a>
       </nav>
     </section>
   </div>
