@@ -36,7 +36,6 @@ $grupos = $panelMaster ? [
 $contadores = $contadores ?? [];
 $nombreUsuario = $_SESSION['nombre'] ?? 'Usuario';
 $iniciales = strtoupper(implode('', array_map(fn($p) => mb_substr($p, 0, 1), array_slice(preg_split('/\s+/', trim($nombreUsuario)), 0, 2))));
-// Obtener el nombre del rol dinámicamente si no está en sesión
 $rolNombre = $_SESSION['nombre_rol'] ?? null;
 if (!$rolNombre) {
     try {

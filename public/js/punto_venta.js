@@ -8,7 +8,11 @@
   var precioL = function (l) { return l.p != null ? l.p : prod(l.id).precio; };
   var totalL = function (l) { return r2(precioL(l) * l.q * (1 - l.d / 100)); };
   var totalPV = function () { return r2(pv.lineas.reduce(function (s, l) { return s + totalL(l); }, 0)); };
-  var cantEn = function (id) { var l = pv.lineas.filter(function (x) { return x.id === id; })[0]; return l ? l.q : 0; };
+  var cantEn = function (id) { return pv.lineas.reduce(function (s, x) { return x.id === id ? s + x.q : s; }, 0); };
+  var variante = function (l) { return l.v ? (prod(l.id).v || []).filter(function (x) { return x[0] === l.v; })[0] : null; };
+  var topeL = function (l) { var x = variante(l); return x ? x[3] : (l.v ? 0 : prod(l.id).t); };
+  var nomVar = function (x) { return [x[1], x[2]].filter(Boolean).join(' / '); };
+  var stockP = function (p) { return p.v && p.v.length ? p.v.reduce(function (s, x) { return s + x[3]; }, 0) : p.t; };
   var iniciales = function (n) { return n.split(' ').map(function (w) { return w[0]; }).slice(0, 2).join('').toUpperCase(); };
 
   var BANCOS_VZLA = [
@@ -27,7 +31,7 @@
     try {
       var a = JSON.parse(localStorage.getItem('pv-actual'));
       if (!a) return false;
-      pv.lineas = (a.lineas || []).filter(function (l) { return prod(l.id) && prod(l.id).t > 0; }).map(function (l) { l.q = Math.min(l.q, prod(l.id).t); return l; });
+      pv.lineas = (a.lineas || []).filter(function (l) { return prod(l.id) && topeL(l) > 0; }).map(function (l) { l.q = Math.min(l.q, topeL(l)); return l; });
       pv.cliente = a.cliente || null; pv.nuevoCliente = a.nuevoCliente || null;
       return pv.lineas.length > 0;
     } catch (e) { return false; }
@@ -47,19 +51,44 @@
     $('pv-vaciar').hidden = !pv.lineas.length;
     if (!pv.lineas.length) { ul.innerHTML = '<li class="pv-vacio">Escanea un código o toca un producto para empezar la venta.</li>'; return; }
     ul.innerHTML = pv.lineas.map(function (l, i) {
-      var p = prod(l.id), abierta = i === pv.edit;
+      var p = prod(l.id), abierta = i === pv.edit, x = variante(l), tope = topeL(l);
       return '<li class="pv-linea' + (abierta ? ' abierta' : '') + '" data-i="' + i + '">' +
-        '<div class="pl-fila1"><b>' + esc(p.n) + '</b><span class="tot" data-tot>' + usd(totalL(l)) + '</span></div>' +
-        '<div class="pl-fila2"><span class="stepper"><button type="button" data-menos="' + i + '" aria-label="Uno menos">−</button><span data-q>' + l.q + '</span><button type="button" data-mas="' + i + '" aria-label="Uno más"' + (l.q >= p.t ? ' disabled' : '') + '>+</button></span>' +
+        '<div class="pl-fila1"><b>' + esc(p.n) + (x ? '<small class="pl-var">' + esc(nomVar(x)) + '</small>' : '') + '</b><span class="tot" data-tot>' + usd(totalL(l)) + '</span></div>' +
+        '<div class="pl-fila2"><span class="stepper"><button type="button" data-menos="' + i + '" aria-label="Uno menos">−</button><span data-q>' + l.q + '</span><button type="button" data-mas="' + i + '" aria-label="Uno más"' + (l.q >= tope ? ' disabled' : '') + '>+</button></span>' +
         '<span class="det" data-det>' + detalleL(l) + '</span>' +
-        '<button type="button" class="ic-btn" data-editar="' + i + '" aria-expanded="' + abierta + '" aria-label="' + (D.puedeDescuento ? 'Editar cantidad, descuento o precio' : 'Editar cantidad o quitar') + '"><svg class="i"><use href="#i-editar"/></svg></button></div>' +
-        (abierta ? '<div class="pl-editor">' +
-          '<div class="campo"><label for="pe-q">Cantidad</label><input id="pe-q" type="number" min="1" max="' + p.t + '" inputmode="numeric" data-campo="q" value="' + l.q + '"><span class="ayuda">Quedan ' + p.t + '</span></div>' +
-          (D.puedeDescuento ? '<div class="campo"><label for="pe-d">Descuento %</label><input id="pe-d" type="number" min="0" max="100" inputmode="numeric" data-campo="d" value="' + l.d + '"></div>' +
-          '<div class="campo"><label for="pe-p">Precio $</label><input id="pe-p" type="number" min="0" step="0.01" inputmode="decimal" data-campo="p" value="' + precioL(l).toFixed(2) + '"><span class="ayuda">Normal ' + usd(p.precio) + '</span></div>' : '') +
-          '<div class="pl-editor-acc"><button type="button" class="btn btn-peligro btn-peq" data-quitar="' + i + '">Quitar del ticket</button><button type="button" class="btn btn-pri btn-peq" data-listo>Listo</button></div>' +
+        '<button type="button" class="ic-btn" data-editar="' + i + '" aria-expanded="' + abierta + '" aria-label="' + (x ? 'Editar talla, color' + (D.puedeDescuento ? ', cantidad o precio' : ' o cantidad') : (D.puedeDescuento ? 'Editar cantidad, descuento o precio' : 'Editar cantidad o quitar')) + '"><svg class="i"><use href="#i-editar"/></svg></button></div>' +
+        (abierta ? '<div class="pl-editor pe">' + (x ? editorPrenda(l, x) : '') +
+          '<div class="pe-campos' + (D.puedeDescuento ? '' : ' uno') + '">' +
+          '<div class="pe-campo"><label class="pe-et" for="pe-q">Cantidad</label><input id="pe-q" type="number" min="1" max="' + tope + '" inputmode="numeric" data-campo="q" value="' + l.q + '"></div>' +
+          (D.puedeDescuento ? '<div class="pe-campo"><label class="pe-et" for="pe-d">Desc. %</label><input id="pe-d" type="number" min="0" max="100" inputmode="numeric" data-campo="d" value="' + l.d + '"></div>' +
+          '<div class="pe-campo"><label class="pe-et" for="pe-p">Precio $</label><input id="pe-p" type="number" min="0" step="0.01" inputmode="decimal" data-campo="p" value="' + precioL(l).toFixed(2) + '"></div>' : '') +
+          '</div><p class="pe-nota">Quedan <b>' + tope + '</b>' + (x ? ' de ' + esc(nomVar(x)) : '') + (D.puedeDescuento ? ' · precio normal <b>' + usd(p.precio) + '</b>' : '') + '</p>' +
+          '<div class="pe-acc"><button type="button" class="pe-quitar" data-quitar="' + i + '"><svg class="i"><use href="#i-basura"/></svg>Quitar</button><button type="button" class="btn btn-pri" data-listo>Listo</button></div>' +
         '</div>' : '') + '</li>';
     }).join('');
+  }
+  function libreLinea(o, l) { return o[3] - pv.lineas.reduce(function (s, y) { return y !== l && y.v === o[0] ? s + y.q : s; }, 0); }
+  function editorPrenda(l, x) {
+    var vs = prod(l.id).v, tallas = unicos(vs.map(function (o) { return o[1]; })), colores = unicos(vs.filter(function (o) { return o[1] === x[1]; }).map(function (o) { return o[2]; }));
+    var fila = function (tit, ops, sel, attr, de) {
+      return '<div class="pe-campo" role="group" aria-label="' + tit + '"><span class="pe-et">' + tit + '</span><span class="pe-seg">' + ops.map(function (v) {
+        var q = vs.filter(function (o) { return de(o, v); }).reduce(function (s, o) { return s + libreLinea(o, l); }, 0);
+        return '<button type="button" ' + attr + '="' + esc(v) + '" aria-pressed="' + (v === sel) + '"' + (q > 0 || v === sel ? '' : ' disabled') + '>' + esc(v) + '</button>';
+      }).join('') + '</span></div>';
+    };
+    return '<div class="pe-prenda">' +
+      (tallas.some(Boolean) ? fila('Talla', tallas, x[1], 'data-pe-talla', function (o, v) { return o[1] === v; }) : '') +
+      (colores.some(Boolean) ? fila('Color', colores, x[2], 'data-pe-color', function (o, v) { return o[1] === x[1] && o[2] === v; }) : '') + '</div>';
+  }
+  function cambiarPrenda(i, talla, color) {
+    var l = pv.lineas[i], vs = prod(l.id).v, x = variante(l);
+    var cand = vs.filter(function (o) { return o[1] === talla && libreLinea(o, l) > 0; });
+    var n = cand.filter(function (o) { return o[2] === color; })[0] || cand.filter(function (o) { return o[2] === x[2]; })[0] || cand[0];
+    if (!n || n[0] === l.v) return;
+    var otra = pv.lineas.filter(function (y) { return y !== l && y.v === n[0]; })[0];
+    if (otra) { otra.q = Math.min(n[3], otra.q + l.q); pv.lineas.splice(i, 1); pv.edit = pv.lineas.indexOf(otra); avisar('Se juntó con la línea de ' + nomVar(n), 'info'); }
+    else { var tope = libreLinea(n, l); if (l.q > tope) { l.q = tope; avisar('Solo quedan ' + tope + ' de ' + nomVar(n), 'aviso'); } l.v = n[0]; }
+    pintarPV();
   }
   function pintarTotales() {
     var art = pv.lineas.reduce(function (s, l) { return s + l.q; }, 0), tot = totalPV();
@@ -81,27 +110,84 @@
     var q = $('pv-scan').value.trim().toLowerCase();
     var lista = productos.filter(function (p) { return (!pv.cat || p.cat === pv.cat) && (!q || (p.n + ' ' + p.c).toLowerCase().indexOf(q) !== -1); });
     $('pv-grid').innerHTML = lista.map(function (p) {
-      var cant = cantEn(p.id), sin = p.t === 0, bajo = p.t > 0 && p.t < p.min;
-      var tope = sin || cant >= p.t;
+      var st = stockP(p), cant = cantEn(p.id), sin = st === 0, bajo = st > 0 && st < p.min;
+      var tope = sin || cant >= st;
       return '<button type="button" class="pv-prod' + (tope ? ' tope' : '') + '" data-agregar="' + p.id + '"' + (tope ? ' aria-disabled="true"' : '') + ' aria-label="Agregar ' + esc(p.n) + (tope ? ', no queda más en tienda' : '') + '">' +
         (p.img ? '<img src="' + esc(p.img) + '" alt="" loading="lazy">' : '<span class="pv-sin-foto"></span>') + (cant ? '<span class="en-ticket">' + cant + '</span>' : '') +
-        '<span class="info"><span class="nom">' + esc(p.n) + '</span><span class="cod">' + esc(p.c) + '</span>' +
-        '<span class="pie"><span class="pp">' + usd(p.precio) + '</span><span class="ps' + (bajo || sin ? ' bajo' : '') + '">' + (sin ? 'Agotado' : 'Quedan ' + p.t) + '</span></span></span></button>';
+        '<span class="info"><span class="nom">' + esc(p.n) + '</span><span class="cod">' + esc(p.c) + (p.v && p.v.length ? ' · ' + p.v.length + (p.v.length === 1 ? ' opción' : ' opciones') : '') + '</span>' +
+        '<span class="pie"><span class="pp">' + usd(p.precio) + '</span><span class="ps' + (bajo || sin ? ' bajo' : '') + '">' + (sin ? 'Agotado' : 'Quedan ' + st) + '</span></span></span></button>';
     }).join('');
     $('pv-sin-productos').hidden = lista.length > 0;
   }
-  function agregar(id) {
+  function agregar(id, vid) {
     var p = prod(id), i = -1;
-    pv.lineas.forEach(function (l, k) { if (l.id === id) i = k; });
+    if (p.v && p.v.length && vid === undefined) { abrirVariante(p); return; }
+    vid = vid || null;
+    var x = vid ? p.v.filter(function (o) { return o[0] === vid; })[0] : null, tope = x ? x[3] : p.t, nom = p.n + (x ? ' ' + nomVar(x) : '');
+    pv.lineas.forEach(function (l, k) { if (l.id === id && (l.v || null) === vid) i = k; });
     if (i >= 0) {
-      if (pv.lineas[i].q >= p.t) { avisar('Solo quedan ' + p.t + ' de ' + p.n + ' en tienda y ya están en el ticket', 'aviso'); return; }
+      if (pv.lineas[i].q >= tope) { avisar('Solo quedan ' + tope + ' de ' + nom + ' en tienda y ya están en el ticket', 'aviso'); return; }
       pv.lineas[i].q++;
     } else {
-      if (!p.t) { avisar(p.n + ' está agotado en tienda', 'aviso'); return; }
-      pv.lineas.push({ id: id, q: 1, d: 0, p: null });
+      if (!tope) { avisar(nom + ' está agotado en tienda', 'aviso'); return; }
+      pv.lineas.push({ id: id, v: vid, q: 1, d: 0, p: null });
     }
     pv.edit = -1; pintarPV(); volverAlLector();
   }
+  var mv = { p: null, talla: null, color: null };
+  function libres(x) { return x[3] - pv.lineas.reduce(function (s, l) { return l.v === x[0] ? s + l.q : s; }, 0); }
+  function abrirVariante(p) {
+    mv = { p: p, talla: null, color: null };
+    var tallas = unicos(p.v.map(function (x) { return x[1]; }));
+    if (tallas.length === 1) mv.talla = tallas[0];
+    $('mv-titulo').textContent = p.n;
+    $('mv-precio').textContent = usd(p.precio) + ' · ' + bs(p.precio);
+    pintarVariante();
+    $('modal-variante').showModal();
+    var primero = $('modal-variante').querySelector('.mv-ops button:not(:disabled)');
+    if (primero) primero.focus();
+  }
+  function unicos(a) { return a.filter(function (x, i) { return a.indexOf(x) === i; }); }
+  function pintarVariante() {
+    var p = mv.p, tallas = unicos(p.v.map(function (x) { return x[1]; })), hayTalla = tallas.some(Boolean);
+    var deTalla = p.v.filter(function (x) { return !hayTalla || x[1] === mv.talla; });
+    var colores = unicos(deTalla.map(function (x) { return x[2]; })), hayColor = colores.some(Boolean);
+    if (mv.talla !== null || !hayTalla) { if (colores.length === 1) mv.color = colores[0]; else if (colores.indexOf(mv.color) === -1) mv.color = null; }
+    $('mv-g-talla').hidden = !hayTalla;
+    $('mv-tallas').innerHTML = tallas.map(function (t) {
+      var quedan = p.v.filter(function (x) { return x[1] === t; }).reduce(function (s, x) { return s + libres(x); }, 0);
+      return '<button type="button" class="chip-btn" data-mv-talla="' + esc(t) + '" aria-pressed="' + (t === mv.talla) + '"' + (quedan > 0 ? '' : ' disabled') + '>' + esc(t || 'Única') + '</button>';
+    }).join('');
+    $('mv-g-color').hidden = !hayColor;
+    $('mv-colores').innerHTML = (hayTalla && mv.talla === null) ? '<span class="mv-espera">Elige primero la talla</span>' : colores.map(function (c) {
+      var x = deTalla.filter(function (o) { return o[2] === c; })[0], q = libres(x);
+      return '<button type="button" class="chip-btn" data-mv-color="' + esc(c) + '" aria-pressed="' + (c === mv.color) + '"' + (q > 0 ? '' : ' disabled') + '>' + esc(c || 'Sin color') + '<span class="mv-n">' + q + '</span></button>';
+    }).join('');
+    var sel = elegida();
+    $('mv-agregar').disabled = !sel || libres(sel) <= 0;
+    $('mv-quedan').textContent = sel ? (libres(sel) > 0 ? 'Quedan ' + libres(sel) + ' de ' + nomVar(sel) + (libres(sel) < sel[3] ? ' (' + (sel[3] - libres(sel)) + ' ya en el ticket)' : '') : 'Las de ' + nomVar(sel) + ' ya están todas en el ticket') : '';
+  }
+  function elegida() {
+    var p = mv.p; if (!p) return null;
+    var hayTalla = p.v.some(function (x) { return x[1]; }), hayColor = p.v.some(function (x) { return x[2]; });
+    if ((hayTalla && mv.talla === null) || (hayColor && mv.color === null)) return null;
+    return p.v.filter(function (x) { return (!hayTalla || x[1] === mv.talla) && (!hayColor || x[2] === mv.color); })[0] || null;
+  }
+  $('modal-variante').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-mv-talla], [data-mv-color]'); if (!b) return;
+    if (b.hasAttribute('data-mv-talla')) { mv.talla = b.getAttribute('data-mv-talla'); mv.color = null; }
+    else mv.color = b.getAttribute('data-mv-color');
+    pintarVariante();
+    var sig = b.hasAttribute('data-mv-talla') ? $('mv-colores').querySelector('[aria-pressed="true"], button:not(:disabled)') : $('mv-agregar');
+    if (sig && !sig.disabled) sig.focus();
+  });
+  $('mv-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var x = elegida(); if (!x) return;
+    $('modal-variante').close();
+    agregar(mv.p.id, x[0]);
+  });
+  $('modal-variante').addEventListener('close', volverAlLector);
   var punteroFino = window.matchMedia && window.matchMedia('(pointer: fine)').matches;
   function volverAlLector() { if (punteroFino && paso === 'venta' && !document.querySelector('dialog[open]')) $('pv-scan').focus({ preventScroll: true }); }
   document.addEventListener('keydown', function (e) {
@@ -118,12 +204,12 @@
       pv.lineas = []; pv.cliente = null; pv.nuevoCliente = null; pv.edit = -1; pintarPV(); avisar('El ticket quedó vacío', 'ok'); volverAlLector();
     });
   });
-  function quitar(i) { var n = prod(pv.lineas[i].id).n; pv.lineas.splice(i, 1); pv.edit = -1; pintarPV(); avisar(n + ' quitado del ticket', 'info'); }
+  function quitar(i) { var l = pv.lineas[i], x = variante(l), n = prod(l.id).n + (x ? ' ' + nomVar(x) : ''); pv.lineas.splice(i, 1); pv.edit = -1; pintarPV(); avisar(n + ' quitado del ticket', 'info'); }
 
   $('pv-lineas').addEventListener('input', function (e) {
     var campo = e.target.getAttribute('data-campo'); if (!campo) return;
-    var li = e.target.closest('[data-i]'), l = pv.lineas[+li.getAttribute('data-i')], p = prod(l.id), v = parseFloat(e.target.value);
-    if (campo === 'q') { if (!(v >= 1)) return; if (v > p.t) { avisar('Solo quedan ' + p.t + ' en tienda', 'aviso'); v = p.t; e.target.value = v; } l.q = Math.floor(v); li.querySelector('[data-q]').textContent = l.q; }
+    var li = e.target.closest('[data-i]'), l = pv.lineas[+li.getAttribute('data-i')], p = prod(l.id), v = parseFloat(e.target.value), tope = topeL(l);
+    if (campo === 'q') { if (!(v >= 1)) return; if (v > tope) { avisar('Solo quedan ' + tope + ' en tienda', 'aviso'); v = tope; e.target.value = v; } l.q = Math.floor(v); li.querySelector('[data-q]').textContent = l.q; }
     if (campo === 'd' && D.puedeDescuento) l.d = Math.max(0, Math.min(100, v || 0));
     if (campo === 'p' && D.puedeDescuento) { if (!(v >= 0)) return; l.p = Math.abs(v - p.precio) < 0.001 ? null : v; }
     li.querySelector('[data-tot]').textContent = usd(totalL(l));
@@ -134,9 +220,11 @@
     var t = function (s) { return e.target.closest(s); };
     var b;
     if ((b = t('[data-agregar]'))) return agregar(+b.getAttribute('data-agregar'));
-    if ((b = t('[data-mas]'))) return agregar(pv.lineas[+b.getAttribute('data-mas')].id);
+    if ((b = t('[data-mas]'))) { var lm = pv.lineas[+b.getAttribute('data-mas')]; return agregar(lm.id, lm.v || null); }
     if ((b = t('[data-menos]'))) { var i = +b.getAttribute('data-menos'); if (pv.lineas[i].q <= 1) quitar(i); else { pv.lineas[i].q--; pintarPV(); } return; }
     if ((b = t('[data-editar]'))) { var k = +b.getAttribute('data-editar'); pv.edit = pv.edit === k ? -1 : k; pintarLineas(); if ($('pe-q')) $('pe-q').focus(); return; }
+    if ((b = t('[data-pe-talla]'))) return cambiarPrenda(pv.edit, b.getAttribute('data-pe-talla'), null);
+    if ((b = t('[data-pe-color]'))) { var xe = variante(pv.lineas[pv.edit]); return cambiarPrenda(pv.edit, xe[1], b.getAttribute('data-pe-color')); }
     if ((b = t('[data-quitar]'))) return quitar(+b.getAttribute('data-quitar'));
     if (t('[data-listo]')) { pv.edit = -1; pintarPV(); return; }
     if ((b = t('[data-pv-cat]'))) { pv.cat = b.getAttribute('data-pv-cat'); document.querySelectorAll('[data-pv-cat]').forEach(function (o) { o.setAttribute('aria-pressed', String(o === b)); }); pintarGrid(); return; }
@@ -419,7 +507,7 @@
     var add = function (n, v) { campos.push('<input type="hidden" name="' + n + '" value="' + esc(v) + '">'); };
     if (pv.cliente && pv.cliente.id) add('id_usuario', pv.cliente.id);
     if (pv.nuevoCliente) Object.keys(pv.nuevoCliente).forEach(function (k) { add('nuevo_cliente[' + k + ']', pv.nuevoCliente[k]); });
-    pv.lineas.forEach(function (l) { add('id_producto[]', l.id); add('cantidad[]', l.q); add('precio_unitario[]', precioL(l)); add('descuento[]', l.d); });
+    pv.lineas.forEach(function (l) { add('id_producto[]', l.id); add('id_variante[]', l.v || ''); add('cantidad[]', l.q); add('precio_unitario[]', precioL(l)); add('descuento[]', l.d); });
     cobro.pagos.forEach(function (p) {
       add('id_metodo_pago[]', p.m);
       add('monto[]', p.monto);

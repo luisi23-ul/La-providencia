@@ -34,7 +34,7 @@ $conFoto = array_values(array_filter($categorias, fn($c) => !empty($c->imagen)))
   <?php if ($novedades): ?>
   <section class="lista" aria-labelledby="t-nov">
     <div class="lista-cab"><h2 class="sec-tit" id="t-nov">Lo más nuevo</h2></div>
-    <ul class="rejilla"><?php foreach ($novedades as $p) echo tarjetaProducto($p, $e, $usd, $bs, $foto, $nombresCategoria); ?></ul>
+    <ul class="rejilla"><?php foreach ($novedades as $p) echo tarjetaProducto($p, $e, $usd, $bs, $foto, $nombresCategoria, $conVariantes); ?></ul>
     <div class="ver-mas"><a class="btn sec" href="index.php?action=ver_catalogo">Ver todo el catálogo</a></div>
   </section>
   <?php endif; ?>

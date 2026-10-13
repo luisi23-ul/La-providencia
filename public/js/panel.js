@@ -3,12 +3,13 @@
   if (!panel) return;
   var TASA = parseFloat(panel.getAttribute('data-tasa')) || 1;
   var fmt = function (v) { return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+  var fmtVe = function (v) { return fmt(v).replace(/,/g, ' ').replace('.', ',').replace(/ /g, '.'); };
 
   window.Panel = {
     tasa: TASA,
     usd: function (v) { return '$' + fmt(+v || 0); },
-    bs: function (v) { return fmt((+v || 0) * TASA) + ' Bs'; },
-    fmtBs: function (v) { return fmt(+v || 0); },
+    bs: function (v) { return fmtVe((+v || 0) * TASA) + ' Bs'; },
+    fmtBs: function (v) { return fmtVe(+v || 0); },
     esc: function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); },
     avisar: function (txt, tipo, segundos) { avisar(txt, tipo, segundos); },
     confirmar: function (op) { return confirmar(op); },

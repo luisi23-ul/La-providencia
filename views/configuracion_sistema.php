@@ -40,7 +40,7 @@ $colores = ['color_primario' => ['Principal', '#0052d4'], 'color_secundario' => 
       <header class="caja-cab"><h3 id="cfg-t2">Tasa del dólar</h3></header>
       <div class="caja-cuerpo">
         <div class="opciones" role="radiogroup" aria-labelledby="cfg-t2">
-          <label class="opcion"><input type="radio" name="tasa_modo" value="bcv" <?= $manual ? '' : 'checked' ?>><span>Automática del BCV<small><?= isset($tasaBcv) ? 'Hoy: ' . number_format((float) $tasaBcv, 2) . ' Bs/$' : 'Se actualiza sola cada día' ?></small></span></label>
+          <label class="opcion"><input type="radio" name="tasa_modo" value="bcv" <?= $manual ? '' : 'checked' ?>><span>Automática del BCV<small><?= isset($tasaBcv) ? 'Hoy: ' . number_format((float) $tasaBcv, 2, ',', '.') . ' Bs/$' : 'Se actualiza sola cada día' ?></small></span></label>
           <label class="opcion"><input type="radio" name="tasa_modo" value="manual" <?= $manual ? 'checked' : '' ?>><span>La pongo yo<small>Útil si el BCV no responde</small></span></label>
         </div>
         <div class="campo cfg-tasa" id="cfg-tasa-manual" <?= $manual ? '' : 'hidden' ?>><label for="cfg-tasa">Tasa manual (Bs por $)</label><input id="cfg-tasa" name="tasa_manual" type="number" step="0.0001" min="0" inputmode="decimal" value="<?= $e($c('tasa_manual')) ?>"></div>

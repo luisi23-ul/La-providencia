@@ -6,8 +6,6 @@ $scripts = ['inventario'];
 $categorias = $categorias ?? [];
 include __DIR__ . '/admin/_abrir.php';
 
-$avisoError = $_SESSION['aviso_error'] ?? null;
-unset($_SESSION['aviso_error']);
 
 $codigo = $editando ? ($p->codigo ?? ('P-' . str_pad($p->id, 4, '0', STR_PAD_LEFT))) : '';
 $campo = fn($crear, $editar) => $editando ? $editar : $crear;
@@ -22,11 +20,6 @@ $opcionCat = fn($c, $prefijo = '') => '<option value="' . (int) $c->id . '"' . (
 ?>
 <section class="contenido">
 
-  <?php if (!empty($avisoError)): ?>
-    <div class="aviso-error" style="background:#fee2e2; color:#991b1b; padding:12px 16px; border-radius:8px; margin-bottom:1.5rem; font-weight:500; border:1px solid #f87171;">
-      <?= htmlspecialchars((string)$avisoError, ENT_QUOTES, 'UTF-8') ?>
-    </div>
-  <?php endif; ?>
 
   <header class="cab">
     <div class="cab-txt"><small>Inventario</small>

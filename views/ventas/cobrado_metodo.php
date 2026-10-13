@@ -26,7 +26,7 @@ foreach ($lista as $v) { $d = date('Y-m-d', strtotime($v->fecha)); $porDia[$d] =
     <?php $periodoFiltro = ['modo' => 'rango', 'defecto' => 'Este mes']; include __DIR__ . '/../admin/_periodo.php'; ?>
   </form>
   <section class="mini-kpis" aria-label="Resumen del periodo">
-    <div><span class="mk-ic"><svg class="i"><use href="#i-dolar"/></svg></span><span>Cobrado</span><b><?= $usd($totUsd) ?></b><small><?= number_format($totBs, 2) ?> Bs</small></div>
+    <div><span class="mk-ic"><svg class="i"><use href="#i-dolar"/></svg></span><span>Cobrado</span><b><?= $usd($totUsd) ?></b><small><?= number_format($totBs, 2, ',', '.') ?> Bs</small></div>
     <div class="mk-oscuro"><span class="mk-ic"><svg class="i"><use href="#i-recibo"/></svg></span><span>Ventas</span><b><?= count($lista) ?></b><small>promedio <?= $usd(count($lista) ? $totUsd / count($lista) : 0) ?></small></div>
     <div class="mk-claro"><span class="mk-ic"><svg class="i"><use href="#i-calendario"/></svg></span><span>Días con cobros</span><b><?= count($porDia) ?></b><small><?= $porDia ? 'mejor día ' . date('d/m', strtotime(array_search(max($porDia), $porDia))) . ', ' . $usd(max($porDia)) : 'sin cobros' ?></small></div>
   </section>
@@ -40,7 +40,7 @@ foreach ($lista as $v) { $d = date('Y-m-d', strtotime($v->fecha)); $porDia[$d] =
             <td class="t-tit"><div class="t-nombre"><b>#<?= str_pad($v->id, 4, '0', STR_PAD_LEFT) ?></b><span><?= date('d/m/Y, g:i a', strtotime($v->fecha)) ?></span></div></td>
             <td data-label="Cliente"><?= $e($v->nombre_cliente) ?></td>
             <td class="num" data-label="Total"><b><?= $usd($v->total) ?></b></td>
-            <td class="num c-media" data-label="En bolívares"><?= number_format($v->total_bs ?? $v->total * $tasa, 2) ?> Bs</td>
+            <td class="num c-media" data-label="En bolívares"><?= number_format($v->total_bs ?? $v->total * $tasa, 2, ',', '.') ?> Bs</td>
             <td class="t-acc"><div class="acc"><a href="index.php?action=detalle_venta&id=<?= (int) $v->id ?>" class="ic-btn" aria-label="Ver venta #<?= (int) $v->id ?>"><svg class="i"><use href="#i-ojo"/></svg></a></div></td>
           </tr>
         <?php endforeach; ?>

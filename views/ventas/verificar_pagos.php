@@ -15,7 +15,7 @@ $metodosList = $db->query("SELECT id, nombre FROM metodos_pago ORDER BY nombre A
 <section class="contenido" id="p-verificar_pagos">
   <header class="cab">
     <div class="cab-txt"><small>Ventas</small><h2>Verificar pagos</h2></div>
-    <div class="cab-acc"><span class="tasa">Tasa BCV <b><?= number_format($tasa, 2) ?> Bs/$</b></span></div>
+    <div class="cab-acc"><span class="tasa">Tasa BCV <b><?= number_format($tasa, 2, ',', '.') ?> Bs/$</b></span></div>
   </header>
 
   <form class="filtros" method="GET" action="index.php" aria-label="Filtros">
@@ -45,7 +45,7 @@ $metodosList = $db->query("SELECT id, nombre FROM metodos_pago ORDER BY nombre A
         <li><button type="button" class="vf-item <?= $claseEstado ?>" data-pago="<?= $i ?>" aria-current="<?= $i === 0 ? 'true' : 'false' ?>">
           <span class="vf-ic"><svg class="i"><use href="#i-<?= $icono ?>"/></svg></span>
           <b><?= $e($p->cliente) ?>, #<?= str_pad($p->id_venta, 4, '0', STR_PAD_LEFT) ?></b>
-          <span class="m"><?= ($p->moneda ?? 'Bs') === 'USD' ? $usd($p->monto) : number_format((float) $p->monto, 2) . ' Bs' ?></span>
+          <span class="m"><?= ($p->moneda ?? 'Bs') === 'USD' ? $usd($p->monto) : number_format((float) $p->monto, 2, ',', '.') . ' Bs' ?></span>
           <small><?= $e($p->metodo) ?> · <?= $esEf ? 'en caja' : 'Ref. ' . $e($p->referencia ?: 'sin referencia') ?></small>
         </button></li>
         <?php endforeach; ?>
@@ -75,52 +75,41 @@ $metodosList = $db->query("SELECT id, nombre FROM metodos_pago ORDER BY nombre A
   </form>
 </dialog>
 
-<!-- MODAL PARA EDITAR PAGO / ORDEN -->
 <dialog class="modal mediano" id="modal-editar-pago" aria-labelledby="me-titulo">
-  <form method="POST" action="index.php?action=editar_pago_verificacion">
+  <form method="POST" action="index.php?action=editar_pago_verificacion" id="me-form">
     <input type="hidden" name="id_pago" id="me-id-pago">
     <input type="hidden" name="id_venta" id="me-id-venta">
     <input type="hidden" name="tasa_cambio" id="me-tasa" value="<?= $tasa ?>">
-
-    <header class="modal-cab">
-      <span class="modal-ic"><svg class="i"><use href="#i-editar"/></svg></span>
-      <div>
-        <h3 id="me-titulo">Editar datos del pago</h3>
-        <p id="me-subtitulo">Ajusta los datos bancarios o cantidades de prendas del pedido.</p>
-      </div>
-    </header>
-
-    <div class="modal-cuerpo" style="display: flex; flex-direction: column; gap: 12px;">
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+    <header class="modal-cab"><span class="modal-ic"><svg class="i"><use href="#i-editar"/></svg></span><div><h3 id="me-titulo">Editar pago</h3><p id="me-subtitulo"></p></div><button type="button" class="ic-btn" data-cerrar aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button></header>
+    <div class="modal-cuerpo me-cuerpo">
+      <div class="me-fila">
         <div class="campo">
-          <label for="me-metodo">Forma de Pago <span class="ob">*</span></label>
+          <label for="me-metodo">Método de pago <span class="ob">*</span></label>
           <select id="me-metodo" name="id_metodo_pago" required>
-            <?php foreach ($metodosList as $m): ?>
-              <option value="<?= $m->id ?>"><?= htmlspecialchars($m->nombre) ?></option>
-            <?php endforeach; ?>
+            <?php foreach ($metodosList as $m): ?><option value="<?= (int) $m->id ?>"><?= $e($m->nombre) ?></option><?php endforeach; ?>
           </select>
         </div>
         <div class="campo">
-          <label for="me-banco">Banco Emisor / Destino</label>
-          <input type="text" id="me-banco" name="banco" placeholder="Ej.: Banesco, Banco de Venezuela">
+          <label for="me-banco">Banco</label>
+          <select id="me-banco" name="banco" data-buscador>
+            <option value="">Sin banco</option>
+            <?php foreach (['Banesco', 'Banco de Venezuela', 'Mercantil', 'Banco Provincial', 'BNC Nacional de Crédito', 'Bancaribe', 'Banco Exterior', 'Banco Plaza', 'Banco del Tesoro', 'Banco Bicentenario', 'Banplus', '100% Banco'] as $b): ?><option><?= $e($b) ?></option><?php endforeach; ?>
+          </select>
         </div>
       </div>
-
       <div class="campo">
-        <label for="me-ref">Número de Referencia</label>
-        <input type="text" id="me-ref" name="referencia" placeholder="Ej.: 123456">
+        <label for="me-ref">Referencia</label>
+        <input type="text" id="me-ref" name="referencia" inputmode="numeric" autocomplete="off" placeholder="Ej.: 004512">
       </div>
-
-      <div class="campo" style="border-top: 1px solid var(--borde, #e5e5e5); padding-top: 10px;">
-        <label style="font-weight: 600; margin-bottom: 6px; display: block;">Productos del pedido (cantidades):</label>
-        <div id="me-lista-prods" style="display: flex; flex-direction: column; gap: 6px; max-height: 160px; overflow-y: auto;"></div>
-        <span class="ayuda">* Si colocas la cantidad en 0 se elimina el producto y el total se recalcula.</span>
-      </div>
+      <section class="me-prods" aria-labelledby="me-prods-tit">
+        <header><h4 id="me-prods-tit">Productos del pedido</h4><span class="ayuda">Pon 0 para quitar uno</span></header>
+        <ul id="me-lista-prods"></ul>
+        <p class="me-total"><span>Nuevo total</span><b id="me-total">—</b></p>
+      </section>
     </div>
-
     <footer class="modal-pie">
       <button type="button" class="btn btn-sec" data-cerrar>Cancelar</button>
-      <button type="submit" class="btn btn-ok">Guardar Cambios</button>
+      <button type="submit" class="btn btn-pri">Guardar cambios</button>
     </footer>
   </form>
 </dialog>
