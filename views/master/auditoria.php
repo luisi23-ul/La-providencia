@@ -14,6 +14,14 @@ $f = [
     'desde' => $_GET['desde'] ?? date('Y-m-d', strtotime('-6 days')),
     'hasta' => $_GET['hasta'] ?? date('Y-m-d'),
 ];
+$iconoModulo = fn($m) => ['ventas' => 'recibo', 'inventario' => 'etiqueta', 'compras' => 'carrito', 'configuración' => 'ajuste', 'configuracion' => 'ajuste', 'personal' => 'usuarios', 'roles y permisos' => 'escudo', 'proveedores' => 'bolsa'][mb_strtolower(trim((string) $m))] ?? 'lista';
+$deducir = function ($d) {
+    $d = mb_strtolower((string) $d);
+    if (str_contains($d, 'creaci') || str_contains($d, 'registr') || str_contains($d, 'nuev')) return 'INSERT';
+    if (str_contains($d, 'elimin') || str_contains($d, 'borr') || str_contains($d, 'anul')) return 'DELETE';
+    if (str_contains($d, 'actualiz') || str_contains($d, 'modific') || str_contains($d, 'cambi') || str_contains($d, 'edit')) return 'UPDATE';
+    return '';
+};
 $acciones = ['INSERT' => ['ins', 'Creó'], 'UPDATE' => ['upd', 'Modificó'], 'DELETE' => ['del', 'Eliminó'], 'LOGIN' => ['log', 'Inició sesión'], 'VERIFICACION' => ['ver', 'Verificó']];
 $fecha = fn($v) => date('d/m', strtotime($v)) . ' · ' . str_replace(['am', 'pm'], ['a. m.', 'p. m.'], date('g:i a', strtotime($v)));
 ?>
@@ -54,14 +62,17 @@ $fecha = fn($v) => date('d/m', strtotime($v)) . ' · ' . str_replace(['am', 'pm'
         <thead><tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Módulo</th><th>Descripción</th><th class="c-media">IP</th></tr></thead>
         <tbody>
         <?php foreach ($registros as $r):
-            $ac = $acciones[$r->accion] ?? ['log', $r->accion]; ?>
+            $tipo = trim((string) $r->accion) ?: $deducir($r->descripcion);
+            $ac = $acciones[$tipo] ?? ['log', $tipo ?: 'Registró'];
+            $ipLocal = in_array($r->ip ?? '', ['::1', '127.0.0.1'], true);
+            $quien = $r->usuario ?? 'Sistema'; ?>
           <tr>
             <td data-label="Fecha" class="nums" style="white-space:nowrap"><time datetime="<?= $e(date('c', strtotime($r->fecha))) ?>"><?= $fecha($r->fecha) ?></time></td>
-            <td class="t-tit"><b><?= $e($r->usuario ?? 'Sistema') ?></b></td>
+            <td class="t-tit"><span class="au-quien"><span class="au-av" aria-hidden="true"><?= $e(mb_strtoupper(mb_substr($quien, 0, 1))) ?></span><b><?= $e($quien) ?></b></span></td>
             <td data-label="Acción"><span class="accion <?= $ac[0] ?>"><?= $ac[1] ?></span></td>
-            <td data-label="Módulo"><?= $e($r->modulo) ?></td>
-            <td data-label="Descripción"><div class="t-nombre"><span style="color:var(--texto)"><?= $e($r->descripcion) ?></span><?php if (!empty($r->ip)): ?><span class="si-estrecho cifra">IP <?= $e($r->ip) ?></span><?php endif; ?></div></td>
-            <td data-label="IP" class="cod c-media"><?= $e($r->ip ?? '') ?></td>
+            <td data-label="Módulo"><span class="au-mod"><svg class="i" aria-hidden="true"><use href="#i-<?= $iconoModulo($r->modulo) ?>"/></svg><?= $e($r->modulo) ?></span></td>
+            <td data-label="Descripción"><div class="t-nombre"><span style="color:var(--texto)"><?= $e($r->descripcion) ?></span><?php if (!empty($r->ip)): ?><span class="si-estrecho cifra"><?= $ipLocal ? 'Desde este equipo' : 'IP ' . $e($r->ip) ?></span><?php endif; ?></div></td>
+            <td data-label="IP" class="c-media<?= $ipLocal ? ' muted' : ' cod' ?>"><?= $ipLocal ? 'Este equipo' : $e($r->ip ?? '') ?></td>
           </tr>
         <?php endforeach; ?>
         </tbody>

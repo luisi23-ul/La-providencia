@@ -818,7 +818,7 @@ tfoot td { padding: 12px 14px; border-top: 1px solid var(--linea); font-weight: 
 .accion.upd { background: var(--marca-suave); color: var(--marca); }
 .accion.del { background: var(--rojo-suave); color: var(--rojo); }
 .accion.log { background: #eef2f6; color: var(--texto-2); }
-.accion.ver { background: var(--violeta-suave); color: var(--violeta); }
+.accion.ver { background: var(--tarjeta); color: #1d6a4f; box-shadow: inset 0 0 0 1.5px #1d6a4f; }
 .panel table thead th { background: var(--encabezado); border-bottom: 3px solid var(--acento); }
 .cab h2, .caja-cab h3, .modal-cab h3, .marca strong, .kpi-val, .fila-total.grande b, .mini-kpis b, .det-datos h3 { font-family: var(--f-titulo); }
 @media (prefers-reduced-motion: reduce) { .lateral { transition: none; } }
@@ -2276,3 +2276,7 @@ body:has(.panel.modo-master) { background: #eeeae3; }
 .rp-celda.cambiada .rp-casilla { box-shadow: 0 0 0 3px var(--tarjeta), 0 0 0 5px #1d6a4f; }
 .rp-celda.cambiada::after { content: ""; position: absolute; top: 7px; right: calc(50% - 20px); width: 7px; height: 7px; border-radius: 50%; background: #1d6a4f; }
 @media (prefers-reduced-motion: reduce) { .rp-casilla, .rp-casilla::after { transition: none; } }
+.au-quien { display: inline-flex; align-items: center; gap: 10px; }
+.au-av { width: 30px; height: 30px; flex: none; border-radius: 50%; display: grid; place-items: center; background: var(--marca-suave); color: var(--marca-fuerte); font: 700 13px var(--f-titulo); }
+.au-mod { display: inline-flex; align-items: center; gap: 8px; }
+.au-mod svg.i { width: 17px; height: 17px; color: var(--marca); flex: none; }
