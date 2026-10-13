@@ -128,7 +128,7 @@ public function actualizarEstadoUsuario($id, $estado) {
 }
 
 public function obtenerClientes() {
-    $sql = "SELECT id, nombre, correo, estado FROM usuarios WHERE id_rol = 3";
-    return $this->db->query($sql)->fetchAll(PDO::FETCH_OBJ);
-}
+        $sql = "SELECT id, nombre, correo, estado FROM usuarios WHERE id_rol = 3 ORDER BY id DESC";
+        return $this->db->query($sql)->fetchAll(PDO::FETCH_OBJ);
+    }
 }
