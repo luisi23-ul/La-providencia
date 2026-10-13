@@ -21,7 +21,7 @@ class AdminControllers {
         } catch (Exception $e) {}
     }
 
-    // Punto 1: Helper de seguridad para validación y procesamiento de imágenes
+    // Helper de seguridad para validación y procesamiento de imágenes
     private function procesarImagenUpload($file, $imagenAnterior = null) {
         if (empty($file['tmp_name']) || $file['error'] !== UPLOAD_ERR_OK) {
             return $imagenAnterior;
@@ -31,7 +31,6 @@ class AdminControllers {
             throw new Exception("La imagen supera el límite permitido de 3 MB.");
         }
 
-        // Validar tipo real
         $mime = '';
         if (function_exists('finfo_open')) {
             $finfo = finfo_open(FILEINFO_MIME_TYPE);
@@ -65,7 +64,6 @@ class AdminControllers {
             throw new Exception("Error al mover la imagen al servidor.");
         }
 
-        // Borrar imagen vieja si existía una diferente
         if (!empty($imagenAnterior) && file_exists($carpeta . $imagenAnterior)) {
             @unlink($carpeta . $imagenAnterior);
         }
@@ -77,12 +75,11 @@ class AdminControllers {
     // VISTAS PRINCIPALES Y CATÁLOGO
     // -------------------------------------------------------------------------
 
-   public function mostrarDashboard() {
+    public function mostrarDashboard() {
         date_default_timezone_set('America/Caracas');
         $hoy  = date('Y-m-d');
         $ayer = date('Y-m-d', strtotime('-1 day'));
 
-        // 1. Tasa de cambio BCV
         $tasa = 526.87;
         try {
             $stmtTasa = $this->db->query("SELECT tasa_bcv FROM configuracion ORDER BY id DESC LIMIT 1");
@@ -92,7 +89,6 @@ class AdminControllers {
             }
         } catch (Exception $e) {}
 
-        // 2. Ventas de Hoy y Ventas de Ayer
         $ventasHoyMonto = 0.0;
         $ventasHoyCantidad = 0;
         $ventasAyerMonto = 0.0;
@@ -119,7 +115,6 @@ class AdminControllers {
             $ventasAyerMonto = (float)($stmtAyer->fetchColumn() ?: 0.0);
         } catch (Exception $e) {}
 
-        // 3. Pagos pendientes por verificar
         $pagosPendientes = [];
         $pagosPendientesMonto = 0.0;
         try {
@@ -140,7 +135,6 @@ class AdminControllers {
             $pagosPendientes = array_slice($todosPagosPend, 0, 5);
         } catch (Exception $e) {}
 
-        // 4. Pedidos por retirar en tienda
         $porRetirar = [];
         $totalPorRetirar = 0;
         try {
@@ -156,7 +150,6 @@ class AdminControllers {
             $porRetirar = array_slice($todosRetirar, 0, 5);
         } catch (Exception $e) {}
 
-        // 5. Productos con stock bajo y agotados
         $stockBajo = [];
         $totalStockBajo = 0;
         $totalAgotados = 0;
@@ -175,7 +168,6 @@ class AdminControllers {
             $stockBajo = array_slice($todosStock, 0, 5);
         } catch (Exception $e) {}
 
-        // 6. Arreglo $kpis que espera la vista dashboard.php
         $kpis = [
             'ventas_hoy'             => $ventasHoyMonto,
             'ventas_hoy_n'           => $ventasHoyCantidad,
@@ -186,9 +178,8 @@ class AdminControllers {
             'stock_bajo'             => $totalStockBajo,
             'agotados'               => $totalAgotados
         ];
-        $k = $kpis; // Compatibilidad por si la vista accede a $k directamente
+        $k = $kpis;
 
-        // 7. Gráfico de ventas de los últimos 7 días
         $ventasSemana = [];
         try {
             for ($i = 6; $i >= 0; $i--) {
@@ -227,6 +218,7 @@ class AdminControllers {
 
         include "views/dashboard.php";
     }
+
     public function mostrarPanel() {
         $categorias = $this->obtenerCategoriasConAtributos();
         $p = null;
@@ -262,7 +254,7 @@ class AdminControllers {
         $stmtCat = $this->db->query("SELECT id, nombre_categoria, id_padre FROM categorias ORDER BY nombre_categoria ASC");
         $cats = $stmtCat->fetchAll(PDO::FETCH_OBJ);
 
-        $stmtAtr = $this->db->prepare("SELECT id, nombre, opciones FROM categoria_atributos WHERE id_categoria = ?");
+        $stmtAtr = $this->db->prepare("SELECT id, nombre FROM categoria_atributos WHERE id_categoria = ?");
         foreach ($cats as $cat) {
             $stmtAtr->execute([$cat->id]);
             $cat->atributos = $stmtAtr->fetchAll(PDO::FETCH_OBJ);
@@ -270,7 +262,7 @@ class AdminControllers {
         return $cats;
     }
 
-  public function agregar() {
+    public function agregar() {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $db = $this->productoModelo->getDb();
             try {
@@ -287,17 +279,14 @@ class AdminControllers {
                 $atributos = $_POST['atributo'] ?? [];
                 $variantes = $_POST['variantes'] ?? [];
 
-                // 1. Validar nombre obligatorio
                 if (empty($nombre)) {
                     throw new Exception("El nombre del producto es obligatorio.");
                 }
 
-                // 2. Validar que el código no exista previamente
                 if (!empty($codigo) && $this->productoModelo->existeCodigo($codigo)) {
                     throw new Exception("El código '{$codigo}' ya está registrado en otro producto.");
                 }
 
-                // 3. Procesar imagen de forma segura
                 $nombreImagen = null;
                 if (!empty($_FILES['imagen']['tmp_name'])) {
                     $nombreImagen = $this->procesarImagenUpload($_FILES['imagen']);
@@ -317,7 +306,6 @@ class AdminControllers {
                     'imagen'          => $nombreImagen
                 ];
 
-                // 4. Iniciar transacción
                 $db->beginTransaction();
 
                 $nuevoId = $this->productoModelo->guardarCompleto($datos, $atributos, $variantes);
@@ -330,25 +318,20 @@ class AdminControllers {
                 exit();
 
             } catch (Exception $e) {
-                // Cancelar cualquier operación pendiente si ocurrió un error
                 if ($db && $db->inTransaction()) {
                     $db->rollBack();
                 }
-
-                // Guardar el mensaje de error para mostrar el banner rojo
                 $_SESSION['aviso_error'] = $e->getMessage();
-
-                // Redirigir de inmediato al mismo formulario para verlo al instante
                 header("Location: index.php?action=formulario_producto");
                 exit();
             }
         }
     }
+
     public function editar() {
         $id = (int)($_GET['id'] ?? 0);
         $p = $this->productoModelo->obtenerPorId($id);
 
-        // Punto 4: Si el producto no existe, redirigir a la lista
         if (!$p) {
             $_SESSION['aviso'] = 'El producto solicitado no existe.';
             header("Location: index.php?action=listado_productos");
@@ -378,7 +361,6 @@ class AdminControllers {
 
                 $codigo = trim($_POST['codigo'] ?? $pActual->codigo);
 
-                // PUNTO 3 / D: Validar código
                 if (!empty($codigo) && $this->productoModelo->existeCodigo($codigo, $id)) {
                     throw new Exception("El código '{$codigo}' ya está asignado a otro producto.");
                 }
@@ -414,7 +396,6 @@ class AdminControllers {
                     'imagen'          => $nombreImagen
                 ];
 
-                // PUNTO C: Transacción
                 $db->beginTransaction();
 
                 $this->productoModelo->actualizarCompleto($id, $datos, $atributos, $variantes);
@@ -427,17 +408,16 @@ class AdminControllers {
                 exit();
 
             } catch (Exception $e) {
-                // PUNTO C: Rollback
-                if ($db->inTransaction()) {
+                if ($db && $db->inTransaction()) {
                     $db->rollBack();
                 }
-                // PUNTO D: Enviar aviso rojo
                 $_SESSION['aviso_error'] = $e->getMessage();
                 header("Location: index.php?action=editar&id=" . $id);
                 exit();
             }
         }
     }
+
     public function eliminar() {
         $id = $_GET['id'] ?? null;
         if ($id) {
@@ -450,7 +430,7 @@ class AdminControllers {
     }
 
     // -------------------------------------------------------------------------
-    // CATEGORÍAS Y ATRIBUTOS (Con soporte de Subcategorías)
+    // CATEGORÍAS Y ATRIBUTOS
     // -------------------------------------------------------------------------
 
     public function categorias() {
@@ -467,7 +447,7 @@ class AdminControllers {
         $stmt = $this->db->query($sql);
         $categorias = $stmt->fetchAll(PDO::FETCH_OBJ);
 
-        $stmtAtr = $this->db->prepare("SELECT id, nombre, opciones FROM categoria_atributos WHERE id_categoria = ?");
+        $stmtAtr = $this->db->prepare("SELECT id, nombre FROM categoria_atributos WHERE id_categoria = ?");
         foreach ($categorias as $cat) {
             $stmtAtr->execute([$cat->id]);
             $cat->atributos = $stmtAtr->fetchAll(PDO::FETCH_OBJ);
@@ -480,7 +460,7 @@ class AdminControllers {
         }
     }
 
-   public function guardarCategoria() {
+    public function guardarCategoria() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $id = !empty($_POST['id']) ? (int)$_POST['id'] : null;
             $nombre = trim($_POST['nombre_categoria'] ?? '');
@@ -497,7 +477,6 @@ class AdminControllers {
             try {
                 $this->db->beginTransaction();
 
-                // 1. Manejo de categoría padre
                 if ($rawPadre === 'nueva_padre' && !empty($nuevaPadre)) {
                     $stmtNP = $this->db->prepare("INSERT INTO categorias (nombre_categoria, id_padre) VALUES (?, NULL)");
                     $stmtNP->execute([$nuevaPadre]);
@@ -507,7 +486,6 @@ class AdminControllers {
                     $idPadre = (int)$rawPadre;
                 }
 
-                // 2. Guardar o actualizar la categoría
                 if ($id) {
                     if ($idPadre === $id) $idPadre = null;
                     $stmt = $this->db->prepare("UPDATE categorias SET nombre_categoria = ?, id_padre = ? WHERE id = ?");
@@ -520,7 +498,6 @@ class AdminControllers {
                     $this->log('Inventario', 'INSERT', "Creó categoría: {$nombre}");
                 }
 
-                // 3. Procesamiento y desduplicación de atributos
                 $atrIds = $_POST['atributo_id'] ?? [];
                 $atrNombres = $_POST['atributo_nombre'] ?? [];
                 $atrOpciones = $_POST['atributo_opciones'] ?? [];
@@ -532,11 +509,9 @@ class AdminControllers {
                     $claveUnica = mb_strtolower($nomAtr, 'UTF-8');
 
                     if ($nomAtr === '' || isset($atributosProcesados[$claveUnica])) {
-                        // Omitir vacíos o atributos que ya se leyeron en este mismo formulario
                         continue;
                     }
 
-                    // Normalizar opciones: quitar repetidas, espacios y comas sueltas
                     $opcRaw = explode(',', $atrOpciones[$i] ?? '');
                     $opcLimpias = [];
                     foreach ($opcRaw as $opc) {
@@ -546,7 +521,6 @@ class AdminControllers {
                         }
                     }
                     $opcAtr = implode(', ', $opcLimpias);
-
                     $atrId = !empty($atrIds[$i]) ? (int)$atrIds[$i] : 0;
 
                     $atributosProcesados[$claveUnica] = [
@@ -556,7 +530,6 @@ class AdminControllers {
                     ];
                 }
 
-                // 4. Sincronizar atributos en la base de datos
                 $idsMantener = [];
                 foreach ($atributosProcesados as $item) {
                     if ($item['id'] > 0) {
@@ -572,14 +545,14 @@ class AdminControllers {
                     $this->db->prepare("DELETE FROM categoria_atributos WHERE id_categoria = ?")->execute([$id]);
                 }
 
-                $stmtUpd = $this->db->prepare("UPDATE categoria_atributos SET nombre = ?, opciones = ? WHERE id = ? AND id_categoria = ?");
-                $stmtIns = $this->db->prepare("INSERT INTO categoria_atributos (id_categoria, nombre, opciones) VALUES (?, ?, ?)");
+                $stmtUpd = $this->db->prepare("UPDATE categoria_atributos SET nombre = ? WHERE id = ? AND id_categoria = ?");
+                $stmtIns = $this->db->prepare("INSERT INTO categoria_atributos (id_categoria, nombre) VALUES (?, ?)");
 
                 foreach ($atributosProcesados as $item) {
                     if ($item['id'] > 0) {
-                        $stmtUpd->execute([$item['nombre'], $item['opciones'], $item['id'], $id]);
+                        $stmtUpd->execute([$item['nombre'], $item['id'], $id]);
                     } else {
-                        $stmtIns->execute([$id, $item['nombre'], $item['opciones']]);
+                        $stmtIns->execute([$id, $item['nombre']]);
                     }
                 }
 
@@ -704,7 +677,6 @@ class AdminControllers {
                 $this->log('Inventario', 'UPDATE', "Ajuste de inventario ({$tipo}) producto ID: {$idProducto}");
             }
 
-            // Punto 6: Aviso verde y redirección si viene volver_producto
             $_SESSION['aviso'] = 'Ajuste de stock registrado.';
             $volverId = (int)($_POST['volver_producto'] ?? 0);
             if ($volverId > 0) {
@@ -762,7 +734,215 @@ class AdminControllers {
         $datosEstadisticas = $this->productoModelo->obtenerEstadisticasGenerales();
         require_once 'views/grafico_tortas.php';
     }
-   public function verReporte() {
+public function mostrarEstadisticas() {
+        date_default_timezone_set('America/Caracas');
+        $hoy = date('Y-m-d');
+
+        // Leer fechas directas enviadas por el formulario de la vista
+        $desde = !empty($_GET['desde']) ? date('Y-m-d', strtotime($_GET['desde'])) : date('Y-m-d', strtotime('-13 days'));
+        $hasta = !empty($_GET['hasta']) ? date('Y-m-d', strtotime($_GET['hasta'])) : $hoy;
+
+        if ($desde > $hasta) {
+            $tmp = $desde; $desde = $hasta; $hasta = $tmp;
+        }
+
+        $agrupar = ($_GET['agrupar'] ?? 'dia') === 'mes' ? 'mes' : 'dia';
+        $tab     = $_GET['tab'] ?? 'ventas';
+
+        // 1. Resumen General (KPIs) usando DATE() para coincidencia exacta con el día
+        $sqlResumen = "
+            SELECT 
+                COALESCE(SUM(v.total), 0) AS vendido,
+                COUNT(v.id) AS ventas,
+                COALESCE(SUM(CASE WHEN v.origen_venta = 'tienda_fisica' THEN v.total ELSE 0 END), 0) AS tienda,
+                COALESCE(SUM(
+                    (SELECT COALESCE(SUM((dv.precio_unitario - dv.costo_unitario) * dv.cantidad), 0)
+                     FROM detalle_ventas dv 
+                     WHERE dv.id_venta = v.id)
+                ), 0) AS ganancia
+            FROM ventas v
+            WHERE v.estado != 'cancelado' 
+              AND DATE(v.fecha) BETWEEN ? AND ?
+        ";
+        $stmtR = $this->db->prepare($sqlResumen);
+        $stmtR->execute([$desde, $hasta]);
+        $resumenRow = $stmtR->fetch(PDO::FETCH_ASSOC) ?: [];
+
+        $resumen = [
+            'vendido'  => (float)($resumenRow['vendido'] ?? 0),
+            'ganancia' => (float)($resumenRow['ganancia'] ?? 0),
+            'ventas'   => (int)($resumenRow['ventas'] ?? 0),
+            'tienda'   => (float)($resumenRow['tienda'] ?? 0)
+        ];
+
+        // 2. Calendario para el gráfico
+        $calendario = [];
+        $inicioTs = strtotime($desde);
+        $finTs    = strtotime($hasta);
+
+        if ($agrupar === 'mes') {
+            $actual = strtotime(date('Y-m-01', $inicioTs));
+            $finMes = strtotime(date('Y-m-01', $finTs));
+            while ($actual <= $finMes) {
+                $clave = date('Y-m-01', $actual);
+                $calendario[$clave] = ['fecha' => $clave, 'tienda' => 0.0, 'online' => 0.0];
+                $actual = strtotime('+1 month', $actual);
+            }
+        } else {
+            $actual = $inicioTs;
+            while ($actual <= $finTs) {
+                $clave = date('Y-m-d', $actual);
+                $calendario[$clave] = ['fecha' => $clave, 'tienda' => 0.0, 'online' => 0.0];
+                $actual = strtotime('+1 day', $actual);
+            }
+        }
+
+        $formato = ($agrupar === 'mes') ? '%Y-%m-01' : '%Y-%m-%d';
+        $sqlDias = "
+            SELECT 
+                DATE_FORMAT(v.fecha, '{$formato}') AS fecha,
+                COALESCE(SUM(CASE WHEN v.origen_venta = 'tienda_fisica' THEN v.total ELSE 0 END), 0) AS tienda,
+                COALESCE(SUM(CASE WHEN v.origen_venta = 'online' THEN v.total ELSE 0 END), 0) AS online
+            FROM ventas v
+            WHERE v.estado != 'cancelado' 
+              AND DATE(v.fecha) BETWEEN ? AND ?
+            GROUP BY DATE_FORMAT(v.fecha, '{$formato}')
+        ";
+        $stmtD = $this->db->prepare($sqlDias);
+        $stmtD->execute([$desde, $hasta]);
+        $ventasAgrupadas = $stmtD->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($ventasAgrupadas as $va) {
+            if (isset($calendario[$va['fecha']])) {
+                $calendario[$va['fecha']]['tienda'] = (float)$va['tienda'];
+                $calendario[$va['fecha']]['online'] = (float)$va['online'];
+            }
+        }
+        $dias = array_values($calendario);
+
+        // 3. Categorías
+        $sqlCat = "
+            SELECT 
+                c.nombre_categoria AS nombre,
+                COALESCE(SUM(dv.subtotal), 0) AS vendido,
+                COALESCE(SUM((dv.precio_unitario - dv.costo_unitario) * dv.cantidad), 0) AS ganancia
+            FROM detalle_ventas dv
+            INNER JOIN ventas v ON dv.id_venta = v.id
+            INNER JOIN productos p ON dv.id_producto = p.id
+            INNER JOIN categorias c ON p.id_categoria = c.id
+            WHERE v.estado != 'cancelado' 
+              AND DATE(v.fecha) BETWEEN ? AND ?
+            GROUP BY c.id, c.nombre_categoria
+            ORDER BY ganancia DESC
+        ";
+        $stmtC = $this->db->prepare($sqlCat);
+        $stmtC->execute([$desde, $hasta]);
+        $categorias = $stmtC->fetchAll(PDO::FETCH_OBJ);
+
+        // 4. Tab Productos: Top
+        $sqlTop = "
+            SELECT 
+                p.nombre_producto AS nombre,
+                COALESCE(c.nombre_categoria, 'Sin categoría') AS categoria,
+                SUM(dv.cantidad) AS unidades,
+                SUM(dv.subtotal) AS monto,
+                SUM((dv.precio_unitario - dv.costo_unitario) * dv.cantidad) AS ganancia
+            FROM detalle_ventas dv
+            INNER JOIN ventas v ON dv.id_venta = v.id
+            INNER JOIN productos p ON dv.id_producto = p.id
+            LEFT JOIN categorias c ON p.id_categoria = c.id
+            WHERE v.estado != 'cancelado' 
+              AND DATE(v.fecha) BETWEEN ? AND ?
+            GROUP BY p.id, p.nombre_producto, c.nombre_categoria
+            ORDER BY monto DESC
+            LIMIT 10
+        ";
+        $stmtTop = $this->db->prepare($sqlTop);
+        $stmtTop->execute([$desde, $hasta]);
+        $top = $stmtTop->fetchAll(PDO::FETCH_OBJ);
+
+        // 5. Tab Productos: Sin movimiento
+        $sqlSinMov = "
+            SELECT 
+                p.nombre_producto AS nombre,
+                COALESCE(c.nombre_categoria, 'General') AS categoria,
+                p.stock,
+                DATEDIFF(NOW(), MAX(v.fecha)) AS dias
+            FROM productos p
+            LEFT JOIN categorias c ON p.id_categoria = c.id
+            LEFT JOIN detalle_ventas dv ON dv.id_producto = p.id
+            LEFT JOIN ventas v ON dv.id_venta = v.id AND v.estado != 'cancelado'
+            WHERE p.estado = 1 AND p.deleted_at IS NULL
+            GROUP BY p.id, p.nombre_producto, c.nombre_categoria, p.stock
+            HAVING dias >= 30 OR dias IS NULL
+            ORDER BY dias DESC, p.stock DESC
+            LIMIT 10
+        ";
+        $sin_movimiento = $this->db->query($sqlSinMov)->fetchAll(PDO::FETCH_OBJ);
+
+        // 6. Tab Dinero: Métodos
+        $sqlMet = "
+            SELECT 
+                COALESCE(mp.nombre, pr.moneda) AS nombre,
+                SUM(pr.monto / CASE WHEN pr.moneda = 'VES' AND pr.tasa_cambio > 0 THEN pr.tasa_cambio ELSE 1 END) AS monto
+            FROM pagos_registro pr
+            INNER JOIN ventas v ON pr.id_venta = v.id
+            LEFT JOIN metodos_pago mp ON pr.id_metodo_pago = mp.id
+            WHERE pr.estado_verificacion = 'aprobado'
+              AND DATE(pr.fecha_pago) BETWEEN ? AND ?
+            GROUP BY mp.nombre, pr.moneda
+            ORDER BY monto DESC
+        ";
+        $stmtMet = $this->db->prepare($sqlMet);
+        $stmtMet->execute([$desde, $hasta]);
+        $metodos = $stmtMet->fetchAll(PDO::FETCH_OBJ);
+
+        // 7. Tab Dinero: Proveedores
+        $proveedores = [];
+        try {
+            $colFecha = 'fecha';
+            $checkCols = $this->db->query("SHOW COLUMNS FROM compras LIKE 'fecha'")->fetch();
+            if (!$checkCols) {
+                $checkColsCompra = $this->db->query("SHOW COLUMNS FROM compras LIKE 'fecha_compra'")->fetch();
+                $colFecha = $checkColsCompra ? 'fecha_compra' : 'created_at';
+            }
+
+            $sqlProv = "
+                SELECT 
+                    COALESCE(prv.razon_social, 'Proveedor') AS razon_social,
+                    COUNT(c.id) AS compras,
+                    COALESCE(SUM(c.total), 0) AS total
+                FROM compras c
+                LEFT JOIN proveedores prv ON c.id_proveedor = prv.id
+                WHERE DATE(c.{$colFecha}) BETWEEN ? AND ?
+                GROUP BY prv.id, prv.razon_social
+                ORDER BY total DESC
+                LIMIT 10
+            ";
+            $stmtProv = $this->db->prepare($sqlProv);
+            $stmtProv->execute([$desde, $hasta]);
+            $proveedores = $stmtProv->fetchAll(PDO::FETCH_OBJ);
+        } catch (\Exception $e) {
+            $proveedores = [];
+        }
+
+        $estadisticas = [
+            'resumen'        => $resumen,
+            'dias'           => $dias,
+            'categorias'     => $categorias,
+            'top'            => $top,
+            'sin_movimiento' => $sin_movimiento,
+            'metodos'        => $metodos,
+            'proveedores'    => $proveedores
+        ];
+
+        if (file_exists('views/seccion_graficos.php')) {
+            require_once 'views/seccion_graficos.php';
+        } elseif (file_exists('views/admin/seccion_graficos.php')) {
+            require_once 'views/admin/seccion_graficos.php';
+        }
+    }
+    public function verReporte() {
         require_once 'models/MetodoPagoModel.php';
         $metodoModel = new MetodoPagoModel($this->db);
 
@@ -778,16 +958,13 @@ class AdminControllers {
         $metodoId     = (int)$metodo->id;
         $metodoNombre = $metodo->nombre ?? 'Pago Móvil';
 
-        // Fechas
         $desde = $_GET['desde'] ?? date('Y-m-01');
         $hasta = $_GET['hasta'] ?? date('Y-m-d');
         $bancoSel  = trim($_GET['banco'] ?? '');
         $estadoSel = trim($_GET['estado'] ?? '');
 
-        // Consultar los pagos registrados en la BD
         $listaBruta = $metodoModel->obtenerReportePagos($metodoId, '', '', $bancoSel, $estadoSel);
 
-        // Mapear los datos al formato que espera views/ventas/cobrado_metodo.php
         $ventas = [];
         $tasa = 1;
 
@@ -806,6 +983,7 @@ class AdminControllers {
 
         require_once 'views/ventas/cobrado_metodo.php';
     }
+
     public function confirmarPago() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             require_once 'models/MetodoPagoModel.php';
@@ -825,5 +1003,4 @@ class AdminControllers {
             exit();
         }
     }
- 
 }
