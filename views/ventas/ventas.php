@@ -12,20 +12,23 @@ $f = [
     'q'      => $_GET['q'] ?? ''
 ];
 
+// Mapeo completo de estados soportados en BD
 $estados = [
-    'pendiente'  => ['pend', 'Pendiente de pago'],
-    'pagado'     => ['az', 'Pagado, por retirar'],
-    'retirado'   => ['ok', 'Retirado'],
-    'entregado'  => ['ok', 'Retirado'],
-    'completado' => ['ok', 'Completado'],
-    'cancelado'  => ['agot', 'Cancelado']
+    'pendiente'   => ['pend', 'Pendiente de pago'],
+    'por_verificar'=> ['pend', 'Por verificar'],
+    'por_retirar' => ['ok',   'Pagado, por retirar'],
+    'pagado'      => ['ok',   'Pagado, por retirar'],
+    'retirado'    => ['ok',   'Retirado'],
+    'entregado'   => ['ok',   'Retirado'],
+    'completado'  => ['ok',   'Completado'],
+    'cancelado'   => ['agot', 'Cancelado']
 ];
 
 // Cálculo de métricas sobre las ventas filtradas
-$validas = array_filter($ventas, fn($v) => ($v->estado ?? '') !== 'cancelado');
-$total = array_sum(array_map(fn($v) => (float)$v->total, $validas));
-$tienda = array_sum(array_map(fn($v) => (float)$v->total, array_filter($validas, fn($v) => ($v->origen_venta ?? '') === 'tienda_fisica')));
-$porCobrar = array_sum(array_map(fn($v) => (float)$v->total, array_filter($ventas, fn($v) => ($v->estado ?? '') === 'pendiente')));
+$validas   = array_filter($ventas, fn($v) => ($v->estado ?? '') !== 'cancelado');
+$total     = array_sum(array_map(fn($v) => (float)($v->total ?? 0), $validas));
+$tienda    = array_sum(array_map(fn($v) => (float)($v->total ?? 0), array_filter($validas, fn($v) => ($v->origen_venta ?? '') === 'tienda_fisica')));
+$porCobrar = array_sum(array_map(fn($v) => (float)($v->total ?? 0), array_filter($ventas, fn($v) => in_array($v->estado ?? '', ['pendiente', 'por_verificar']))));
 $pctTienda = $total > 0 ? round(($tienda / $total) * 100) : 0;
 $pctOnline = $total > 0 ? (100 - $pctTienda) : 0;
 ?>
@@ -85,30 +88,33 @@ $pctOnline = $total > 0 ? (100 - $pctTienda) : 0;
         </thead>
         <tbody>
         <?php foreach ($ventas as $v): 
-          $keyEstado = strtolower(trim($v->estado ?? 'pendiente'));
-          $es = $estados[$keyEstado] ?? ['pend', ucfirst($keyEstado)]; 
+          $rawEst = trim($v->estado ?? '');
+          $keyEstado = empty($rawEst) ? 'pendiente' : strtolower($rawEst);
+          $es = $estados[$keyEstado] ?? ['pend', ($rawEst ?: 'Pendiente')]; 
           $origen = ($v->origen_venta ?? 'online') === 'online' ? 'Online' : 'Tienda'; 
         ?>
           <tr>
             <td class="t-tit">
               <div class="t-nombre">
-                <b>#<?= str_pad($v->id, 4, '0', STR_PAD_LEFT) ?></b>
-                <span><?= date('d/m, g:i a', strtotime($v->fecha)) ?></span>
+                <b>#<?= str_pad((string)$v->id, 4, '0', STR_PAD_LEFT) ?></b>
+                <span><?= !empty($v->fecha) ? date('d/m, g:i a', strtotime($v->fecha)) : '—' ?></span>
               </div>
             </td>
             <td data-label="Cliente">
               <div class="t-nombre">
-                <b><?= $e($v->nombre_cliente ?? '') ?></b>
-                <span class="si-estrecho"><?= $origen ?>, <?= $e($v->nombre_metodo ?? '') ?></span>
+                <b><?= $e($v->nombre_cliente ?? 'Cliente general') ?></b>
+                <span class="si-estrecho"><?= $origen ?>, <?= $e($v->nombre_metodo ?? 'General') ?></span>
               </div>
             </td>
             <td data-label="Origen" class="c-media"><span class="chip"><?= $origen ?></span></td>
             <td data-label="Pago" class="c-media"><?= $e($v->nombre_metodo ?? 'N/A') ?></td>
             <td class="num" data-label="Total">
-              <b><?= $usd($v->total) ?></b><br>
-              <span class="muted"><?= $bs($v->total) ?></span>
+              <b><?= $usd($v->total ?? 0) ?></b><br>
+              <span class="muted"><?= $bs($v->total ?? 0) ?></span>
             </td>
-            <td data-label="Estado"><span class="est <?= $es[0] ?>"><?= $es[1] ?></span></td>
+            <td data-label="Estado">
+              <span class="est <?= $es[0] ?>"><?= $e($es[1]) ?></span>
+            </td>
             <td class="t-acc">
               <div class="acc">
                 <a href="index.php?action=detalle_venta&id=<?= (int) $v->id ?>" class="ic-btn" aria-label="Ver venta #<?= (int) $v->id ?>">

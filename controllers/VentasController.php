@@ -68,6 +68,9 @@ class VentaController {
         require_once 'views/ventas/punto_venta.php';
     }
 
+   // =========================================================================
+    // GUARDAR VENTA EN PUNTO DE VENTA (TIENDA FÍSICA)
+    // =========================================================================
     public function guardarVentaTienda() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header("Location: index.php?action=punto_venta");
@@ -80,6 +83,7 @@ class VentaController {
             $idUsuario = !empty($_POST['id_usuario']) ? (int)$_POST['id_usuario'] : null;
             $vendedorId = $_SESSION['id_usuario'] ?? null;
 
+            // 1. Crear nuevo cliente si viene desde el modal rápido
             if (!$idUsuario && !empty($_POST['nuevo_cliente']['nombre'])) {
                 $nc = $_POST['nuevo_cliente'];
                 $stmtNC = $this->db->prepare("
@@ -95,20 +99,35 @@ class VentaController {
                 $idUsuario = (int)$this->db->lastInsertId();
             }
 
+            // Cliente por defecto si no se seleccionó ninguno
             if (!$idUsuario) {
                 $stmtDef = $this->db->query("SELECT id FROM usuarios WHERE id_rol = 3 LIMIT 1");
                 $idUsuario = (int)$stmtDef->fetchColumn() ?: ($vendedorId ?: 1);
             }
 
-            $total = (float)$_POST['total'];
+            $total = (float)($_POST['total'] ?? 0);
             $vuelto = (float)($_POST['vuelto'] ?? 0);
             $vueltoMoneda = $_POST['vuelto_moneda'] ?? ($vuelto > 0 ? 'USD' : 'ninguno');
 
+            // 2. Registrar venta (con IVA calculado según esquema)
+            $porcentajeIva = 16.00;
+            $subtotalVenta = round($total / (1 + ($porcentajeIva / 100)), 2);
+            $ivaMonto = round($total - $subtotalVenta, 2);
+
             $stmtV = $this->db->prepare("
-                INSERT INTO ventas (id_usuario, origen_venta, vendedor_id, total, vuelto, vuelto_moneda, estado, fecha)
-                VALUES (?, 'tienda_fisica', ?, ?, ?, ?, 'pendiente', NOW())
+                INSERT INTO ventas (id_usuario, origen_venta, vendedor_id, subtotal, porcentaje_iva, iva_monto, total, vuelto, vuelto_moneda, estado, fecha)
+                VALUES (?, 'tienda_fisica', ?, ?, ?, ?, ?, ?, ?, 'retirado', NOW())
             ");
-            $stmtV->execute([$idUsuario, $vendedorId, $total, $vuelto, $vueltoMoneda]);
+            $stmtV->execute([
+                $idUsuario, 
+                $vendedorId, 
+                $subtotalVenta, 
+                $porcentajeIva, 
+                $ivaMonto, 
+                $total, 
+                $vuelto, 
+                $vueltoMoneda
+            ]);
             $idVenta = (int)$this->db->lastInsertId();
 
             $prodIds    = $_POST['id_producto'] ?? [];
@@ -116,48 +135,43 @@ class VentaController {
             $precios    = $_POST['precio_unitario'] ?? [];
             $descuentos = $_POST['descuento'] ?? [];
 
+            // 3. Detalles de venta y descuento en stock único
             $stmtD = $this->db->prepare("
                 INSERT INTO detalle_ventas (id_venta, id_producto, cantidad, costo_unitario, precio_unitario, descuento, subtotal)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             ");
-            $stmtStock = $this->db->prepare("UPDATE productos SET stock = stock - ? WHERE id = ?");
-            $stmtKardex = $this->db->prepare("
-                INSERT INTO kardex_inventario 
-                (id_producto, tipo_movimiento, canal, cantidad, stock_tienda_resultante, stock_online_resultante, id_referencia, observacion, id_usuario)
-                VALUES (?, 'venta_tienda', 'tienda_fisica', ?, ?, ?, ?, ?, ?)
-            ");
+            $stmtStock = $this->db->prepare("UPDATE productos SET stock = GREATEST(0, stock - ?) WHERE id = ?");
 
             $lineasComprobante = [];
             for ($i = 0; $i < count($prodIds); $i++) {
-                $pId   = (int)$prodIds[$i];
-                $cnt   = (int)$cants[$i];
-                $prc   = (float)$precios[$i];
-                $desc  = (float)($descuentos[$i] ?? 0);
-                $subt  = round(($cnt * $prc) * (1 - ($desc / 100)), 2);
+                $pId  = (int)$prodIds[$i];
+                $cnt  = (int)$cants[$i];
+                $prc  = (float)$precios[$i];
+                $desc = (float)($descuentos[$i] ?? 0);
 
-                $stmtProd = $this->db->prepare("SELECT costo_compra, stock, stock_online, nombre_producto FROM productos WHERE id = ?");
+                if ($pId <= 0 || $cnt <= 0) continue;
+
+                $subt = round(($cnt * $prc) * (1 - ($desc / 100)), 2);
+
+                $stmtProd = $this->db->prepare("SELECT costo_compra, stock, nombre_producto FROM productos WHERE id = ?");
                 $stmtProd->execute([$pId]);
                 $prodActual = $stmtProd->fetch(PDO::FETCH_OBJ);
 
                 $costoU = (float)($prodActual->costo_compra ?? 0);
                 $stmtD->execute([$idVenta, $pId, $cnt, $costoU, $prc, $desc, $subt]);
 
+                // Descuento directo en stock unificado
                 $stmtStock->execute([$cnt, $pId]);
-                $nuevoStock = max(0, (int)$prodActual->stock - $cnt);
-
-                $stmtKardex->execute([
-                    $pId, -$cnt, $nuevoStock, (int)$prodActual->stock_online,
-                    $idVenta, "Venta en caja #{$idVenta}", $vendedorId ?: 1
-                ]);
 
                 $lineasComprobante[] = [
-                    'nombre'    => $prodActual->nombre_producto,
+                    'nombre'    => $prodActual->nombre_producto ?? 'Producto',
                     'cantidad'  => $cnt,
                     'descuento' => $desc,
                     'subtotal'  => $subt
                 ];
             }
 
+            // 4. Registrar métodos de pago
             $metodoIds = $_POST['id_metodo_pago'] ?? [];
             $montos    = $_POST['monto'] ?? [];
             $tasas     = $_POST['tasa_cambio'] ?? [];
@@ -169,79 +183,41 @@ class VentaController {
             $stmtP = $this->db->prepare("
                 INSERT INTO pagos_registro 
                 (id_venta, id_metodo_pago, banco, moneda, monto, tasa_cambio, referencia, observacion, estado_verificacion, verificado_por, fecha_verificacion, fecha_pago)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'aprobado', ?, NOW(), NOW())
             ");
 
-            $todosAprobados = true;
             $pagosComprobante = [];
-            $primerMetodoId = null;
-
             for ($j = 0; $j < count($metodoIds); $j++) {
                 $mId = (int)$metodoIds[$j];
                 $mnt = (float)$montos[$j];
                 $tsa = !empty($tasas[$j]) ? (float)$tasas[$j] : 1.0;
-                $rf  = trim($refs[$j] ?? '');
-                $bnk = trim($bancos[$j] ?? '');
+                $rf  = trim($refs[$j] ?? 'No aplica');
+                $bnk = trim($bancos[$j] ?? 'Caja Mostrador');
                 $ced = trim($titulares[$j] ?? '');
                 $tel = trim($telefonos[$j] ?? '');
 
                 if ($mnt <= 0) continue;
-                if (!$primerMetodoId) $primerMetodoId = $mId;
 
-                $stmtM = $this->db->prepare("SELECT nombre, moneda, requiere_referencia FROM metodos_pago WHERE id = ?");
+                $stmtM = $this->db->prepare("SELECT nombre, moneda FROM metodos_pago WHERE id = ?");
                 $stmtM->execute([$mId]);
                 $mObj = $stmtM->fetch(PDO::FETCH_OBJ);
 
-                $esEfectivo = stripos($mObj->nombre ?? '', 'efectivo') !== false || empty($mObj->requiere_referencia);
+                $obs = !empty($ced) ? "Titular: {$ced}" . (!empty($tel) ? " | Tel: {$tel}" : "") : "Cobro en caja";
+                $moneda = $mObj->moneda ?? 'USD';
 
-                if ($esEfectivo) {
-                    $bancoCaja = ($mObj->moneda === 'USD') ? 'Caja Divisas' : 'Caja Bolívares';
-                    $stmtP->execute([$idVenta, $mId, $bancoCaja, $mObj->moneda, $mnt, $tsa, 'No aplica', 'Cobro en efectivo', 'aprobado', $vendedorId, date('Y-m-d H:i:s')]);
-                    $pagosComprobante[] = [
-                        'metodo'     => $mObj->nombre ?? 'Efectivo',
-                        'monto'      => $mnt,
-                        'moneda'     => $mObj->moneda ?? 'USD',
-                        'referencia' => 'No aplica'
-                    ];
-                } else {
-                    if (empty($rf)) {
-                        throw new Exception("El método {$mObj->nombre} requiere número de referencia.");
-                    }
+                $stmtP->execute([$idVenta, $mId, $bnk, $moneda, $mnt, $tsa, $rf, $obs, $vendedorId]);
 
-                    $stmtChk = $this->db->prepare("
-                        SELECT id, id_venta 
-                        FROM pagos_registro 
-                        WHERE referencia = ? AND banco = ? AND estado_verificacion IN ('pendiente', 'aprobado')
-                        LIMIT 1
-                    ");
-                    $stmtChk->execute([$rf, $bnk]);
-                    $dup = $stmtChk->fetch(PDO::FETCH_OBJ);
-
-                    if ($dup) {
-                        throw new Exception("La referencia '{$rf}' del banco '{$bnk}' ya fue utilizada en la venta #{$dup->id_venta}. No se puede duplicar.");
-                    }
-
-                    $obsBancaria = "Titular: {$ced}" . (!empty($tel) ? " | Tel: {$tel}" : "");
-                    $stmtP->execute([$idVenta, $mId, $bnk, $mObj->moneda, $mnt, $tsa, $rf, $obsBancaria, 'pendiente', null, null]);
-                    $todosAprobados = false;
-
-                    $pagosComprobante[] = [
-                        'metodo'     => $mObj->nombre ?? 'Bancario',
-                        'monto'      => $mnt,
-                        'moneda'     => $mObj->moneda ?? 'Bs',
-                        'referencia' => $rf
-                    ];
-                }
-            }
-
-            if ($todosAprobados) {
-                $stmtUpdV = $this->db->prepare("UPDATE ventas SET estado = 'retirado' WHERE id = ?");
-                $stmtUpdV->execute([$idVenta]);
+                $pagosComprobante[] = [
+                    'metodo'     => $mObj->nombre ?? 'Pago',
+                    'monto'      => $mnt,
+                    'moneda'     => $moneda,
+                    'referencia' => $rf
+                ];
             }
 
             $this->db->commit();
-            $this->log('Ventas', 'INSERT', "Venta en caja #{$idVenta} por $" . number_format($total, 2));
 
+            // Preparar comprobante en sesión
             $stmtCl = $this->db->prepare("SELECT nombre, apellido, telefono FROM usuarios WHERE id = ?");
             $stmtCl->execute([$idUsuario]);
             $clObj = $stmtCl->fetch(PDO::FETCH_OBJ);
@@ -262,13 +238,12 @@ class VentaController {
             exit();
 
         } catch (Exception $e) {
-            $this->db->rollBack();
-            error_log("Error en guardarVentaTienda: " . $e->getMessage());
-            echo "<script>alert('Error procesando venta: " . addslashes($e->getMessage()) . "'); window.history.back();</script>";
-            exit();
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            die("Error procesando venta: " . $e->getMessage());
         }
     }
-
     // =========================================================================
     // 2. HISTORIAL DE VENTAS CON FILTROS NORMALIZADOS
     // =========================================================================
@@ -498,12 +473,7 @@ class VentaController {
     // APROBAR PAGO Y DESCONTAR INVENTARIO
     // =========================================================================
     public function aprobarPago() {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header("Location: index.php?action=verificar_pagos");
-            exit();
-        }
-
-        $idPago = (int)($_POST['id'] ?? 0);
+        $idPago  = (int)($_POST['id'] ?? $_GET['id'] ?? 0);
         $idAdmin = $_SESSION['id_usuario'] ?? $_SESSION['id'] ?? 1;
 
         if ($idPago <= 0) {
@@ -514,6 +484,7 @@ class VentaController {
         try {
             $this->db->beginTransaction();
 
+            // 1. Obtener la venta asociada al pago
             $stmtP = $this->db->prepare("SELECT id_venta FROM pagos_registro WHERE id = ? LIMIT 1");
             $stmtP->execute([$idPago]);
             $idVenta = (int)$stmtP->fetchColumn();
@@ -522,6 +493,7 @@ class VentaController {
                 throw new Exception("Pago no encontrado.");
             }
 
+            // 2. Conciliar y marcar el pago como aprobado
             $stmtAprobar = $this->db->prepare("
                 UPDATE pagos_registro 
                 SET estado_verificacion = 'aprobado',
@@ -531,18 +503,33 @@ class VentaController {
             ");
             $stmtAprobar->execute([$idAdmin, $idPago]);
 
-            $stmtV = $this->db->prepare("UPDATE ventas SET estado = 'pagado' WHERE id = ?");
-            $stmtV->execute([$idVenta]);
+            // 3. Obtener origen de la venta
+            $stmtOrigen = $this->db->prepare("SELECT origen_venta FROM ventas WHERE id = ?");
+            $stmtOrigen->execute([$idVenta]);
+            $origen = $stmtOrigen->fetchColumn();
 
-            $ventaModel = new VentaModel();
-            $ventaModel->descontarStockDeVenta($idVenta);
+            // 'retirado' para tienda física; 'por_retirar' para online
+            $nuevoEstado = ($origen === 'tienda_fisica') ? 'retirado' : 'por_retirar';
+
+            $stmtV = $this->db->prepare("UPDATE ventas SET estado = ? WHERE id = ?");
+            $stmtV->execute([$nuevoEstado, $idVenta]);
+
+            // 4. Descontar del inventario unificado (columna stock)
+            $stmtItems = $this->db->prepare("SELECT id_producto, cantidad FROM detalle_ventas WHERE id_venta = ?");
+            $stmtItems->execute([$idVenta]);
+            $items = $stmtItems->fetchAll(PDO::FETCH_OBJ);
+
+            $stmtStock = $this->db->prepare("UPDATE productos SET stock = GREATEST(0, stock - ?) WHERE id = ?");
+            foreach ($items as $it) {
+                $stmtStock->execute([(int)$it->cantidad, (int)$it->id_producto]);
+            }
 
             $this->db->commit();
 
             $_SESSION['alerta'] = [
                 'tipo'   => 'success',
                 'titulo' => 'Pago aprobado',
-                'texto'  => 'El pago fue conciliado y el stock se descontó correctamente.'
+                'texto'  => 'El pago fue conciliado y el inventario se actualizó correctamente.'
             ];
             header("Location: index.php?action=verificar_pagos");
             exit();
@@ -624,39 +611,10 @@ class VentaController {
     // 4. REPORTE DE PAGOS POR BANCO CON FILTROS, TITULAR Y CÉDULA
     // =========================================================================
     public function pagosBanco() {
-        date_default_timezone_set('America/Caracas');
-
         $desde  = trim($_GET['desde'] ?? date('Y-m-d'));
         $hasta  = trim($_GET['hasta'] ?? date('Y-m-d'));
         $idMet  = !empty($_GET['metodo']) ? (int)$_GET['metodo'] : null;
         $banco  = trim($_GET['banco'] ?? '');
-
-        // 1. Obtener dinámicamente la tasa del BCV del día desde la tabla de configuración
-       // Obtener tasa BCV activa del sistema
-        $tasa = 1.0;
-        try {
-            $stmtTasa = $this->db->query("SELECT tasa_bcv FROM configuracion ORDER BY id DESC LIMIT 1");
-            $resTasa = $stmtTasa ? $stmtTasa->fetch(PDO::FETCH_OBJ) : null;
-            if ($resTasa && (float)$resTasa->tasa_bcv > 1) {
-                $tasa = (float)$resTasa->tasa_bcv;
-            }
-        } catch (\Exception $e) {}
-
-        // Enviar $tasa a la vista directamente sin alterar $p->monto
-
-        // Búsqueda de respaldo si la tasa se guarda en configuraciones tipo clave-valor
-      // Obtener tasa BCV activa del sistema
-        $tasaDia = 1.0;
-        try {
-            $stmtTasa = $this->db->query("SELECT tasa_bcv FROM configuracion ORDER BY id DESC LIMIT 1");
-            $resTasa = $stmtTasa ? $stmtTasa->fetch(PDO::FETCH_OBJ) : null;
-            if ($resTasa && (float)$resTasa->tasa_bcv > 1) {
-                $tasaDia = (float)$resTasa->tasa_bcv;
-            }
-        } catch (\Exception $e) {}
-
-        // Variable para la vista
-        $tasa = $tasaDia;
 
         $where = ["pr.estado_verificacion = 'aprobado'"];
         $params = [];
@@ -719,10 +677,7 @@ class VentaController {
         $stmt->execute($params);
         $pagosRecibidos = $stmt->fetchAll(PDO::FETCH_OBJ);
 
-        $totalDolares = 0.0;
-        $totalBolivares = 0.0;
-
-       foreach ($pagosRecibidos as $p) {
+        foreach ($pagosRecibidos as $p) {
             $titularLimpio = '';
             if (!empty($p->observacion)) {
                 $titularLimpio = preg_replace('/^(Titular:\s*|Emisor:\s*[^|]+\|\s*Titular:\s*)/i', '', $p->observacion);
@@ -732,32 +687,13 @@ class VentaController {
                 $titularLimpio = $p->cliente;
             }
             $p->titular = $titularLimpio;
-
-            // Tasa para este pago
-            $tasaEfectiva = $tasaDia > 1 ? $tasaDia : (((float)($p->tasa_cambio ?? 1) > 1) ? (float)$p->tasa_cambio : 1.0);
-
-            $moneda = strtoupper(trim($p->moneda ?? 'BS'));
-            $monto = (float)($p->monto ?? 0);
-            if ($moneda === 'VES' || $moneda === 'BS') {
-                $montoBs  = $monto;
-                $montoUsd = $tasaEfectiva > 0 ? ($montoBs / $tasaEfectiva) : 0;
-            } else {
-                // Pago registrado en dólares: se calcula a bolívares multiplicando por la tasa activa
-                $montoUsd = $monto;
-                $montoBs  = $montoUsd * $tasaEfectiva;
-            }
-
-            $p->monto_usd_calc = $montoUsd;
-            $p->monto_bs_calc  = $montoBs;
-
-            $totalDolares   += $montoUsd;
-            $totalBolivares += $montoBs;
         }
 
         $metodos = $this->db->query("SELECT id, nombre FROM metodos_pago WHERE activo = 1 ORDER BY nombre ASC")->fetchAll(PDO::FETCH_OBJ);
 
         require_once 'views/ventas/pagos_banco.php';
     }
+
     // =========================================================================
     // 5. RETIRO DE PEDIDOS (ENTREGA DE VENTAS PAGADAS)
     // =========================================================================

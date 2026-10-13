@@ -437,7 +437,7 @@ class AdminControllers {
         $sql = "SELECT c.id, c.id_padre, c.nombre_categoria,
                        p.nombre_categoria AS nombre_padre,
                        COUNT(pr.id) AS total_productos,
-                       COALESCE(SUM(pr.stock + pr.stock_online), 0) AS total_unidades
+                       COALESCE(SUM(pr.stock), 0) AS total_unidades
                 FROM categorias c
                 LEFT JOIN categorias p ON c.id_padre = p.id
                 LEFT JOIN productos pr ON pr.id_categoria = c.id AND pr.deleted_at IS NULL
@@ -591,12 +591,12 @@ class AdminControllers {
     // -------------------------------------------------------------------------
 
     public function ajustesInventario() {
-        $stmtP = $this->db->query("SELECT id, codigo, nombre_producto, stock, stock_online, stock_minimo, imagen 
+        $stmtP = $this->db->query("SELECT id, codigo, nombre_producto, stock, stock_minimo 
                                    FROM productos WHERE deleted_at IS NULL ORDER BY nombre_producto ASC");
         $productos = $stmtP->fetchAll(PDO::FETCH_OBJ);
 
         $stmtAjustes = $this->db->query("
-            SELECT p.nombre_producto, k.tipo_movimiento, k.observacion, k.fecha, 
+            SELECT p.nombre_producto, k.tipo_movimiento, k.observacion, k.fecha,
                    COALESCE(u.nombre, 'Admin') AS usuario, k.cantidad
             FROM kardex_inventario k
             INNER JOIN productos p ON k.id_producto = p.id
@@ -608,87 +608,62 @@ class AdminControllers {
 
         require_once 'views/inventario/ajustes.php';
     }
-
-    public function guardarAjuste() {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $idProducto = (int)($_POST['id_producto'] ?? 0);
-            $tipo = $_POST['tipo_movimiento'] ?? '';
-            $observacion = trim($_POST['observacion'] ?? '');
-            $idUsuario = $_SESSION['id_usuario'] ?? 1;
-
-            $stmtP = $this->db->prepare("SELECT stock, stock_online FROM productos WHERE id = ?");
-            $stmtP->execute([$idProducto]);
-            $prod = $stmtP->fetch(PDO::FETCH_OBJ);
-
-            if ($prod) {
-                $stockTienda = (int)$prod->stock;
-                $stockOnline = (int)$prod->stock_online;
-                $cantidadMov = 0;
-                $canal = 'tienda_fisica';
-
-                if ($tipo === 'ajuste') {
-                    $canal = $_POST['canal'] ?? 'tienda_fisica';
-                    $contada = (int)$_POST['cantidad_contada'];
-                    if ($canal === 'tienda_fisica') {
-                        $cantidadMov = $contada - $stockTienda;
-                        $stockTienda = $contada;
-                    } else {
-                        $cantidadMov = $contada - $stockOnline;
-                        $stockOnline = $contada;
-                    }
-                } elseif ($tipo === 'merma') {
-                    $canal = $_POST['canal'] ?? 'tienda_fisica';
-                    $cant = abs((int)$_POST['cantidad']);
-                    $motivo = trim($_POST['motivo'] ?? 'Merma');
-                    $observacion = $observacion ? "$motivo: $observacion" : $motivo;
-                    $cantidadMov = -$cant;
-                    if ($canal === 'tienda_fisica') {
-                        $stockTienda = max(0, $stockTienda - $cant);
-                    } else {
-                        $stockOnline = max(0, $stockOnline - $cant);
-                    }
-                } elseif ($tipo === 'transferencia') {
-                    $dir = $_POST['direccion'] ?? '';
-                    $cant = abs((int)$_POST['cantidad']);
-                    if ($dir === 'a_online') {
-                        $stockTienda = max(0, $stockTienda - $cant);
-                        $stockOnline += $cant;
-                        $cantidadMov = $cant;
-                        $canal = 'online';
-                    } else {
-                        $stockOnline = max(0, $stockOnline - $cant);
-                        $stockTienda += $cant;
-                        $cantidadMov = -$cant;
-                        $canal = 'tienda_fisica';
-                    }
-                }
-
-                $this->db->prepare("UPDATE productos SET stock = ?, stock_online = ? WHERE id = ?")
-                         ->execute([$stockTienda, $stockOnline, $idProducto]);
-
-                $stmtK = $this->db->prepare("
-                    INSERT INTO kardex_inventario 
-                    (id_producto, tipo_movimiento, canal, cantidad, stock_tienda_resultante, 
-                     stock_online_resultante, observacion, id_usuario)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                ");
-                $stmtK->execute([$idProducto, $tipo, $canal, $cantidadMov, $stockTienda, $stockOnline, $observacion, $idUsuario]);
-
-                $this->log('Inventario', 'UPDATE', "Ajuste de inventario ({$tipo}) producto ID: {$idProducto}");
-            }
-
-            $_SESSION['aviso'] = 'Ajuste de stock registrado.';
-            $volverId = (int)($_POST['volver_producto'] ?? 0);
-            if ($volverId > 0) {
-                header("Location: index.php?action=editar&id=" . $volverId);
-                exit();
-            }
-
-            header("Location: index.php?action=kardex");
+   public function guardarAjuste() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header("Location: index.php?action=ajustes_inventario");
             exit();
         }
-    }
 
+        $idProducto = (int)($_POST['id_producto'] ?? 0);
+        $tipo       = $_POST['tipo_movimiento'] ?? '';
+        $cantidad   = (int)($_POST['cantidad'] ?? 0);
+        $observacion= trim($_POST['observacion'] ?? '');
+        $idUsuario  = $_SESSION['id_usuario'] ?? 1;
+
+        if ($idProducto <= 0 || $cantidad <= 0) {
+            header("Location: index.php?action=ajustes_inventario");
+            exit();
+        }
+
+        try {
+            $this->db->beginTransaction();
+
+            $stmtP = $this->db->prepare("SELECT stock FROM productos WHERE id = ?");
+            $stmtP->execute([$idProducto]);
+            $stockActual = (int)$stmtP->fetchColumn();
+
+            // Calcular nuevo stock según el tipo de movimiento
+            if ($tipo === 'merma') {
+                $nuevoStock = max(0, $stockActual - $cantidad);
+                $cantKardex = -$cantidad;
+            } else { // ajuste positivo o ajuste general
+                $nuevoStock = $stockActual + $cantidad;
+                $cantKardex = $cantidad;
+            }
+
+            // Actualizar stock único del producto
+            $stmtUpd = $this->db->prepare("UPDATE productos SET stock = ? WHERE id = ?");
+            $stmtUpd->execute([$nuevoStock, $idProducto]);
+
+            // Registrar en kardex
+            $stmtK = $this->db->prepare("
+                INSERT INTO kardex_inventario 
+                (id_producto, tipo_movimiento, canal, cantidad, stock_tienda_resultante, stock_online_resultante, observacion, id_usuario)
+                VALUES (?, ?, 'general', ?, ?, 0, ?, ?)
+            ");
+            $stmtK->execute([$idProducto, $tipo, $cantKardex, $nuevoStock, $observacion, $idUsuario]);
+
+            $this->db->commit();
+            header("Location: index.php?action=ajustes_inventario&msg=ok");
+            exit();
+
+        } catch (Exception $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            die("Error al guardar ajuste: " . $e->getMessage());
+        }
+    }
     public function kardex() {
         $tipo = $_GET['tipo'] ?? '';
         $desde = $_GET['desde'] ?? '';

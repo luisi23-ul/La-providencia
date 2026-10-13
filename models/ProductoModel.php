@@ -99,7 +99,7 @@ class ProductoModel {
 
     public function obtenerAtributosProducto($idProducto) {
         $stmt = $this->db->prepare("
-            SELECT pa.*, ca.nombre, ca.opciones
+            SELECT pa.*, ca.nombre
             FROM producto_atributos pa
             INNER JOIN categoria_atributos ca ON pa.id_atributo = ca.id
             WHERE pa.id_producto = ?
@@ -114,41 +114,34 @@ class ProductoModel {
         return $stmt->fetchAll(PDO::FETCH_OBJ);
     }
 
-    public function guardarCompleto($datos, $atributos = [], $variantes = []) {
-        $sql = "INSERT INTO productos (codigo, nombre_producto, descripcion, precio, costo_compra, stock, stock_online, stock_minimo, id_categoria, estado, imagen) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+   public function guardarCompleto($datos, $atributos = [], $variantes = []) {
+        $sql = "INSERT INTO productos (codigo, nombre_producto, descripcion, precio, costo_compra, stock, stock_minimo, imagen, id_categoria, estado)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([
-            $datos['codigo'],
-            $datos['nombre_producto'],
-            $datos['descripcion'],
-            $datos['precio'],
-            $datos['costo_compra'],
-            $datos['stock'],
-            $datos['stock_online'],
-            $datos['stock_minimo'],
-            $datos['id_categoria'],
-            $datos['estado'],
-            $datos['imagen']
+            $datos['codigo'] ?? null,
+            $datos['nombre_producto'] ?? '',
+            $datos['descripcion'] ?? '',
+            $datos['precio'] ?? 0,
+            $datos['costo_compra'] ?? 0,
+            $datos['stock'] ?? 0,
+            $datos['stock_minimo'] ?? 5,
+            $datos['imagen'] ?? null,
+            $datos['id_categoria'] ?? null
         ]);
+
         $idProducto = (int)$this->db->lastInsertId();
 
-        if (!empty($atributos) && is_array($atributos)) {
-            $stmtAtr = $this->db->prepare("INSERT INTO producto_atributos (id_producto, id_atributo, valor) VALUES (?, ?, ?)");
-            foreach ($atributos as $idAtr => $valor) {
-                if (trim($valor) !== '') {
-                    $stmtAtr->execute([$idProducto, (int)$idAtr, trim($valor)]);
-                }
+        // Guardar variantes o atributos si existen
+        if (!empty($variantes)) {
+            $stmtVar = $this->db->prepare("INSERT INTO producto_variantes (id_producto, sku, precio, stock) VALUES (?, ?, ?, ?)");
+            foreach ($variantes as $v) {
+                $stmtVar->execute([$idProducto, $v['sku'] ?? '', $v['precio'] ?? 0, $v['stock'] ?? 0]);
             }
-        }
-
-        if (!empty($variantes) && is_array($variantes)) {
-            $this->sincronizarVariantes($idProducto, $variantes);
         }
 
         return $idProducto;
     }
-
     public function actualizarCompleto($id, $datos, $atributos = [], $variantes = []) {
         $sql = "UPDATE productos SET 
                     codigo = ?, 
