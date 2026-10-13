@@ -8,7 +8,7 @@ include __DIR__ . '/../admin/_abrir.php';
 $elegido = (int) ($_GET['producto'] ?? 0);
 $desde = null;
 foreach ($productos as $p) if ($elegido && (int) $p->id === $elegido) $desde = $p;
-$tipos = ['ajuste' => ['lista', 'Conteo'], 'merma' => ['basura', 'Merma'], 'transferencia' => ['camion', 'Entre canales']];
+$tipos = ['ajuste' => ['mas', 'Entrada'], 'merma' => ['basura', 'Merma'], 'transferencia' => ['camion', 'Entre canales']];
 ?>
 <section class="contenido">
   <header class="cab">
@@ -28,9 +28,8 @@ $tipos = ['ajuste' => ['lista', 'Conteo'], 'merma' => ['basura', 'Merma'], 'tran
         <header><span class="fpx-ic"><svg class="i"><use href="#i-ajuste"/></svg></span><div><h3 id="aj-t-tipo">¿Qué quieres hacer?</h3><p>Cada ajuste queda en Movimientos con quién y por qué.</p></div></header>
         <div class="fpx-cuerpo">
           <div class="ajx-tipos ancho" role="radiogroup" aria-labelledby="aj-t-tipo">
-            <label class="ajx-tipo"><input type="radio" name="tipo_movimiento" value="ajuste" checked><span class="ic"><svg class="i"><use href="#i-lista"/></svg></span><b>Corregir por conteo</b><small>Contaste y no cuadra</small></label>
+            <label class="ajx-tipo"><input type="radio" name="tipo_movimiento" value="ajuste" checked><span class="ic"><svg class="i"><use href="#i-mas"/></svg></span><b>Sumar unidades</b><small>Llegaron o aparecieron más</small></label>
             <label class="ajx-tipo"><input type="radio" name="tipo_movimiento" value="merma"><span class="ic"><svg class="i"><use href="#i-basura"/></svg></span><b>Registrar merma</b><small>Dañado, vencido, perdido</small></label>
-            <label class="ajx-tipo"><input type="radio" name="tipo_movimiento" value="transferencia"><span class="ic"><svg class="i"><use href="#i-camion"/></svg></span><b>Pasar entre canales</b><small>Tienda ↔ online</small></label>
           </div>
         </div>
       </section>
@@ -82,5 +81,5 @@ $tipos = ['ajuste' => ['lista', 'Conteo'], 'merma' => ['basura', 'Merma'], 'tran
     </aside>
   </form>
 </section>
-<script type="application/json" id="datos-ajustes"><?= json_encode(array_map(fn($p) => ['id' => (int) $p->id, 'n' => $p->nombre_producto, 't' => (int) $p->stock, 'o' => (int) ($p->stock_online ?? 0), 'min' => (int) ($p->stock_minimo ?? 5), 'img' => $p->imagen ? 'public/uploads/' . $p->imagen : ''], $productos), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?></script>
+<script type="application/json" id="datos-ajustes"><?= json_encode(array_map(fn($p) => ['id' => (int) $p->id, 'n' => $p->nombre_producto, 't' => (int) $p->stock, 'min' => (int) ($p->stock_minimo ?? 5), 'img' => !empty($p->imagen) ? 'public/uploads/' . $p->imagen : ''], $productos), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?></script>
 <?php include __DIR__ . '/../admin/_cerrar.php'; ?>

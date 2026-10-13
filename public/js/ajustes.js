@@ -11,11 +11,9 @@
   var cantidad = function (etiqueta, nombre, min, valor, ayuda) {
     return '<div class="campo"><label for="aj-cant">' + etiqueta + ' <span class="ob">*</span></label><div class="ajx-cant"><button type="button" data-paso="-1" aria-label="Restar uno">−</button><input id="aj-cant" type="number" min="' + min + '" inputmode="numeric" name="' + nombre + '" value="' + valor + '" required><button type="button" data-paso="1" aria-label="Sumar uno">+</button></div>' + (ayuda ? '<span class="ayuda">' + ayuda + '</span>' : '') + '</div>';
   };
-  var canal = '<div class="campo"><span class="lbl">Canal</span>' + seg('canal', [['tienda_fisica', 'tienda', 'Tienda física'], ['online', 'globo', 'Online']]) + '</div>';
   var campos = {
-    ajuste: { sub: 'Lo que hay de verdad en el estante.', html: canal + cantidad('Cantidad contada', 'cantidad_contada', 0, 0, 'Escribe lo que contaste, no la diferencia.') },
-    merma: { sub: 'Lo que se dañó, venció o se perdió.', html: canal + cantidad('Unidades perdidas', 'cantidad', 1, 1, '') + '<div class="campo"><label for="aj-motivo">Motivo</label><select id="aj-motivo" name="motivo"><option>Dañado</option><option>Vencido</option><option>Extraviado</option><option>Otro</option></select></div>' },
-    transferencia: { sub: 'Mueve unidades de un canal al otro.', html: '<div class="campo"><span class="lbl">Dirección</span>' + seg('direccion', [['a_online', 'globo', 'Tienda → Online'], ['a_tienda', 'tienda', 'Online → Tienda']]) + '</div>' + cantidad('Cantidad', 'cantidad', 1, 1, '') }
+    ajuste: { sub: 'Las unidades se suman al stock.', html: cantidad('Unidades a sumar', 'cantidad', 1, 1, 'Escribe cuántas entran, no el total.') },
+    merma: { sub: 'Lo que se dañó, venció o se perdió.', html: cantidad('Unidades perdidas', 'cantidad', 1, 1, '') + '<div class="campo"><label for="aj-motivo">Motivo</label><select id="aj-motivo" name="motivo"><option>Dañado</option><option>Vencido</option><option>Extraviado</option><option>Otro</option></select></div>' },
   };
   function valor(nombre) { var el = form.querySelector('input[name="' + nombre + '"]:checked'); return el ? el.value : ''; }
   function producto() { return productos.find(function (p) { return String(p.id) === sel.value; }) || productos[0]; }
@@ -24,7 +22,6 @@
     var t = valor('tipo_movimiento');
     document.getElementById('aj-campos').innerHTML = campos[t].html;
     document.getElementById('aj-t-prod-sub').textContent = campos[t].sub;
-    if (t === 'ajuste') document.getElementById('aj-cant').value = producto().t;
     vista();
   }
 
@@ -36,16 +33,14 @@
   }
 
   function vista() {
-    var p = producto(), t = valor('tipo_movimiento'), c = valor('canal'), d = valor('direccion');
-    var cant = document.getElementById('aj-cant'), n = parseInt(cant && cant.value, 10) || 0, nt = p.t, no = p.o;
-    if (t === 'ajuste') { if (c === 'online') no = n; else nt = n; }
-    if (t === 'merma') { if (c === 'online') no = p.o - n; else nt = p.t - n; }
-    if (t === 'transferencia') { if (d === 'a_online') { nt = p.t - n; no = p.o + n; } else { no = p.o - n; nt = p.t + n; } }
+    var p = producto(), t = valor('tipo_movimiento');
+    var cant = document.getElementById('aj-cant'), n = parseInt(cant && cant.value, 10) || 0;
+    var nt = t === 'merma' ? p.t - n : p.t + n;
     document.getElementById('aj-elegido').innerHTML = (p.img ? '<img src="' + esc(p.img) + '" alt="" width="64" height="64">' : '<span class="sin-foto"><svg class="i"><use href="#i-caja"/></svg></span>') +
-      '<b>' + esc(p.n) + '</b><span class="dv-chip neutro">Mínimo ' + p.min + '</span><small>Tienda ' + p.t + ' · Online ' + p.o + '</small>';
-    var invalido = nt < 0 || no < 0;
-    document.getElementById('aj-queda').innerHTML = tarjeta('Tienda física', 'tienda', p.t, Math.max(0, nt)) + tarjeta('Online', 'globo', p.o, Math.max(0, no)) +
-      (invalido ? '<p class="ajx-error"><svg class="i"><use href="#i-alerta"/></svg>No hay tantas unidades en ese canal.</p>' : '');
+      '<b>' + esc(p.n) + '</b><span class="dv-chip neutro">Mínimo ' + p.min + '</span><small>Stock ' + p.t + '</small>';
+    var invalido = nt < 0;
+    document.getElementById('aj-queda').innerHTML = tarjeta('Stock', 'caja', p.t, Math.max(0, nt)) +
+      (invalido ? '<p class="ajx-error"><svg class="i"><use href="#i-alerta"/></svg>No hay tantas unidades en stock.</p>' : '');
     document.getElementById('aj-guardar').disabled = invalido;
   }
 
@@ -58,7 +53,6 @@
   });
   form.addEventListener('change', function (e) {
     if (e.target.name === 'tipo_movimiento' || e.target === sel) return pintarCampos();
-    if (e.target.name === 'canal' && valor('tipo_movimiento') === 'ajuste') document.getElementById('aj-cant').value = e.target.value === 'online' ? producto().o : producto().t;
     vista();
   });
   form.addEventListener('input', vista);
