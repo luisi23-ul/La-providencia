@@ -1,6 +1,6 @@
 <?php
 include __DIR__ . '/tienda/_comun.php';
-$clienteCarrito = !empty($_SESSION['id_usuario']);
+$clienteCarrito = !empty($_SESSION['id_usuario']) && (int) ($_SESSION['rol'] ?? 0) === 3;
 ?>
   <section class="carro" id="carro" data-sesion="<?= $clienteCarrito ? '1' : '0' ?>">
     <h1 class="sec-tit">Tu pedido</h1>

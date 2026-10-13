@@ -25,7 +25,7 @@ $seccionTienda = [
     'inicio' => 'inicio', 'ver_catalogo' => 'catalogo', 'ver_producto' => 'catalogo',
     'ver_carrito' => 'pedido', 'login_usuario' => 'cuenta', 'registro' => 'cuenta', 'mis_pedidos' => 'cuenta',
 ][$accionActual] ?? 'inicio';
-$clienteSesion = !empty($_SESSION['id_usuario']);
+$clienteSesion = !empty($_SESSION['id_usuario']) && (int) ($_SESSION['rol'] ?? 0) === 3;
 $enlaceCuenta = $clienteSesion ? 'index.php?action=mis_pedidos' : 'index.php?action=login_usuario';
 ?>
 <!DOCTYPE html>

@@ -1,7 +1,7 @@
 <?php
 $seccionPie = $seccionPie ?? 'inicio';
 $conMenuMovil = $conMenuMovil ?? true;
-$clientePie = !empty($_SESSION['id_usuario']);
+$clientePie = !empty($_SESSION['id_usuario']) && (int) ($_SESSION['rol'] ?? 0) === 3;
 $waPie = preg_replace('/\D/', '', (string) ($sistema->whatsapp ?? ''));
 ?>
   <footer class="pie" id="contacto">
