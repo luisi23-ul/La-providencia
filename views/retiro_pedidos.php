@@ -4,7 +4,7 @@ $tituloPagina = 'Retiro de pedidos';
 $ventas = $ventas ?? [];
 include __DIR__ . '/admin/_abrir.php';
 $tab = ($_GET['tab'] ?? 'pendiente') === 'entregado' ? 'entregado' : 'pendiente';
-$porRetirar = array_filter($ventas, fn($v) => $v->estado === 'pagado');
+$porRetirar = array_filter($ventas, fn($v) => in_array($v->estado, ['pagado', 'por_retirar']));
 $entregados = array_filter($ventas, fn($v) => in_array($v->estado, ['retirado', 'entregado']));
 $lista = $tab === 'pendiente' ? $porRetirar : $entregados;
 ?>
@@ -31,10 +31,10 @@ $lista = $tab === 'pendiente' ? $porRetirar : $entregados;
           <tr>
             <td class="t-tit"><div class="t-nombre"><b><?= $num ?></b><span>Pagado <?= date('d/m, g:i a', strtotime($v->fecha)) ?></span></div></td>
             <td data-label="Cliente"><div class="t-nombre"><b><?= $e($v->nombre_cliente) ?></b><?php if (!empty($v->telefono)): ?><span class="tel-cli"><?= $e($v->telefono) ?></span><?php endif; ?></div></td>
-            <td data-label="Pago" class="c-media centro"><span class="chip"><?= $e($v->nombre_metodo ?? 'N/A') ?></span></td>
-            <td class="num" data-label="Total"><b><?= $usd($v->total) ?></b><br><span class="muted"><?= number_format($v->total_bs ?? $v->total * $tasa, 2, ',', '.') ?> Bs</span></td>
+            <td data-label="Pago" class="c-media centro"><span class="chip"><?= $e($v->nombre_metodo ?? $v->metodo_pago ?? $v->pago ?? 'Pago Móvil') ?></span></td>
+            <td class="num" data-label="Total"><b><?= $usd($v->total) ?></b><br><span class="muted"><?= number_format($v->total_bs ?? ((float)$v->total * (float)($tasa ?? 1)), 2, ',', '.') ?> Bs</span></td>
             <td class="t-acc centro">
-              <?php if ($v->estado === 'pagado'): ?>
+              <?php if (in_array($v->estado, ['pagado', 'por_retirar'])): ?>
                 <div class="acc"><button type="button" class="btn btn-ok btn-peq" data-abrir-modal="modal-entrega" data-registro="<?= $e(json_encode(['id' => $v->id, 'cliente' => $v->nombre_cliente, 'pedido' => $num])) ?>"><svg class="i"><use href="#i-bolsa"/></svg>Entregar</button></div>
               <?php else: ?>
                 <span class="entrega-ok"><b>Entregado</b><?= $e(trim(($v->fecha_entrega ?? '') ? date('d/m, g:i a', strtotime($v->fecha_entrega)) . '. ' : '') . (!empty($v->retirado_por) ? 'Retiró ' . $v->retirado_por . '.' : 'Retiró el cliente.')) ?></span>

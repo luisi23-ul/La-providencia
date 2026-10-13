@@ -6,7 +6,10 @@
   var unDecimal = function (x) { return String(Math.round(x * 10) / 10); };
 
   function prod(id) { return productos.find(function (p) { return String(p.id) === String(id); }); }
-  function destino() { return form.querySelector('input[name="destino_stock"]:checked').value; }
+  function destino() { 
+    var el = form.querySelector('input[name="destino_stock"]');
+    return el ? el.value : 'tienda_fisica'; 
+  }
   function campo(li, nombre) { return li.querySelector('[name="' + nombre + '[]"]'); }
 
   function agregar(abrir) {
@@ -25,10 +28,27 @@
     var p = prod(campo(li, 'id_producto').value), cab = li.querySelector('.cpx-rg-cab'), foto = cab.querySelector('.sin-foto, img');
     if (p && p.img) { var img = document.createElement('img'); img.src = p.img; img.alt = ''; img.width = 52; img.height = 52; foto.replaceWith(img); }
     else if (foto.tagName === 'IMG') { var s = document.createElement('span'); s.className = 'sin-foto'; s.innerHTML = '<svg class="i"><use href="#i-caja"/></svg>'; foto.replaceWith(s); }
+    
     var esNuevo = campo(li, 'id_producto').value === 'nuevo', bloque = li.querySelector('.cpx-nuevo-prod');
     bloque.hidden = !esNuevo;
     bloque.querySelectorAll('input, select').forEach(function (i) { i.required = esNuevo; if (!esNuevo) i.value = ''; });
     Panel.refrescarSelects(bloque);
+
+    // Manejo de variantes en el renglón
+    var selVar = li.querySelector('.cpx-sel-variante');
+    if (selVar) {
+      if (p && p.variantes && p.variantes.length > 0) {
+        selVar.innerHTML = '<option value="0">Elige variante...</option>' + p.variantes.map(function (v) {
+          var label = [v.talla, v.color, v.modelo].filter(Boolean).join(' - ') || ('Variante #' + v.id);
+          return '<option value="' + v.id + '">' + Panel.esc(label + ' (Stock: ' + v.stock + ')') + '</option>';
+        }).join('');
+        selVar.style.display = 'inline-block';
+      } else {
+        selVar.innerHTML = '<option value="0">Variante principal / Única</option>';
+        selVar.style.display = 'none';
+      }
+    }
+
     li.querySelector('.cpx-hoy').textContent = p ? 'Hoy se vende a ' + usd(p.precio) : esNuevo ? 'Producto nuevo: escribe su código y nombre' : 'Elige qué llegó en la factura';
     if (esNuevo) { campo(li, 'costo_unitario').value = ''; campo(li, 'margen').value = MARGEN; campo(li, 'precio_venta').value = ''; pintar(li); bloque.querySelector('input').focus(); return; }
     if (!p) { pintar(li); return; }
@@ -43,11 +63,13 @@
     }
     if (!p.costo) campo(li, 'costo_unitario').focus();
   }
+
   function desdeMargen(li) {
     var c = parseFloat(campo(li, 'costo_unitario').value), m = parseFloat(campo(li, 'margen').value);
     if (c > 0 && !isNaN(m)) campo(li, 'precio_venta').value = Math.max(0, c * (1 + m / 100)).toFixed(2);
     pintar(li);
   }
+
   function desdePrecio(li) {
     var c = parseFloat(campo(li, 'costo_unitario').value), v = parseFloat(campo(li, 'precio_venta').value);
     campo(li, 'margen').value = c > 0 && v > 0 ? unDecimal((v - c) / c * 100) : '';
@@ -61,8 +83,8 @@
     var st = li.querySelector('.cpx-stock');
     st.hidden = !p;
     if (p) {
-      var online = destino() === 'online', actual = online ? p.o : p.t;
-      st.innerHTML = (online ? 'Online' : 'Tienda') + ' <s>' + actual + '</s> → ' + (actual + cant);
+      var actual = p.t || 0;
+      st.innerHTML = 'Inventario <s>' + actual + '</s> → ' + (actual + cant);
     }
     var perdida = c > 0 && v > 0 && v < c, act = li.querySelector('.cpx-precio'), cambia = !!p && v > 0 && Math.abs(v - p.precio) >= 0.005;
     act.hidden = !cambia;
@@ -84,7 +106,14 @@
       var cant = parseInt(campo(li, 'cantidad').value, 10) || 0, c = parseFloat(campo(li, 'costo_unitario').value) || 0;
       unid += cant; total += cant * c;
       if (+li.querySelector('.cpx-precio input[type=hidden]').value) precios++;
-      if (id && id !== 'nuevo') { if (vistos[id]) repetido = true; vistos[id] = 1; }
+      
+      // Permitir mismo producto si tiene variante distinta
+      var vId = (campo(li, 'id_variante') ? campo(li, 'id_variante').value : '') || '0';
+      var claveUnica = id + '_' + vId;
+      if (id && id !== 'nuevo') { 
+        if (vistos[claveUnica]) repetido = true; 
+        vistos[claveUnica] = 1; 
+      }
     });
     var cuenta = document.getElementById('cuenta-renglones');
     cuenta.textContent = elegidos + (elegidos === 1 ? ' producto' : ' productos');
@@ -94,8 +123,8 @@
     document.getElementById('r-precios').textContent = precios;
     document.getElementById('r-total').textContent = usd(total);
     document.getElementById('r-bs').textContent = Panel.fmtBs(total * Panel.tasa) + ' Bs';
-    document.getElementById('r-destino').textContent = 'Al guardar, las unidades se suman a ' + (destino() === 'online' ? 'la tienda online.' : 'la tienda física.');
-    var aviso = !filas.length ? 'Agrega al menos un producto.' : !elegidos ? 'Elige qué producto llegó.' : repetido ? 'Hay un producto repetido: súmalo en una sola tarjeta.' : lista.querySelector('.cpx-rg.perdida') ? 'Hay un precio de venta por debajo del costo.' : '';
+    document.getElementById('r-destino').textContent = 'Al guardar, las unidades se suman al inventario.';
+    var aviso = !filas.length ? 'Agrega al menos un producto.' : !elegidos ? 'Elige qué producto llegó.' : repetido ? 'Hay un producto/variante repetido: súmalo en una sola tarjeta.' : lista.querySelector('.cpx-rg.perdida') ? 'Hay un precio de venta por debajo del costo.' : '';
     var r = document.getElementById('r-aviso');
     r.textContent = aviso; r.hidden = !aviso;
     document.querySelectorAll('#form-compra [type=submit], [type=submit][form="form-compra"]').forEach(function (b) { if (!b.classList.contains('guardando')) b.disabled = !filas.length || repetido; });
@@ -104,6 +133,7 @@
   lista.addEventListener('change', function (e) {
     var li = e.target.closest('.cpx-rg');
     if (e.target.name === 'id_producto[]') elegir(li);
+    else if (e.target.name === 'id_variante[]') resumen();
     else if (e.target.type === 'checkbox') pintar(li);
   });
   lista.addEventListener('input', function (e) {
@@ -127,7 +157,13 @@
     }
     if (e.target.closest('[data-quitar]')) { e.target.closest('.cpx-rg').remove(); resumen(); revisar(); }
   });
-  form.addEventListener('change', function (e) { if (e.target.name === 'destino_stock') { lista.querySelectorAll('.cpx-rg').forEach(pintar); resumen(); } });
+
+  form.addEventListener('change', function (e) { 
+    if (e.target.name === 'destino_stock') { 
+      lista.querySelectorAll('.cpx-rg').forEach(pintar); 
+      resumen(); 
+    } 
+  });
   document.getElementById('agregar-renglon').addEventListener('click', function () { agregar(true); revisar(); });
   agregar(false);
 

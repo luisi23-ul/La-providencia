@@ -5,10 +5,10 @@ $detalles = $detalles ?? [];
 include __DIR__ . '/../admin/_abrir.php';
 $num = '#' . str_pad((string) $compra->id, 4, '0', STR_PAD_LEFT);
 $anulada = $compra->estado === 'anulado';
-$destino = $compra->destino_stock === 'online' ? 'Online' : 'Tienda física';
+$destino = 'Tienda';
 $unidades = array_sum(array_map(fn($d) => (int) $d->cantidad, $detalles));
 $ganancia = array_sum(array_map(fn($d) => (float) ($d->ganancia_total_linea ?? 0), $detalles));
-$margenTotal = (float) $compra->total > 0 ? $ganancia / (float) $compra->total * 100 : 0;
+$margenTotal = (float) $compra->total > 0 ? ($ganancia / (float) $compra->total) * 100 : 0;
 $dias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 $meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 $t = strtotime($compra->fecha_compra);
@@ -23,7 +23,7 @@ $pct = fn($v) => rtrim(rtrim(number_format((float) $v, 1), '0'), '.') . ' %';
     <div class="cab-txt"><small>Compra</small><div class="titulo-atras"><a href="index.php?action=compras" class="atras" aria-label="Volver a Compras"><svg class="i"><use href="#i-volver"/></svg></a><h2><?= $num ?></h2></div><p class="dv-fecha"><?= $fechaLarga ?></p></div>
     <div class="cab-acc dv-chips">
       <span class="dv-chip<?= $anulada ? ' agot' : '' ?>"><svg class="i"><use href="#i-<?= $anulada ? 'x' : 'check' ?>"/></svg><?= $anulada ? 'Anulada' : 'Recibida' ?></span>
-      <span class="dv-chip neutro"><svg class="i"><use href="#i-<?= $compra->destino_stock === 'online' ? 'globo' : 'tienda' ?>"/></svg><?= $destino ?></span>
+      <span class="dv-chip neutro"><svg class="i"><use href="#i-tienda"/></svg><?= $destino ?></span>
       <a href="index.php?action=exportar_pdf&amp;tipo=compra&amp;id=<?= (int) $compra->id ?>" target="_blank" class="btn btn-sec"><svg class="i"><use href="#i-archivo"/></svg>PDF</a>
       <?php if (!$anulada): ?>
       <form method="POST" action="index.php?action=anular_compra" class="dc-anular">

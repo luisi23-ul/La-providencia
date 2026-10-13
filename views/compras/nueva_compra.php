@@ -21,6 +21,7 @@ include __DIR__ . '/../admin/_abrir.php';
   </header>
 
   <form class="fpx" id="form-compra" action="index.php?action=guardar_compra" method="POST">
+    <input type="hidden" name="destino_stock" value="tienda_fisica">
     <div class="fpx-col">
       <section class="fpx-sec" aria-labelledby="c-t-fac">
         <header><span class="fpx-ic"><svg class="i"><use href="#i-recibo"/></svg></span><div><h3 id="c-t-fac">Proveedor y factura</h3><p>Los datos de la factura que te entregaron.</p></div></header>
@@ -37,12 +38,6 @@ include __DIR__ . '/../admin/_abrir.php';
             <datalist id="lista-empleados"><?php foreach ($empleados as $emp): ?><option value="<?= $e($emp->nombre_completo) ?>"></option><?php endforeach; ?></datalist>
           </div>
           <div class="campo"><label for="c-fecha">Fecha de recepción <span class="ob">*</span></label><input id="c-fecha" type="date" name="fecha_compra" value="<?= date('Y-m-d') ?>" max="<?= date('Y-m-d') ?>" required></div>
-          <div class="campo"><span class="lbl" id="l-destino">¿A dónde entra el stock? <span class="ob">*</span></span>
-            <div class="ajx-seg" role="radiogroup" aria-labelledby="l-destino">
-              <label><input type="radio" name="destino_stock" value="tienda_fisica" checked><svg class="i"><use href="#i-tienda"/></svg>Tienda física</label>
-              <label><input type="radio" name="destino_stock" value="online"><svg class="i"><use href="#i-globo"/></svg>Online</label>
-            </div>
-          </div>
         </div>
       </section>
 
@@ -88,7 +83,7 @@ include __DIR__ . '/../admin/_abrir.php';
           <p class="cpx-aviso" id="r-aviso" hidden></p>
           <button type="submit" class="btn btn-pri" id="c-guardar"><svg class="i"><use href="#i-check"/></svg>Guardar compra</button>
           <a href="index.php?action=compras" class="btn btn-sec">Cancelar</a>
-          <small id="r-destino">Al guardar, las unidades se suman a la tienda física.</small>
+          <small id="r-destino">Al guardar, las unidades se suman al inventario.</small>
         </div>
       </div>
     </aside>
@@ -105,6 +100,9 @@ include __DIR__ . '/../admin/_abrir.php';
     <div class="cpx-rg-cab">
       <span class="sin-foto"><svg class="i"><use href="#i-caja"/></svg></span>
       <select name="id_producto[]" required aria-label="Producto" data-buscar="Buscar producto"></select>
+      <select name="id_variante[]" class="cpx-sel-variante" style="display:none;" aria-label="Variante">
+        <option value="0">Variante principal / Única</option>
+      </select>
       <small class="cpx-hoy">Elige qué llegó en la factura</small>
       <span class="cpx-stock" hidden></span>
       <button type="button" class="ic-btn" data-quitar aria-label="Quitar producto"><svg class="i"><use href="#i-basura"/></svg></button>
@@ -141,5 +139,25 @@ include __DIR__ . '/../admin/_abrir.php';
   </li>
 </template>
 <?php include __DIR__ . '/_modal_proveedor.php'; ?>
-<script type="application/json" id="datos-compra"><?= json_encode(array_map(fn($p) => ['id' => (int) $p->id, 'c' => $p->codigo ?? 'P-' . str_pad($p->id, 4, '0', STR_PAD_LEFT), 'n' => $p->nombre_producto, 't' => (int) $p->stock, 'o' => (int) ($p->stock_online ?? 0), 'costo' => (float) ($p->costo_compra ?? 0), 'precio' => (float) $p->precio, 'img' => !empty($p->imagen) ? 'public/uploads/' . $p->imagen : ''], $productos), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?></script>
+<script type="application/json" id="datos-compra"><?= json_encode(array_map(function($p) {
+    return [
+        'id'        => (int) $p->id,
+        'c'         => $p->codigo ?? 'P-' . str_pad($p->id, 4, '0', STR_PAD_LEFT),
+        'n'         => $p->nombre_producto,
+        't'         => (int) $p->stock,
+        'costo'     => (float) ($p->costo_compra ?? 0),
+        'precio'    => (float) $p->precio,
+        'img'       => !empty($p->imagen) ? 'public/uploads/' . $p->imagen : '',
+        'variantes' => array_map(function($v) {
+            return [
+                'id'     => (int) $v->id,
+                'talla'  => $v->talla ?? '',
+                'color'  => $v->color ?? '',
+                'modelo' => $v->modelo ?? '',
+                'stock'  => (int) $v->stock,
+                'precio' => (float) ($v->precio ?? 0)
+            ];
+        }, $p->variantes ?? [])
+    ];
+}, $productos), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?></script>
 <?php include __DIR__ . '/../admin/_cerrar.php'; ?>

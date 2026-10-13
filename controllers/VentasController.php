@@ -503,25 +503,45 @@ class VentaController {
             ");
             $stmtAprobar->execute([$idAdmin, $idPago]);
 
-            // 3. Obtener origen de la venta
+            // 3. Obtener origen de la venta y actualizar estado a pagado/retirado
             $stmtOrigen = $this->db->prepare("SELECT origen_venta FROM ventas WHERE id = ?");
             $stmtOrigen->execute([$idVenta]);
             $origen = $stmtOrigen->fetchColumn();
 
-            // 'retirado' para tienda física; 'por_retirar' para online
-            $nuevoEstado = ($origen === 'tienda_fisica') ? 'retirado' : 'por_retirar';
+            // Si es tienda física queda 'retirado'; si es online pasa a 'pagado'
+            $nuevoEstado = ($origen === 'tienda_fisica') ? 'retirado' : 'pagado';
 
             $stmtV = $this->db->prepare("UPDATE ventas SET estado = ? WHERE id = ?");
             $stmtV->execute([$nuevoEstado, $idVenta]);
 
-            // 4. Descontar del inventario unificado (columna stock)
+            // 4. Descontar del inventario unificado (columna stock) y asentar en Kardex
             $stmtItems = $this->db->prepare("SELECT id_producto, cantidad FROM detalle_ventas WHERE id_venta = ?");
             $stmtItems->execute([$idVenta]);
             $items = $stmtItems->fetchAll(PDO::FETCH_OBJ);
 
             $stmtStock = $this->db->prepare("UPDATE productos SET stock = GREATEST(0, stock - ?) WHERE id = ?");
+            $stmtStkAct = $this->db->prepare("SELECT stock FROM productos WHERE id = ?");
+            $stmtKardex = $this->db->prepare("
+                INSERT INTO kardex_inventario 
+                (id_producto, tipo_movimiento, canal, cantidad, stock_tienda_resultante, stock_online_resultante, id_referencia, observacion, id_usuario)
+                VALUES (?, 'venta', 'general', ?, ?, 0, ?, ?, ?)
+            ");
+
             foreach ($items as $it) {
                 $stmtStock->execute([(int)$it->cantidad, (int)$it->id_producto]);
+
+                // Registrar salida en el inventario
+                $stmtStkAct->execute([(int)$it->id_producto]);
+                $stockRestante = (int)$stmtStkAct->fetchColumn();
+
+                $stmtKardex->execute([
+                    (int)$it->id_producto,
+                    -(int)$it->cantidad,
+                    $stockRestante,
+                    $idVenta,
+                    "Salida por venta online aprobada #{$idVenta}",
+                    $idAdmin
+                ]);
             }
 
             $this->db->commit();
@@ -547,7 +567,6 @@ class VentaController {
             exit();
         }
     }
-
     public function rechazarPago() {
         $idPago = (int)($_POST['id'] ?? $_GET['id'] ?? 0);
         $observacion = trim($_POST['observacion'] ?? $_GET['observacion'] ?? 'Comprobante no coincide');
@@ -694,14 +713,16 @@ class VentaController {
         require_once 'views/ventas/pagos_banco.php';
     }
 
-    // =========================================================================
+   // =========================================================================
     // 5. RETIRO DE PEDIDOS (ENTREGA DE VENTAS PAGADAS)
     // =========================================================================
     public function retiroPedidos() {
-        $estadoTab = $_GET['estado'] ?? 'por_retirar';
+        // Detecta 'tab' o 'estado', y acepta 'entregado' o 'entregados'
+        $tabParam = trim($_GET['tab'] ?? $_GET['estado'] ?? 'por_retirar');
+        $esEntregado = in_array($tabParam, ['entregado', 'entregados', 'retirado']);
 
-        // Si la pestaña es entregados buscamos 'entregado' o 'retirado', sino 'pagado'
-        $estadoSql = ($estadoTab === 'entregados') ? "v.estado IN ('entregado', 'retirado')" : "v.estado = 'pagado'";
+        // Filtro de estados
+        $estadoSql = $esEntregado ? "v.estado IN ('entregado', 'retirado')" : "v.estado IN ('pagado', 'por_retirar')";
 
         $sql = "SELECT v.id, 
                        v.id AS id_venta,
@@ -712,22 +733,27 @@ class VentaController {
                        v.total,
                        v.fecha,
                        v.estado,
-                       COALESCE(mp.nombre, 'Pago Móvil / Transferencia') AS metodo_pago,
-                       pr.referencia,
-                       pr.banco
+                       COALESCE(MAX(mp.nombre), 'Pago Móvil') AS metodo_pago,
+                       COALESCE(MAX(mp.nombre), 'Pago Móvil') AS pago,
+                       COALESCE(MAX(mp.nombre), 'Pago Móvil') AS forma_pago,
+                       MAX(pr.referencia) AS referencia,
+                       MAX(pr.banco) AS banco
                 FROM ventas v
                 LEFT JOIN usuarios u ON v.id_usuario = u.id
                 LEFT JOIN pagos_registro pr ON pr.id_venta = v.id
                 LEFT JOIN metodos_pago mp ON pr.id_metodo_pago = mp.id
                 WHERE {$estadoSql}
-                GROUP BY v.id
+                GROUP BY v.id, u.nombre, u.apellido, u.cedula, u.telefono, v.total, v.fecha, v.estado
                 ORDER BY v.fecha DESC";
 
         $pedidos = $this->db->query($sql)->fetchAll(PDO::FETCH_OBJ);
 
-        // Se declaran con los distintos nombres de variable para compatibilidad con la vista
+        // Variables para compatibilidad con la vista
         $retiros = $pedidos;
         $ventas  = $pedidos;
+
+        // Pasamos la variable $tab activa para que la vista resalte la pestaña correcta
+        $tab = $esEntregado ? 'entregado' : 'por_retirar';
 
         if (file_exists('views/ventas/retiro_pedidos.php')) {
             require_once 'views/ventas/retiro_pedidos.php';
@@ -736,20 +762,21 @@ class VentaController {
         }
     }
 
-   public function procesarRetiro($id = null) {
+  public function procesarRetiro($id = null) {
         $id = (int)($id ?? $_GET['id'] ?? $_POST['id'] ?? 0);
         if ($id > 0) {
-            // Actualizamos a 'retirado' para que coincida con el estado estándar del sistema
+            // Actualizamos el estado a 'entregado' / 'retirado'
             $stmt = $this->db->prepare("UPDATE ventas SET estado = 'retirado' WHERE id = ?");
             $stmt->execute([$id]);
 
             $_SESSION['alerta'] = [
-                'tipo' => 'success',
-                'titulo' => 'Pedido Retirado',
-                'texto' => 'El pedido fue marcado como retirado satisfactoriamente.'
+                'tipo'   => 'success',
+                'titulo' => 'Pedido Entregado',
+                'texto'  => 'El pedido fue marcado como entregado satisfactoriamente.'
             ];
         }
-        header("Location: index.php?action=retiro_pedidos");
+        // Redirige conservando la vista de entregados
+        header("Location: index.php?action=retiro_pedidos&tab=entregado");
         exit();
     }
     // =========================================================================

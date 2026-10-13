@@ -67,16 +67,30 @@ class CompraController {
         require_once 'views/compras/compras.php';
     }
 
-    public function nuevaCompra() {
+   public function nuevaCompra() {
         $proveedores = $this->db->query("SELECT id, rif_cedula, razon_social, estado FROM proveedores WHERE estado = 1 ORDER BY razon_social ASC")->fetchAll(PDO::FETCH_OBJ);
-        $productos   = $this->db->query("SELECT id, codigo, nombre_producto, precio, costo_compra, stock, stock_online FROM productos WHERE estado = 1 AND deleted_at IS NULL ORDER BY nombre_producto ASC")->fetchAll(PDO::FETCH_OBJ);
+        
+        // Traer productos activos
+        $productos = $this->db->query("SELECT id, codigo, nombre_producto, precio, costo_compra, stock FROM productos WHERE deleted_at IS NULL ORDER BY nombre_producto ASC")->fetchAll(PDO::FETCH_OBJ);
+        
+        // Cargar las variantes asociadas a cada producto
+        $stmtVars = $this->db->prepare("SELECT id, id_producto, sku, talla, color, modelo, stock, precio FROM producto_variantes WHERE id_producto = ? ORDER BY id ASC");
+        foreach ($productos as $p) {
+            $stmtVars->execute([$p->id]);
+            $p->variantes = $stmtVars->fetchAll(PDO::FETCH_OBJ);
+        }
+
         $metodos     = $this->db->query("SELECT id, nombre FROM metodos_pago WHERE activo = 1 ORDER BY nombre ASC")->fetchAll(PDO::FETCH_OBJ);
-        $empleados   = $this->db->query("SELECT id, CONCAT(nombre, ' ', apellido) AS nombre_completo FROM usuarios WHERE id_rol IN (1, 2) AND deleted_at IS NULL ORDER BY nombre ASC")->fetchAll(PDO::FETCH_OBJ);
+        $empleados   = $this->db->query("SELECT id, CONCAT(nombre, ' ', apellido) AS nombre_completo FROM usuarios WHERE id_rol IN (1, 2) ORDER BY nombre ASC")->fetchAll(PDO::FETCH_OBJ);
         $categorias  = $this->db->query("SELECT id, id_padre, nombre_categoria FROM categorias ORDER BY nombre_categoria ASC")->fetchAll(PDO::FETCH_OBJ);
+        
         require_once 'views/compras/nueva_compra.php';
     }
 
-    public function guardar() {
+    // =========================================================================
+    // 1. GUARDAR COMPRA
+    // =========================================================================
+   public function guardar() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header("Location: index.php?action=compras");
             exit();
@@ -90,19 +104,20 @@ class CompraController {
             $compradoPor    = trim($_POST['comprado_por'] ?? '');
             $numeroFactura  = trim($_POST['numero_factura'] ?? '');
             $fechaCompra    = !empty($_POST['fecha_compra']) ? str_replace('T', ' ', $_POST['fecha_compra']) : date('Y-m-d H:i:s');
-            $destinoStock   = trim($_POST['destino_stock'] ?? 'tienda_fisica');
+            $destinoStock   = 'general'; // Inventario unificado
             $idMetodoPago   = !empty($_POST['id_metodo_pago']) ? (int)$_POST['id_metodo_pago'] : null;
             $banco          = trim($_POST['banco'] ?? '');
             $referenciaPago = trim($_POST['referencia_pago'] ?? '');
 
-            $prodIds     = $_POST['id_producto'] ?? [];
-            $nuevosCod   = $_POST['nuevo_codigo'] ?? [];
-            $nuevosNom   = $_POST['nuevo_nombre'] ?? [];
-            $cants       = $_POST['cantidad'] ?? [];
-            $costos      = $_POST['costo_unitario'] ?? [];
-            $nuevosPv    = $_POST['precio_venta'] ?? [];
-            $actPrecios  = $_POST['actualizar_precio'] ?? [];
-            $nuevosCat   = $_POST['nuevo_categoria'] ?? [];
+            $prodIds    = $_POST['id_producto'] ?? [];
+            $varIds     = $_POST['id_variante'] ?? [];
+            $nuevosCod  = $_POST['nuevo_codigo'] ?? [];
+            $nuevosNom  = $_POST['nuevo_nombre'] ?? [];
+            $cants      = $_POST['cantidad'] ?? [];
+            $costos     = $_POST['costo_unitario'] ?? [];
+            $nuevosPv   = $_POST['precio_venta'] ?? [];
+            $actPrecios = $_POST['actualizar_precio'] ?? [];
+            $nuevosCat  = $_POST['nuevo_categoria'] ?? [];
 
             if ($idProveedor <= 0 || empty($numeroFactura)) {
                 throw new Exception("Selecciona un proveedor e ingresa el número de factura.");
@@ -132,31 +147,32 @@ class CompraController {
             ");
 
             $stmtNuevoProd = $this->db->prepare("
-                INSERT INTO productos (codigo, nombre_producto, id_categoria, precio, costo_compra, stock, stock_online, estado)
-                VALUES (?, ?, ?, ?, ?, 0, 0, 1)
+                INSERT INTO productos (codigo, nombre_producto, id_categoria, precio, costo_compra, stock, estado)
+                VALUES (?, ?, ?, ?, ?, 0, 1)
             ");
 
-            $stmtStockTienda = $this->db->prepare("UPDATE productos SET stock = stock + ?, costo_compra = ? WHERE id = ?");
-            $stmtStockOnline = $this->db->prepare("UPDATE productos SET stock_online = stock_online + ?, costo_compra = ? WHERE id = ?");
+            $stmtStock       = $this->db->prepare("UPDATE productos SET stock = stock + ?, costo_compra = ? WHERE id = ?");
+            $stmtStockVar    = $this->db->prepare("UPDATE producto_variantes SET stock = stock + ? WHERE id = ? AND id_producto = ?");
             $stmtUpdPrecio   = $this->db->prepare("UPDATE productos SET precio = ? WHERE id = ?");
+            $stmtP           = $this->db->prepare("SELECT stock FROM productos WHERE id = ?");
 
             $stmtKardex = $this->db->prepare("
                 INSERT INTO kardex_inventario 
                 (id_producto, tipo_movimiento, canal, cantidad, stock_tienda_resultante, stock_online_resultante, id_referencia, observacion, id_usuario)
-                VALUES (?, 'compra', ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, 'compra', 'general', ?, ?, 0, ?, ?, ?)
             ");
 
             for ($i = 0; $i < count($prodIds); $i++) {
                 $rawPId = $prodIds[$i];
                 $cnt    = (int)$cants[$i];
                 $costo  = (float)$costos[$i];
-                $subt   = $cnt * $costo;
+                $subt   = round($cnt * $costo, 2);
                 $pv     = !empty($nuevosPv[$i]) ? (float)$nuevosPv[$i] : $costo;
                 $debeActualizar = !empty($actPrecios[$i]);
+                $varId  = !empty($varIds[$i]) ? (int)$varIds[$i] : 0;
 
                 if ($cnt <= 0) continue;
 
-                // Si se marcó como "nuevo", se inserta en productos
                 if ($rawPId === 'nuevo') {
                     $cod = trim($nuevosCod[$i] ?? '');
                     $nom = trim($nuevosNom[$i] ?? '');
@@ -171,7 +187,9 @@ class CompraController {
 
                     $stmtNuevoProd->execute([$cod, $nom, $cat, $pv, $costo]);
                     $pId = (int)$this->db->lastInsertId();
-                    $this->log('Inventario', 'INSERT', "Producto creado desde Compra #{$idCompra}: {$nom} ({$cod})");
+                    if (method_exists($this, 'log')) {
+                        $this->log('Inventario', 'INSERT', "Producto creado desde Compra #{$idCompra}: {$nom} ({$cod})");
+                    }
                 } else {
                     $pId = (int)$rawPId;
                     if ($debeActualizar && $pv > 0) {
@@ -179,44 +197,55 @@ class CompraController {
                     }
                 }
 
+                // A. Registrar en detalle de compras
                 $stmtDet->execute([$idCompra, $pId, $cnt, $costo, $subt]);
 
-                $stmtP = $this->db->prepare("SELECT stock, stock_online FROM productos WHERE id = ?");
+                // B. Actualizar stock y costo automáticamente
+                $stmtStock->execute([$cnt, $costo, $pId]);
+
+                // B.1 Si se especificó una variante, actualizar su stock
+                if ($varId > 0) {
+                    $stmtStockVar->execute([$cnt, $varId, $pId]);
+                }
+
+                // C. Kardex con el stock resultante
                 $stmtP->execute([$pId]);
-                $prodActual = $stmtP->fetch(PDO::FETCH_OBJ);
+                $stockResultante = (int)$stmtP->fetchColumn();
 
-                $stTienda = (int)($prodActual->stock ?? 0);
-                $stOnline = (int)($prodActual->stock_online ?? 0);
-
-                if ($destinoStock === 'online') {
-                    $stmtStockOnline->execute([$cnt, $costo, $pId]);
-                    $stOnline += $cnt;
-                    $canal = 'online';
-                } else {
-                    $stmtStockTienda->execute([$cnt, $costo, $pId]);
-                    $stTienda += $cnt;
-                    $canal = 'tienda_fisica';
+                $obs = "Entrada por compra Fac #{$numeroFactura}";
+                if ($varId > 0) {
+                    $obs .= " (Variante #{$varId})";
                 }
 
                 $stmtKardex->execute([
-                    $pId, $canal, $cnt, $stTienda, $stOnline,
-                    $idCompra, "Compra Fac #{$numeroFactura}", $idUsuario
+                    $pId, 
+                    $cnt, 
+                    $stockResultante, 
+                    $idCompra, 
+                    $obs, 
+                    $idUsuario
                 ]);
             }
 
             $this->db->commit();
-            $this->log('Compras', 'INSERT', "Registró compra #{$idCompra} (Fac: {$numeroFactura}) por $" . number_format($total, 2));
+            if (method_exists($this, 'log')) {
+                $this->log('Compras', 'INSERT', "Registró compra #{$idCompra} (Fac: {$numeroFactura}) por $" . number_format($total, 2));
+            }
 
             header("Location: index.php?action=compras");
             exit();
 
         } catch (Exception $e) {
-            $this->db->rollBack();
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
             echo "<script>alert('Error: " . addslashes($e->getMessage()) . "'); window.history.back();</script>";
             exit();
         }
     }
-
+    // =========================================================================
+    // 2. DETALLE DE COMPRA
+    // =========================================================================
     public function detalle() {
         $idCompra = (int)($_GET['id'] ?? 0);
 
@@ -253,15 +282,18 @@ class CompraController {
         require_once 'views/compras/detalle_compra.php';
     }
 
+    // =========================================================================
+    // 3. ANULAR COMPRA
+    // =========================================================================
     public function anular() {
-        $idCompra = (int)($_POST['id'] ?? $_GET['id'] ?? 0);
+        $idCompra  = (int)($_POST['id'] ?? $_GET['id'] ?? 0);
         $idUsuario = $_SESSION['id_usuario'] ?? 1;
 
         if ($idCompra > 0) {
             try {
                 $this->db->beginTransaction();
 
-                $stmtC = $this->db->prepare("SELECT estado, destino_stock, numero_factura FROM compras WHERE id = ?");
+                $stmtC = $this->db->prepare("SELECT estado, numero_factura FROM compras WHERE id = ?");
                 $stmtC->execute([$idCompra]);
                 $compra = $stmtC->fetch(PDO::FETCH_OBJ);
 
@@ -270,33 +302,41 @@ class CompraController {
                     $stmtD->execute([$idCompra]);
                     $items = $stmtD->fetchAll(PDO::FETCH_OBJ);
 
-                    $colStock = ($compra->destino_stock === 'online') ? 'stock_online' : 'stock';
+                    $stmtResta  = $this->db->prepare("UPDATE productos SET stock = GREATEST(0, stock - ?) WHERE id = ?");
+                    $stmtStk    = $this->db->prepare("SELECT stock FROM productos WHERE id = ?");
+                    $stmtKardex = $this->db->prepare("
+                        INSERT INTO kardex_inventario 
+                        (id_producto, tipo_movimiento, canal, cantidad, stock_tienda_resultante, stock_online_resultante, id_referencia, observacion, id_usuario)
+                        VALUES (?, 'ajuste_salida', 'general', ?, ?, 0, ?, ?, ?)
+                    ");
 
                     foreach ($items as $it) {
-                        $this->db->prepare("UPDATE productos SET {$colStock} = GREATEST(0, {$colStock} - ?) WHERE id = ?")
-                                 ->execute([$it->cantidad, $it->id_producto]);
+                        $stmtResta->execute([(int)$it->cantidad, (int)$it->id_producto]);
 
-                        $stmtP = $this->db->prepare("SELECT stock, stock_online FROM productos WHERE id = ?");
-                        $stmtP->execute([$it->id_producto]);
-                        $act = $stmtP->fetch(PDO::FETCH_OBJ);
+                        $stmtStk->execute([(int)$it->id_producto]);
+                        $actStock = (int)$stmtStk->fetchColumn();
 
-                        $this->db->prepare("
-                            INSERT INTO kardex_inventario 
-                            (id_producto, tipo_movimiento, canal, cantidad, stock_tienda_resultante, stock_online_resultante, id_referencia, observacion, id_usuario)
-                            VALUES (?, 'ajuste_salida', 'ambos', ?, ?, ?, ?, ?, ?)
-                        ")->execute([
-                            $it->id_producto, -$it->cantidad, (int)$act->stock, (int)$act->stock_online,
-                            $idCompra, "Anulación compra Fac #{$compra->numero_factura}", $idUsuario
+                        $stmtKardex->execute([
+                            (int)$it->id_producto,
+                            -(int)$it->cantidad,
+                            $actStock,
+                            $idCompra,
+                            "Anulación compra Fac #{$compra->numero_factura}",
+                            $idUsuario
                         ]);
                     }
 
                     $this->db->prepare("UPDATE compras SET estado = 'anulado' WHERE id = ?")->execute([$idCompra]);
-                    $this->log('Compras', 'UPDATE', "Anuló compra #{$idCompra}");
+                    if (method_exists($this, 'log')) {
+                        $this->log('Compras', 'UPDATE', "Anuló compra #{$idCompra}");
+                    }
                 }
 
                 $this->db->commit();
             } catch (Exception $e) {
-                $this->db->rollBack();
+                if ($this->db->inTransaction()) {
+                    $this->db->rollBack();
+                }
             }
         }
 
