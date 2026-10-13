@@ -7,7 +7,7 @@ $admins = $admins ?? [];
 $roles = $roles ?? [];
 include __DIR__ . '/admin/_abrir.php';
 $miId = $_SESSION['id_usuario'] ?? null;
-$claseRol = [4 => 'vendedor', 5 => 'cajero'];
+$claseRol = [1 => 'master', 2 => '', 4 => 'vendedor'];
 $nombreRol = array_column(array_map(fn($r) => (array) $r, $roles), 'nombre_rol', 'id') + [1 => 'Master', 2 => 'Administrador', 4 => 'Vendedor', 5 => 'Cajero'];
 $acceso = function ($fecha) {
     if (!$fecha) return 'Nunca';
@@ -17,12 +17,24 @@ $acceso = function ($fecha) {
     if (date('Y-m-d', $t) === date('Y-m-d', strtotime('-1 day'))) return 'Ayer, ' . $hora;
     return date('d/m/Y', $t);
 };
+$activas = count(array_filter($admins, fn($a) => (int) $a->estado === 1));
+$desactivadas = count($admins) - $activas;
+$porRol = [];
+foreach ($admins as $a) $porRol[$nombreRol[$a->id_rol] ?? 'Sin rol'] = ($porRol[$nombreRol[$a->id_rol] ?? 'Sin rol'] ?? 0) + 1;
+arsort($porRol);
+$resumenRoles = implode(' · ', array_map(fn($n, $c) => $n . ' ' . $c, array_keys($porRol), $porRol));
 ?>
 <section class="contenido">
   <header class="cab">
     <div class="cab-txt"><small>Panel Master</small><h2>Administradores</h2></div>
     <div class="cab-acc"><button type="button" class="btn btn-pri" data-abrir-modal="modal-admin"><svg class="i"><use href="#i-mas"/></svg>Nueva cuenta</button></div>
   </header>
+
+  <section class="mini-kpis" aria-label="Resumen del personal">
+    <div><span class="mk-ic"><svg class="i"><use href="#i-usuarios"/></svg></span><span>Cuentas activas</span><b><?= $activas ?></b><small>pueden entrar al panel</small></div>
+    <div class="mk-claro"><span class="mk-ic"><svg class="i"><use href="#i-x"/></svg></span><span>Desactivadas</span><b><?= $desactivadas ?></b><small>sus ventas se conservan</small></div>
+    <div class="mk-ambar"><span class="mk-ic"><svg class="i"><use href="#i-escudo"/></svg></span><span>Por rol</span><b><?= count($porRol) ?> <?= count($porRol) === 1 ? 'rol' : 'roles' ?></b><small><?= $e($resumenRoles) ?></small></div>
+  </section>
 
   <section class="tabla-caja" aria-label="Personal">
     <div class="tabla-scroll">
@@ -33,10 +45,10 @@ $acceso = function ($fecha) {
             $yo = $miId !== null && (int) $a->id === (int) $miId;
             $nombre = trim(($a->nombre ?? '') . ' ' . ($a->apellido ?? ''));
             $ult = $acceso($a->ultimo_acceso ?? null); ?>
-          <tr>
-            <td class="t-tit"><div class="t-nombre"><b><?= $e($nombre) ?><?php if ($yo): ?> <span class="chip">Tú</span><?php endif; ?></b><span><?= $e($a->correo) ?></span><span class="si-estrecho">Último acceso: <?= $e($ult) ?></span></div></td>
-            <td data-label="Rol"><span class="rol-chip <?= $claseRol[$a->id_rol] ?? '' ?>"><?= $e($nombreRol[$a->id_rol] ?? 'Sin rol') ?></span></td>
-            <td data-label="Último acceso" class="c-media"><?= $e($ult) ?></td>
+          <tr<?= $yo ? ' class="ad-yo"' : '' ?>>
+            <td class="t-tit"><div class="ad-persona"><span class="ad-av" aria-hidden="true"><?= $e(mb_strtoupper(mb_substr($a->nombre ?? '?', 0, 1) . mb_substr($a->apellido ?? '', 0, 1))) ?></span><div class="t-nombre"><b><?= $e($nombre) ?><?php if ($yo): ?> <span class="ad-tu">Tú</span><?php endif; ?></b><span><?= $e($a->correo) ?></span><span class="si-estrecho">Último acceso: <?= $e($ult) ?></span></div></div></td>
+            <td data-label="Rol"><span class="rol-chip <?= $claseRol[$a->id_rol] ?? 'otro' ?>"><?= $e($nombreRol[$a->id_rol] ?? 'Sin rol') ?></span></td>
+            <td data-label="Último acceso" class="c-media<?= $ult === 'Nunca' ? ' muted' : '' ?>"><?= $e($ult) ?></td>
             <td data-label="Cuenta">
               <?php if ($yo): ?>
                 <span class="muted">Tu cuenta</span>
