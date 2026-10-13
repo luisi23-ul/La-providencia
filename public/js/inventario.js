@@ -57,20 +57,18 @@
     li.className = 'fpx-var-fila';
     li.innerHTML = '<input type="hidden" name="variantes[' + i + '][id]" value="' + (v && v.id ? v.id : 0) + '">' +
       COLUMNAS.map(function (c) { return control(c[0], c[1], v ? v[c[0]] : '', i); }).join('') +
-      '<div class="fpx-var-campo"><label for="fp-v-' + i + '-st">Tienda</label><input id="fp-v-' + i + '-st" class="var-st" name="variantes[' + i + '][stock]" type="number" min="0" inputmode="numeric" value="' + (v ? v.stock : 0) + '"></div>' +
-      '<div class="fpx-var-campo"><label for="fp-v-' + i + '-so">Online</label><input id="fp-v-' + i + '-so" class="var-so" name="variantes[' + i + '][stock_online]" type="number" min="0" inputmode="numeric" value="' + (v ? v.stock_online : 0) + '"></div>' +
+      '<div class="fpx-var-campo"><label for="fp-v-' + i + '-st">Stock</label><input id="fp-v-' + i + '-st" class="var-st" name="variantes[' + i + '][stock]" type="number" min="0" inputmode="numeric" value="' + (v ? v.stock : 0) + '"></div>' +
       '<button type="button" class="ic-btn" data-quitar-var aria-label="Quitar esta combinación"><svg class="i"><use href="#i-basura"/></svg></button>';
     listaVar.appendChild(li);
     return li;
   }
   function totales() {
     if (seccionVar.hidden) return;
-    var t = 0, o = 0;
+    var t = 0;
     listaVar.querySelectorAll('.fpx-var-fila').forEach(function (li) {
       t += parseInt(li.querySelector('.var-st').value, 10) || 0;
-      o += parseInt(li.querySelector('.var-so').value, 10) || 0;
     });
-    stTienda.value = t + o;
+    stTienda.value = t;
   }
   function vistaVariantes(inicial) {
     var conVariantes = atributosCat().length > 0;
@@ -80,7 +78,7 @@
       else {
         var previas = [].map.call(listaVar.querySelectorAll('.fpx-var-fila'), function (li) {
           var g = function (s) { var x = li.querySelector(s); return x ? x.value : ''; };
-          return { id: g('input[type=hidden]'), talla: g('[name$="[talla]"]'), color: g('[name$="[color]"]'), modelo: g('[name$="[modelo]"]'), stock: g('.var-st'), stock_online: g('.var-so') };
+          return { id: g('input[type=hidden]'), talla: g('[name$="[talla]"]'), color: g('[name$="[color]"]'), modelo: g('[name$="[modelo]"]'), stock: g('.var-st') };
         });
         listaVar.innerHTML = ''; n = 0;
         (previas.length ? previas : [null]).forEach(fila);

@@ -5,11 +5,13 @@ $movimientos = $movimientos ?? [];
 include __DIR__ . '/../admin/_abrir.php';
 $f = ['desde' => $_GET['desde'] ?? '', 'hasta' => $_GET['hasta'] ?? '', 'tipo' => $_GET['tipo'] ?? ''];
 $tipos = ['compra' => ['compra', 'Compra'], 'venta_tienda' => ['venta', 'Venta en tienda'], 'venta_online' => ['venta', 'Venta online'], 'ajuste' => ['ajuste', 'Ajuste por conteo'], 'merma' => ['merma', 'Merma'], 'transferencia' => ['transf', 'Transferencia'], 'anulacion_compra' => ['merma', 'Compra anulada']];
-$pastilla = function ($n, $canal, $min, $afectado) {
+
+// Modificado: Pastilla de stock unificada y simple
+$pastilla = function ($n, $min) {
     $agotado = (int) $n === 0;
-    $bajo = !$agotado && $canal === 'tienda' && $n < $min;
-    $titulo = $agotado ? 'Agotado en ' . $canal : ($bajo ? "Por debajo del mínimo ($min)" : '');
-    return '<span class="canal-stock ' . $canal . ($agotado ? ' agotado' : ($bajo ? ' bajo' : '')) . ($afectado ? '' : ' quieto') . '" title="' . $titulo . '"><svg class="i"><use href="#i-' . ($canal === 'online' ? 'globo' : 'tienda') . '"/></svg><b class="cifra">' . (int) $n . '</b><span>' . $canal . '</span></span>';
+    $bajo = !$agotado && $n < $min;
+    $titulo = $agotado ? 'Agotado' : ($bajo ? "Por debajo del mínimo ($min)" : '');
+    return '<span class="canal-stock' . ($agotado ? ' agotado' : ($bajo ? ' bajo' : '')) . '" title="' . $titulo . '"><svg class="i"><use href="#i-caja"/></svg><b class="cifra">' . (int) $n . '</b><span>unidades</span></span>';
 };
 ?>
 <section class="contenido">
@@ -42,21 +44,23 @@ $pastilla = function ($n, $canal, $min, $afectado) {
         <?php foreach ($movimientos as $m):
             $tm = $tipos[$m->tipo_movimiento] ?? ['ajuste', $m->tipo_movimiento];
             $transf = $m->tipo_movimiento === 'transferencia';
-            $canal = $transf ? ($m->cantidad > 0 ? 'Tienda → Online' : 'Online → Tienda') : (($m->canal ?? 'tienda_fisica') === 'online' ? 'Online' : 'Tienda');
-            $enT = $transf || $canal === 'Tienda';
-            $enO = $transf || $canal === 'Online';
+            $canal = $transf ? 'Transferencia' : (($m->canal ?? 'tienda_fisica') === 'online' ? 'Online' : 'Tienda');
             $num = str_pad($m->id_referencia ?? 0, 4, '0', STR_PAD_LEFT);
             $origen = in_array($m->tipo_movimiento, ['venta_tienda', 'venta_online']) && $m->id_referencia ? '<a href="index.php?action=detalle_venta&id=' . (int) $m->id_referencia . '" class="enlace">Venta #' . $num . '</a>'
                 : (in_array($m->tipo_movimiento, ['compra', 'anulacion_compra']) && $m->id_referencia ? '<a href="index.php?action=detalle_compra&id=' . (int) $m->id_referencia . '" class="enlace">Compra #' . $num . '</a>'
                 : $e($m->observacion ?: 'Ajuste'));
-            $min = (int) ($m->stock_minimo ?? 5); ?>
+            $min = (int) ($m->stock_minimo ?? 5); 
+            
+            // Usamos el stock general resultante (o la suma si venía separado por canales anteriormente)
+            $stockTotal = (int) ($m->stock_tienda_resultante ?? 0) + (int) ($m->stock_online_resultante ?? 0);
+        ?>
           <tr>
             <td data-label="Fecha" style="white-space:nowrap"><?= date('d/m, g:i a', strtotime($m->fecha)) ?></td>
             <td class="t-tit"><div class="prod"><?php if (!empty($m->imagen)): ?><img class="foto chica" src="public/uploads/<?= $e($m->imagen) ?>" alt="" width="36" height="36" loading="lazy"><?php endif; ?><div><b><?= $e($m->nombre_producto) ?></b><span class="si-estrecho"><?= $canal ?>, <?= strip_tags($origen) ?>, <?= $e($m->usuario ?? '') ?></span></div></div></td>
             <td data-label="Movimiento"><span class="mov <?= $tm[0] ?>"><?= $tm[1] ?></span></td>
             <td data-label="Canal" class="c-media"><?= $canal ?></td>
             <td class="num" data-label="Cantidad"><?= $transf ? '<span class="cifra">' . abs($m->cantidad) . '</span>' : '<span class="' . ($m->cantidad > 0 ? 'cant-mas' : 'cant-menos') . ' cifra">' . ($m->cantidad > 0 ? '+' : '−') . abs($m->cantidad) . '</span>' ?></td>
-            <td class="num" data-label="Stock que queda"><span class="stock-pila"><?= $pastilla($m->stock_tienda_resultante, 'tienda', $min, $enT) . $pastilla($m->stock_online_resultante ?? 0, 'online', $min, $enO) ?></span></td>
+            <td class="num" data-label="Stock que queda"><span class="stock-pila"><?= $pastilla($stockTotal, $min) ?></span></td>
             <td data-label="Origen" class="c-media"><?= $origen ?></td>
             <td data-label="Usuario" class="c-media"><?= $e($m->usuario ?? '') ?></td>
           </tr>

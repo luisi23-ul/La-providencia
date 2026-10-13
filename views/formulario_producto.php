@@ -20,7 +20,6 @@ $opcionCat = fn($c, $prefijo = '') => '<option value="' . (int) $c->id . '"' . (
 ?>
 <section class="contenido">
 
-
   <header class="cab">
     <div class="cab-txt"><small>Inventario</small>
       <div class="titulo-atras"><a href="index.php?action=listado_productos" class="atras" aria-label="Volver a Productos"><svg class="i"><use href="#i-volver"/></svg></a><h2><?= $editando ? 'Editar ' . $e($p->nombre_producto) : 'Nuevo producto' ?></h2></div>
@@ -72,7 +71,8 @@ $opcionCat = fn($c, $prefijo = '') => '<option value="' . (int) $c->id . '"' . (
       <section class="fpx-sec" aria-labelledby="fp-t-var" id="fp-variantes" hidden>
         <header><span class="fpx-ic"><svg class="i"><use href="#i-etiqueta"/></svg></span><div><h3 id="fp-t-var">Tallas, colores y stock</h3><p>Una fila por cada combinación que tengas. El stock total es la suma.</p></div></header>
         <div class="fpx-var">
-          <div class="fpx-var-cab" aria-hidden="true"><span>Talla</span><span>Color</span><span>Modelo</span><span>Tienda</span><span>Online</span><span></span></div>
+          <!-- Cambiado: Unificado de Tienda / Online a un solo campo de Stock -->
+          <div class="fpx-var-cab" aria-hidden="true"><span>Talla</span><span>Color</span><span>Modelo</span><span>Stock</span><span></span></div>
           <ul class="fpx-var-lista" id="fp-var-lista"></ul>
           <button type="button" class="fpx-var-mas" id="fp-var-mas"><svg class="i"><use href="#i-mas"/></svg>Agregar combinación</button>
         </div>
@@ -122,7 +122,8 @@ $opcionCat = fn($c, $prefijo = '') => '<option value="' . (int) $c->id . '"' . (
 </section>
 <script type="application/json" id="datos-atributos"><?= json_encode([
     'categorias' => array_map(fn($c) => ['id' => (int) $c->id, 'atributos' => array_map(fn($a) => ['nombre' => mb_strtolower(trim($a->nombre)), 'opciones' => array_values(array_filter(array_map('trim', explode(',', (string) ($a->opciones ?? '')))))], $c->atributos ?? [])], $categorias),
-    'variantes' => array_map(fn($v) => ['id' => (int) $v->id, 'talla' => $v->talla ?? '', 'color' => $v->color ?? '', 'modelo' => $v->modelo ?? '', 'stock' => (int) $v->stock, 'stock_online' => (int) $v->stock_online], $variantesGuardadas),
+    // Limpiado: Ahora mapeamos únicamente el stock unificado de la variante
+    'variantes' => array_map(fn($v) => ['id' => (int) $v->id, 'talla' => $v->talla ?? '', 'color' => $v->color ?? '', 'modelo' => $v->modelo ?? '', 'stock' => (int) $v->stock], $variantesGuardadas),
     'editando' => (bool) $editando,
 ], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?></script>
 <?php include __DIR__ . '/admin/_cerrar.php'; ?>
