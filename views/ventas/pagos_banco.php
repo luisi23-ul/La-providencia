@@ -5,6 +5,8 @@ $menu = 'pagos_banco';
 $tituloPagina = 'Pagos por banco';
 $pagosRecibidos = $pagosRecibidos ?? [];
 $metodos = $metodos ?? [];
+$tasa = isset($tasa) && (float)$tasa > 1 ? (float)$tasa : 1.0;
+
 include __DIR__ . '/../admin/_abrir.php';
 
 $hoy = date('Y-m-d');
@@ -19,27 +21,64 @@ $esEfectivo = fn($p) => empty($p->requiere_referencia) || stripos($p->metodo ?? 
 $pagos = array_values(array_filter($pagosRecibidos, fn($p) => !$esEfectivo($p)));
 $tipos = array_values(array_filter($metodos, fn($m) => stripos($m->nombre, 'efectivo') === false));
 
-$tasaDe = fn($p) => (float) ($p->tasa_cambio ?? 0) > 1 ? (float) $p->tasa_cambio : $tasa;
-$aUsd = fn($p) => ($p->moneda ?? 'Bs') === 'USD' ? (float) $p->monto : (float) $p->monto / $tasaDe($p);
-$aBs = fn($p) => ($p->moneda ?? 'Bs') === 'Bs' ? (float) $p->monto : (float) $p->monto * $tasaDe($p);
-$fmtBs = fn($v) => number_format((float) $v, 2, ',', '.') . ' Bs';
-$fmtUsd = fn($v) => '$' . number_format((float) $v, 2, ',', '.');
+// Funciones de conversión dinámicas: si el sistema tiene una tasa activa (> 1), esa prevalece
+$tasaDe = function($p) use ($tasa) {
+    if ($tasa > 1) {
+        return (float)$tasa;
+    }
+    return (!empty($p->tasa_cambio) && (float)$p->tasa_cambio > 1) ? (float)$p->tasa_cambio : 1.0;
+};
 
+// Tasa activa del BCV proveniente del sistema
+$tasaActiva = (isset($tasa) && (float)$tasa > 1) ? (float)$tasa : 1.0;
+
+// Función para determinar el monto en USD real de la transacción
+$aUsd = function($p) use ($tasaActiva) {
+    $mon = strtoupper(trim($p->moneda ?? 'BS'));
+    $monto = (float)($p->monto ?? 0);
+    $tasaPago = (!empty($p->tasa_cambio) && (float)$p->tasa_cambio > 1) ? (float)$p->tasa_cambio : $tasaActiva;
+
+    // Si el monto guardado es pequeño (<= 500) o la moneda es USD, ya está en USD
+    if ($mon === 'USD' || $mon === '$' || ($monto < 1000 && $tasaPago > 100)) {
+        return $monto;
+    }
+
+    // Si el monto guardado está en Bs (número grande), convertir a USD dividiendo entre la tasa
+    return $tasaPago > 0 ? ($monto / $tasaPago) : $monto;
+};
+
+// Función para determinar el monto en Bolívares (Monto en USD * Tasa BCV)
+$aBs = function($p) use ($aUsd, $tasaActiva) {
+    $usd = $aUsd($p);
+    // Multiplicar EXACTAMENTE UNA VEZ los dólares por la tasa del día
+    return $usd * $tasaActiva;
+};
+
+$fmtBs = fn($v) => number_format((float)$v, 2, ',', '.') . ' Bs';
+$fmtUsd = fn($v) => '$' . number_format((float)$v, 2, ',', '.');
 $porBanco = [];
 $repetidas = [];
 $totUsd = 0;
 $totBs = 0;
+
 foreach ($pagos as $p) {
     $nombre = trim($p->banco ?? '') ?: 'Sin banco';
     $porBanco[$nombre] ??= ['n' => 0, 'usd' => 0, 'bs' => 0];
     $porBanco[$nombre]['n']++;
-    $porBanco[$nombre]['usd'] += $aUsd($p);
-    $porBanco[$nombre]['bs'] += $aBs($p);
-    $totUsd += $aUsd($p);
-    $totBs += $aBs($p);
+
+    $usdVal = $aUsd($p);
+    $bsVal  = $aBs($p);
+
+    $porBanco[$nombre]['usd'] += $usdVal;
+    $porBanco[$nombre]['bs']  += $bsVal;
+
+    $totUsd += $usdVal;
+    $totBs  += $bsVal;
+
     $clave = $nombre . '|' . trim($p->referencia ?? '');
     $repetidas[$clave] = ($repetidas[$clave] ?? 0) + 1;
 }
+
 uasort($porBanco, fn($a, $b) => $b['usd'] <=> $a['usd']);
 $mayor = $porBanco ? max(array_column($porBanco, 'usd')) : 0;
 
@@ -71,6 +110,7 @@ $fechaLarga = function ($fecha, $conMes = true) use ($meses) {
     $txt = date('j', $t) . ($conMes ? ' de ' . $meses[date('n', $t) - 1] : '');
     return $conMes && date('Y', $t) !== date('Y') ? $txt . ' de ' . date('Y', $t) : $txt;
 };
+
 if ($f['desde'] === $f['hasta']) {
     $periodo = $f['desde'] === $hoy ? 'hoy, ' . $fechaLarga($hoy) : 'el ' . $fechaLarga($f['desde']);
 } elseif (substr($f['desde'], 0, 7) === substr($f['hasta'], 0, 7)) {
@@ -80,20 +120,17 @@ if ($f['desde'] === $f['hasta']) {
 }
 
 $nombreTipo = '';
-foreach ($tipos as $t) if ((string) $t->id === (string) $f['metodo']) $nombreTipo = $t->nombre;
+foreach ($tipos as $t) if ((string)$t->id === (string)$f['metodo']) $nombreTipo = $t->nombre;
 $hayFiltros = $f['metodo'] !== '' || $f['banco'] !== '' || $atajoActivo !== 'Hoy';
 
 $titular = function ($p) {
     $obs = $p->observacion ?? '';
-    // Intenta extraer si viene con "Titular: ... | Tel: ..." o similar
     if (preg_match('/Titular:\s*([^|]*?)(?:\s*\|\s*Tel:\s*(.*))?$/ui', $obs, $m)) {
         return [trim($m[1]), trim($m[2] ?? '')];
     }
-    // Si viene la propiedad ya armada desde el controlador
     if (!empty($p->titular)) {
         return [$p->titular, ''];
     }
-    // Si no hay observación, muestra cédula y teléfono del cliente registrado
     if (!empty($p->cliente_cedula)) {
         return [$p->cliente_cedula, $p->cliente_telefono ?? ''];
     }
@@ -107,7 +144,9 @@ $titular = function ($p) {
       <h2>Pagos por banco</h2>
     </div>
     <div class="cab-acc">
-      <a href="index.php?action=exportar_excel&amp;tipo=pagos_banco&amp;<?= $e(http_build_query($f)) ?>" class="btn btn-sec"><svg class="i"><use href="#i-archivo"/></svg>Excel</a>
+      <a href="index.php?action=exportar_excel&amp;tipo=pagos_banco&amp;<?= $e(http_build_query($f)) ?>" class="btn btn-sec">
+        <svg class="i"><use href="#i-archivo"/></svg>Excel
+      </a>
     </div>
   </header>
 
@@ -118,7 +157,7 @@ $titular = function ($p) {
     <nav class="f-grupo" aria-label="Tipo de pago">
       <a class="f-op" href="<?= $e($url(['metodo' => ''])) ?>" aria-current="<?= $f['metodo'] === '' ? 'true' : 'false' ?>">Todos</a>
       <?php foreach ($tipos as $t): ?>
-      <a class="f-op" href="<?= $e($url(['metodo' => $t->id])) ?>" aria-current="<?= (string) $f['metodo'] === (string) $t->id ? 'true' : 'false' ?>"><?= $e($t->nombre) ?></a>
+      <a class="f-op" href="<?= $e($url(['metodo' => $t->id])) ?>" aria-current="<?= (string)$f['metodo'] === (string)$t->id ? 'true' : 'false' ?>"><?= $e($t->nombre) ?></a>
       <?php endforeach; ?>
     </nav>
     <label class="f-select<?= $f['banco'] !== '' ? ' activo' : '' ?>"><svg class="i"><use href="#i-banco"/></svg>
@@ -191,12 +230,13 @@ $titular = function ($p) {
             $repetida = $ref !== '' && ($repetidas[$banco . '|' . $ref] ?? 0) > 1;
             $tit = $titular($p);
             $t = strtotime($p->fecha_pago);
+            $esBs = strtoupper(trim($p->moneda ?? 'BS')) === 'BS' || strtoupper(trim($p->moneda ?? 'BS')) === 'VES';
           ?>
             <tr<?= $repetida ? ' class="pb-repetida"' : '' ?>>
               <td class="t-tit">
                 <div class="t-nombre">
                   <b><?= date('d/m/Y', $t) ?> · <?= date('g:i a', $t) ?></b>
-                  <span>Venta #<?= str_pad((string) $p->id_venta, 4, '0', STR_PAD_LEFT) ?> · <?= ($p->origen_venta ?? '') === 'tienda_fisica' ? 'Tienda física' : 'Online' ?></span>
+                  <span>Venta #<?= str_pad((string)$p->id_venta, 4, '0', STR_PAD_LEFT) ?> · <?= ($p->origen_venta ?? '') === 'tienda_fisica' ? 'Tienda física' : 'Online' ?></span>
                 </div>
               </td>
               <td data-label="Cliente"><?= $e(trim($p->cliente ?? '') ?: 'Cliente') ?></td>
@@ -217,8 +257,8 @@ $titular = function ($p) {
                 <?php endif; ?>
               </td>
               <td class="num" data-label="Monto">
-                <b class="pb-monto"><?= ($p->moneda ?? 'Bs') === 'USD' ? $fmtUsd($p->monto) : $fmtBs($p->monto) ?></b>
-                <?php if (($p->moneda ?? 'Bs') === 'Bs'): ?><small class="pb-equiv"><?= $fmtUsd($aUsd($p)) ?></small><?php endif; ?>
+                <b class="pb-monto"><?= $fmtBs($aBs($p)) ?></b>
+                <small class="pb-equiv"><?= $fmtUsd($aUsd($p)) ?></small>
               </td>
             </tr>
           <?php endforeach; ?>
