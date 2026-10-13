@@ -40,14 +40,36 @@ $enlaceCuenta = $clienteSesion ? 'index.php?action=mis_pedidos' : 'index.php?act
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,600&family=Jost:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="public/vendor/tabler/tabler-icons.min.css">
 <link rel="stylesheet" href="public/css/tienda.css?v=<?= filemtime(__DIR__ . '/../../public/css/tienda.css') ?>">
+<?php
+$colorTienda = function ($valor) {
+    $valor = strtolower(trim((string) $valor));
+    $fabrica = ['#0052d4', '#1b34da', '#0f172a', '#363c54', '#020617', '#dcdcea', '#64748b', '#282b2f'];
+    return preg_match('/^#[0-9a-f]{6}$/', $valor) && !in_array($valor, $fabrica, true) ? $valor : null;
+};
+$luz = function ($hex) {
+    $c = array_map(fn($p) => hexdec($p) / 255, str_split(substr($hex, 1), 2));
+    $c = array_map(fn($v) => $v <= 0.03928 ? $v / 12.92 : (($v + 0.055) / 1.055) ** 2.4, $c);
+    return 0.2126 * $c[0] + 0.7152 * $c[1] + 0.0722 * $c[2];
+};
+$legibleConBlanco = function ($hex) use ($luz) {
+    $c = array_map('hexdec', str_split(substr($hex, 1), 2));
+    for ($i = 0; $i < 20 && 1.05 / ($luz(vsprintf('#%02x%02x%02x', $c)) + 0.05) < 4.5; $i++) $c = array_map(fn($v) => (int) round($v * 0.9), $c);
+    return vsprintf('#%02x%02x%02x', $c);
+};
+$cPrincipal = $colorTienda($sistema->color_primario ?? '');
+$cFondo = $colorTienda($sistema->color_secundario ?? '');
+$cTexto = $colorTienda($sistema->color_terciario ?? '');
+if ($cPrincipal) $cPrincipal = $legibleConBlanco($cPrincipal);
+if ($cPrincipal || $cFondo || $cTexto): ?>
 <style>
   :root {
-    --color-primario: <?= $e($sistema->color_primario ?? '#1b34da') ?>;
-    --color-secundario: <?= $e($sistema->color_secundario ?? '#363c54') ?>;
-    --color-terciario: <?= $e($sistema->color_terciario ?? '#dcdcea') ?>;
-    --color-cuaternario: <?= $e($sistema->color_cuaternario ?? '#282b2f') ?>;
-  }
+<?php if ($cPrincipal): ?>    --acento: <?= $cPrincipal ?>; --acento-hover: color-mix(in srgb, <?= $cPrincipal ?> 85%, #000);
+<?php endif; if ($cFondo): ?>    --fondo: <?= $cFondo ?>; --sup: color-mix(in srgb, <?= $cFondo ?> 35%, #fff);
+<?php endif; if ($cTexto): ?>    --tinta: <?= $cTexto ?>; --tinta-2: color-mix(in srgb, <?= $cTexto ?> 75%, var(--fondo));
+<?php endif; if ($cFondo || $cTexto): ?>    --suave: color-mix(in srgb, var(--fondo) 90%, var(--tinta)); --linea: color-mix(in srgb, var(--fondo) 86%, var(--tinta));
+<?php endif; ?>  }
 </style>
+<?php endif; ?>
 </head>
 <body class="tienda" id="tienda" data-tasa="<?= $e($tasaTienda) ?>" data-wa="<?= $e($waTienda) ?>" data-tienda="<?= $e($nombreTienda) ?>" data-sesion="<?= $clienteSesion ? '1' : '0' ?>">
   <div class="franja"><i class="ti ti-brand-whatsapp" aria-hidden="true"></i>Arma tu pedido y lo confirmamos por WhatsApp</div>
