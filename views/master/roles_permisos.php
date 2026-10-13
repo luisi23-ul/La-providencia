@@ -13,6 +13,7 @@ $porModulo = [];
 foreach ($permisos as $p) $porModulo[$p->modulo][] = $p;
 $editables = array_values(array_filter($roles, fn($r) => (int) $r->id !== 1));
 $primerRol = $editables ? (int) $editables[0]->id : 1;
+$iconoModulo = fn($m) => ['compras' => 'carrito', 'gestión' => 'ajuste', 'gestion' => 'ajuste', 'inicio' => 'inicio', 'inventario' => 'etiqueta', 'master' => 'escudo', 'ventas' => 'recibo'][mb_strtolower(trim($m))] ?? 'lista';
 ?>
 <section class="contenido">
   <header class="cab">
@@ -40,14 +41,14 @@ $primerRol = $editables ? (int) $editables[0]->id : 1;
           </tr></thead>
           <tbody>
           <?php foreach ($porModulo as $modulo => $lista): ?>
-            <tr class="grupo"><td colspan="<?= count($roles) + 1 ?>"><?= $e($modulo) ?></td></tr>
+            <tr class="grupo"><td colspan="<?= count($roles) + 1 ?>"><span class="rp-grupo"><span class="rp-ic"><svg class="i"><use href="#i-<?= $iconoModulo($modulo) ?>"/></svg></span><b><?= $e($modulo) ?></b><small><?= count($lista) ?> <?= count($lista) === 1 ? 'permiso' : 'permisos' ?></small></span></td></tr>
             <?php foreach ($lista as $p): ?>
               <tr>
-                <td><span class="perm"><b><?= $e($p->nombre) ?></b><code><?= $e($p->codigo) ?></code></span></td>
+                <td><span class="perm"><b title="<?= $e($p->codigo) ?>"><?= $e($p->nombre) ?></b></span></td>
                 <?php foreach ($roles as $r):
                     $master = (int) $r->id === 1;
                     $tiene = $master || in_array((int) $p->id, array_map('intval', $rolPermisos[$r->id] ?? []), true); ?>
-                  <td data-r="<?= (int) $r->id ?>"><input type="checkbox" <?= $master ? 'disabled' : 'name="permisos[' . (int) $r->id . '][]"' ?> value="<?= (int) $p->id ?>" aria-label="<?= $e($p->nombre . ' · ' . $r->nombre_rol) ?>" <?= $tiene ? 'checked' : '' ?>></td>
+                  <td data-r="<?= (int) $r->id ?>"><?php if ($master): ?><span class="rp-siempre" title="El Master siempre tiene este permiso"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span class="sr-only">Siempre</span></span><?php else: ?><label class="rp-celda"><input type="checkbox" class="rp-casilla" name="permisos[<?= (int) $r->id ?>][]" value="<?= (int) $p->id ?>" aria-label="<?= $e($p->nombre . ' · ' . $r->nombre_rol) ?>" <?= $tiene ? 'checked' : '' ?>></label><?php endif; ?></td>
                 <?php endforeach; ?>
               </tr>
             <?php endforeach; ?>

@@ -35,3 +35,8 @@
   });
   form.addEventListener('submit', function () { form.dataset.enviando = '1'; });
 })();
+document.addEventListener('change', function (e) {
+  var c = e.target.closest('.rp-casilla'); if (!c) return;
+  c.closest('.rp-celda').classList.toggle('cambiada', c.checked !== c.defaultChecked);
+});
+document.addEventListener('reset', function (e) { if (e.target.id !== 'form-permisos') return; setTimeout(function () { document.querySelectorAll('.rp-celda.cambiada').forEach(function (l) { l.classList.remove('cambiada'); }); }); });
