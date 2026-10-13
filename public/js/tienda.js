@@ -24,6 +24,21 @@
     setTimeout(function () { t.remove(); }, 4000);
   }
 
+  document.addEventListener('click', function (ev) {
+    var b = ev.target.closest('[data-agregar-rapido]');
+    if (!b) return;
+    var id = +b.dataset.id, stock = parseInt(b.dataset.stock, 10) || 0, items = leer(), clave = id + '|';
+    var enCarrito = items.filter(function (i) { return i.id === id; }).reduce(function (s, i) { return s + i.cantidad; }, 0);
+    if (stock && enCarrito >= stock) { avisar('<i class="ti ti-alert-circle" aria-hidden="true"></i>Solo quedan ' + stock + ' y ya están en tu pedido.'); return; }
+    var it = items.find(function (i) { return i.clave === clave; });
+    if (it) it.cantidad += 1;
+    else items.push({ clave: clave, id: id, nombre: b.dataset.nombre, precio: parseFloat(b.dataset.precio), imagen: b.dataset.imagen, variante: '', cantidad: 1, stock: stock });
+    guardar(items);
+    b.classList.add('listo');
+    b.innerHTML = '<i class="ti ti-check" aria-hidden="true"></i>Agregado';
+    setTimeout(function () { b.classList.remove('listo'); b.innerHTML = '<i class="ti ti-shopping-bag-plus" aria-hidden="true"></i>Agregar'; }, 1600);
+    avisar('<i class="ti ti-circle-check" aria-hidden="true"></i>Agregado a tu pedido. <a href="index.php?action=ver_carrito">Ver pedido</a>');
+  });
   document.querySelectorAll('[data-ver-clave]').forEach(function (b) {
     b.addEventListener('click', function () {
       var i = document.getElementById(b.dataset.verClave), ver = i.type === 'password';

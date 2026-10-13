@@ -15,36 +15,6 @@ $enlace = function ($cambios) use ($busqueda, $catActual, $tallaActual) {
     return 'index.php?' . htmlspecialchars(http_build_query($q), ENT_QUOTES);
 };
 $total = count($listaProductos);
-
-if (!function_exists('tarjetaProducto')) {
-    function tarjetaProducto($p, $e, $usd, $bs, $foto, $nombresCategoria = []) {
-        $id = (int) ($p->id ?? 0);
-        $nombre = $p->nombre_producto ?? '';
-        $catId = (int) ($p->id_categoria ?? 0);
-        $categoria = $nombresCategoria[$catId] ?? ($p->nombre_categoria ?? '');
-        $stock = (int) ($p->stock_online > 0 ? $p->stock_online : ($p->stock ?? 0));
-        $precio = (float) ($p->precio ?? 0);
-        $url = 'index.php?action=ver_producto&amp;id=' . $id;
-        $img = $foto($p->imagen ?? '');
-
-        $h = '<li class="prod" data-id="' . $id . '">';
-        $h .= '<div class="prod-foto"><a href="' . $url . '" tabindex="-1" aria-hidden="true">';
-        $h .= $img ? '<img src="' . $e($img) . '" alt="' . $e($nombre) . '" loading="lazy" width="600" height="800">' : '';
-        $h .= '</a></div>';
-        $h .= '<div class="prod-meta"><span>' . $e($categoria) . '</span>' . ($stock <= 0 ? '<b class="agotado">Agotado</b>' : '') . '</div>';
-        $h .= '<h3><a href="' . $url . '">' . $e($nombre) . '</a></h3>';
-        $h .= '<div class="precio"><b>' . $usd($precio) . '</b><span>' . $bs($precio) . '</span></div>';
-        
-        if ($stock > 0) {
-            // Redirige al detalle para seleccionar atributos (talla, color, modelo)
-            $h .= '<a href="' . $url . '" class="btn btn-sm" style="margin-top: 10px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none;">';
-            $h .= '<i class="ti ti-adjustments-horizontal"></i> Elegir opciones</a>';
-        }
-        
-        $h .= '</li>';
-        return $h;
-    }
-}
 ?>
   <section class="lista" aria-labelledby="t-cat" style="padding-top:40px">
     <div class="filtros-cat">
@@ -70,7 +40,7 @@ if (!function_exists('tarjetaProducto')) {
       <p class="ped-hola" style="margin:0"><?= $total ?> <?= $total === 1 ? 'producto' : 'productos' ?><?= $busqueda !== '' ? ' para «' . $e($busqueda) . '»' : '' ?></p>
     </div>
     <ul class="rejilla">
-      <?php foreach ($listaProductos as $p) echo tarjetaProducto($p, $e, $usd, $bs, $foto, $nombresCategoria); ?>
+      <?php foreach ($listaProductos as $p) echo tarjetaProducto($p, $e, $usd, $bs, $foto, $nombresCategoria, $conVariantes); ?>
       <?php if (!$listaProductos): ?><li class="vacio-lista">No encontramos productos con esos filtros. <a href="index.php?action=ver_catalogo">Ver todo el catálogo</a></li><?php endif; ?>
     </ul>
   </section>
