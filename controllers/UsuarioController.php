@@ -93,48 +93,75 @@ exit();
     }
 
     public function guardarCliente() {
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        header("Location: index.php?action=login_usuario");
-        exit();
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header("Location: index.php?action=login_usuario");
+            exit();
+        }
+
+        // 1. Datos del formulario
+        $nombre    = trim($_POST['nombre'] ?? '');
+        $apellido  = trim($_POST['apellido'] ?? '');
+        $cedula    = trim($_POST['cedula'] ?? $_POST['documento'] ?? '');
+        $telefono  = trim($_POST['telefono'] ?? $_POST['celular'] ?? '');
+        $correo    = trim($_POST['correo'] ?? $_POST['email'] ?? '');
+        $direccion = trim($_POST['direccion'] ?? '');
+        $clave     = $_POST['clave'] ?? $_POST['password'] ?? '123456';
+        $claveHash = password_hash($clave, PASSWORD_BCRYPT);
+
+        // 2. Verificar si el correo ya existe
+        if (!empty($correo)) {
+            $stmtCheck = $this->db->prepare("SELECT id, nombre, id_rol FROM usuarios WHERE correo = ? LIMIT 1");
+            $stmtCheck->execute([$correo]);
+            $existente = $stmtCheck->fetch(PDO::FETCH_OBJ);
+
+            if ($existente) {
+                $_SESSION['id_usuario'] = $existente->id;
+                $_SESSION['nombre']     = $existente->nombre;
+                $_SESSION['rol']        = (int)$existente->id_rol;
+
+                header("Location: index.php?action=ver_carrito");
+                exit();
+            }
+        }
+
+        // 3. Inserción con los nombres exactos de tu tabla (id_rol y estado)
+        try {
+            $sql = "INSERT INTO usuarios (cedula, nombre, apellido, telefono, direccion, correo, clave, id_rol, estado) 
+                    VALUES (:cedula, :nombre, :apellido, :telefono, :direccion, :correo, :clave, 3, 1)";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([
+                ':cedula'    => !empty($cedula) ? $cedula : null,
+                ':nombre'    => !empty($nombre) ? $nombre : 'Cliente',
+                ':apellido'  => !empty($apellido) ? $apellido : null,
+                ':telefono'  => !empty($telefono) ? $telefono : null,
+                ':direccion' => !empty($direccion) ? $direccion : null,
+                ':correo'    => $correo,
+                ':clave'     => $claveHash
+            ]);
+
+            $nuevoId = (int)$this->db->lastInsertId();
+
+            // 4. Iniciar sesión inmediata para el nuevo cliente
+            $_SESSION['id_usuario'] = $nuevoId;
+            $_SESSION['nombre']     = !empty($nombre) ? $nombre : 'Cliente';
+            $_SESSION['rol']        = 3;
+
+            header("Location: index.php?action=ver_carrito");
+            exit();
+
+        } catch (PDOException $e) {
+            if ($e->getCode() == 23000 || strpos($e->getMessage(), 'Duplicate entry') !== false) {
+                echo "<script>
+                    alert('El correo o cédula ya se encuentra registrado. Por favor inicia sesión.');
+                    window.location.href = 'index.php?action=login_usuario';
+                </script>";
+                exit();
+            }
+
+            die("Error al registrar cliente: " . $e->getMessage());
+        }
     }
-
-    $correo = trim($_POST['correo'] ?? '');
-    
-    // 1. Verificar si el correo ya existe
-    $stmtCheck = $this->db->prepare("SELECT id, nombre FROM usuarios WHERE correo = ? LIMIT 1");
-    $stmtCheck->execute([$correo]);
-    $existente = $stmtCheck->fetch(PDO::FETCH_OBJ);
-
-    if ($existente) {
-        // Iniciar sesión automáticamente si ya existe o avisar
-        $_SESSION['id_usuario'] = $existente->id;
-        $_SESSION['nombre'] = $existente->nombre;
-        $_SESSION['rol'] = 3;
-
-        header("Location: index.php?action=ver_carrito");
-        exit();
-    }
-
-    try {
-        // Llamada a tu modelo existente
-        $this->usuarioModel->registrarClienteModel($_POST); // o como lo llames actualmente
-        
-        // Iniciar sesión con el nuevo ID
-        $_SESSION['id_usuario'] = $this->db->lastInsertId();
-        $_SESSION['nombre'] = trim($_POST['nombre'] ?? 'Cliente');
-        $_SESSION['rol'] = 3;
-
-        header("Location: index.php?action=ver_carrito");
-        exit();
-    } catch (PDOException $e) {
-        echo "<script>
-            alert('El correo ya se encuentra registrado. Por favor inicia sesión.');
-            window.location.href = 'index.php?action=login_usuario';
-        </script>";
-        exit();
-    }
-}
-
     public function mostrarLogin_registro() {
         include "views/login_registro.php";
     }
