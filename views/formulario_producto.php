@@ -81,8 +81,7 @@ $opcionCat = fn($c, $prefijo = '') => '<option value="' . (int) $c->id . '"' . (
       <section class="fpx-sec" aria-labelledby="fp-t-stock">
         <header><span class="fpx-ic"><svg class="i"><use href="#i-caja"/></svg></span><div><h3 id="fp-t-stock">Stock</h3><p id="fp-stock-nota"><?= $editando ? 'Se cambia en Ajustes de stock para que quede en Movimientos.' : 'Con cuántas unidades empieza.' ?></p></div></header>
         <div class="fpx-cuerpo fpx-stock">
-          <div class="fpx-st"><span class="ic"><svg class="i"><use href="#i-tienda"/></svg></span><label for="fp-st">En tienda</label><input id="fp-st" name="stock" type="number" min="0" inputmode="numeric" value="<?= (int) ($p->stock ?? 0) ?>"<?= $editando ? ' readonly' : '' ?>></div>
-          <div class="fpx-st"><span class="ic"><svg class="i"><use href="#i-globo"/></svg></span><label for="fp-so">Online</label><input id="fp-so" name="stock_online" type="number" min="0" inputmode="numeric" value="<?= (int) ($p->stock_online ?? 0) ?>"<?= $editando ? ' readonly' : '' ?>></div>
+          <div class="fpx-st"><span class="ic"><svg class="i"><use href="#i-tienda"/></svg></span><label for="fp-st">Unidades</label><input id="fp-st" name="stock" type="number" min="0" inputmode="numeric" value="<?= (int) ($p->stock ?? 0) ?>"<?= $editando ? ' readonly' : '' ?>></div>
           <div class="fpx-st min"><span class="ic"><svg class="i"><use href="#i-alerta"/></svg></span><label for="fp-sm">Avisar cuando baje de</label><input id="fp-sm" name="stock_minimo" type="number" min="0" inputmode="numeric" value="<?= (int) ($p->stock_minimo ?? 5) ?>"></div>
           <?php if ($editando): ?>
           <div class="fpx-ajuste" id="fp-ajuste"><span>¿Contaste y no cuadra? Corrígelo con un ajuste.</span><a href="index.php?action=ajustes_inventario&amp;producto=<?= (int) $p->id ?>" class="btn btn-sec"><svg class="i"><use href="#i-ajuste"/></svg>Ajustar stock</a></div>

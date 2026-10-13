@@ -142,8 +142,7 @@ $url = fn($stock) => 'index.php?' . http_build_query(array_filter(['action' => '
             <th>Producto</th>
             <th class="c-media">Categoría</th>
             <th class="num">Precio</th>
-            <th class="num">Tienda</th>
-            <th class="num">Online</th>
+            <th class="num">Stock</th>
             <th class="num">Acciones</th>
           </tr>
         </thead>
@@ -194,9 +193,6 @@ $url = fn($stock) => 'index.php?' . http_build_query(array_filter(['action' => '
                 <?php elseif ($s === 'agot'): ?><span class="est agot">Agotado</span><?php endif; ?>
               </div>
             </td>
-            <td class="num">
-              <div class="stk"><b><?= (int) ($p->stock_online ?? 0) ?></b></div>
-            </td>
             <td>
               <div class="acc">
                 <a href="index.php?action=editar&id=<?= (int) $p->id ?>" class="ic-btn" aria-label="Editar <?= $e($p->nombre_producto) ?>"><svg class="i"><use href="#i-editar"/></svg></a>
@@ -226,7 +222,7 @@ $url = fn($stock) => 'index.php?' . http_build_query(array_filter(['action' => '
             <?= $tallasDe($p, 'm') ?>
           </div>
           <div class="t-precio"><?= $usd($p->precio) ?></div>
-          <div class="t-stock">Tienda <b><?= (int) $p->stock ?></b>, online <b><?= (int) ($p->stock_online ?? 0) ?></b> <?php if ($s === 'bajo'): ?><span class="est bajo">Bajo</span><?php elseif ($s === 'agot'): ?><span class="est agot">Agotado</span><?php endif; ?></div>
+          <div class="t-stock">Stock <b><?= (int) $p->stock ?></b> <?php if ($s === 'bajo'): ?><span class="est bajo">Bajo</span><?php elseif ($s === 'agot'): ?><span class="est agot">Agotado</span><?php endif; ?></div>
           <div class="t-acc">
             <a href="index.php?action=editar&id=<?= (int) $p->id ?>" class="btn btn-sec btn-peq"><svg class="i"><use href="#i-editar"/></svg>Editar</a>
             <a href="index.php?action=ajustes_inventario&producto=<?= (int) $p->id ?>" class="btn btn-sec btn-peq"><svg class="i"><use href="#i-ajuste"/></svg>Ajustar stock</a>

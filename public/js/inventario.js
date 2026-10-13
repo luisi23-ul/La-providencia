@@ -35,7 +35,7 @@
   precio.addEventListener('input', desdePrecio);
 
   var seccionVar = document.getElementById('fp-variantes'), listaVar = document.getElementById('fp-var-lista');
-  var stTienda = document.getElementById('fp-st'), stOnline = document.getElementById('fp-so');
+  var stTienda = document.getElementById('fp-st');
   var notaStock = document.getElementById('fp-stock-nota'), ajuste = document.getElementById('fp-ajuste');
   var notaOriginal = notaStock.textContent, n = 0;
   var COLUMNAS = [['talla', 'Talla'], ['color', 'Color'], ['modelo', 'Modelo']];
@@ -70,7 +70,7 @@
       t += parseInt(li.querySelector('.var-st').value, 10) || 0;
       o += parseInt(li.querySelector('.var-so').value, 10) || 0;
     });
-    stTienda.value = t; stOnline.value = o;
+    stTienda.value = t + o;
   }
   function vistaVariantes(inicial) {
     var conVariantes = atributosCat().length > 0;
@@ -86,7 +86,7 @@
         (previas.length ? previas : [null]).forEach(fila);
       }
     } else { listaVar.innerHTML = ''; n = 0; }
-    stTienda.readOnly = stOnline.readOnly = conVariantes || !!D.editando;
+    stTienda.readOnly = conVariantes || !!D.editando;
     notaStock.textContent = conVariantes ? 'El stock total es la suma de las combinaciones.' : notaOriginal;
     if (ajuste) ajuste.hidden = conVariantes;
     totales();

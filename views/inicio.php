@@ -6,7 +6,7 @@ if (!$categorias || !$novedades) {
     try {
         $dbInicio = $GLOBALS['db'] ?? Database::connect();
         if (!$categorias) $categorias = $dbInicio->query("SELECT * FROM categorias WHERE id_padre IS NULL ORDER BY nombre_categoria ASC")->fetchAll(PDO::FETCH_OBJ);
-        if (!$novedades) $novedades = $dbInicio->query("SELECT p.*, c.nombre_categoria FROM productos p LEFT JOIN categorias c ON c.id = p.id_categoria WHERE p.estado = 1 AND p.deleted_at IS NULL AND (p.stock > 0 OR p.stock_online > 0) ORDER BY p.id DESC LIMIT 8")->fetchAll(PDO::FETCH_OBJ);
+        if (!$novedades) $novedades = $dbInicio->query("SELECT p.*, c.nombre_categoria FROM productos p LEFT JOIN categorias c ON c.id = p.id_categoria WHERE p.estado = 1 AND p.deleted_at IS NULL AND p.stock > 0 ORDER BY p.id DESC LIMIT 8")->fetchAll(PDO::FETCH_OBJ);
     } catch (Throwable $t) {
         $categorias = $categorias ?: [];
         $novedades = $novedades ?: [];
