@@ -624,10 +624,39 @@ class VentaController {
     // 4. REPORTE DE PAGOS POR BANCO CON FILTROS, TITULAR Y CÉDULA
     // =========================================================================
     public function pagosBanco() {
+        date_default_timezone_set('America/Caracas');
+
         $desde  = trim($_GET['desde'] ?? date('Y-m-d'));
         $hasta  = trim($_GET['hasta'] ?? date('Y-m-d'));
         $idMet  = !empty($_GET['metodo']) ? (int)$_GET['metodo'] : null;
         $banco  = trim($_GET['banco'] ?? '');
+
+        // 1. Obtener dinámicamente la tasa del BCV del día desde la tabla de configuración
+       // Obtener tasa BCV activa del sistema
+        $tasa = 1.0;
+        try {
+            $stmtTasa = $this->db->query("SELECT tasa_bcv FROM configuracion ORDER BY id DESC LIMIT 1");
+            $resTasa = $stmtTasa ? $stmtTasa->fetch(PDO::FETCH_OBJ) : null;
+            if ($resTasa && (float)$resTasa->tasa_bcv > 1) {
+                $tasa = (float)$resTasa->tasa_bcv;
+            }
+        } catch (\Exception $e) {}
+
+        // Enviar $tasa a la vista directamente sin alterar $p->monto
+
+        // Búsqueda de respaldo si la tasa se guarda en configuraciones tipo clave-valor
+      // Obtener tasa BCV activa del sistema
+        $tasaDia = 1.0;
+        try {
+            $stmtTasa = $this->db->query("SELECT tasa_bcv FROM configuracion ORDER BY id DESC LIMIT 1");
+            $resTasa = $stmtTasa ? $stmtTasa->fetch(PDO::FETCH_OBJ) : null;
+            if ($resTasa && (float)$resTasa->tasa_bcv > 1) {
+                $tasaDia = (float)$resTasa->tasa_bcv;
+            }
+        } catch (\Exception $e) {}
+
+        // Variable para la vista
+        $tasa = $tasaDia;
 
         $where = ["pr.estado_verificacion = 'aprobado'"];
         $params = [];
@@ -690,7 +719,10 @@ class VentaController {
         $stmt->execute($params);
         $pagosRecibidos = $stmt->fetchAll(PDO::FETCH_OBJ);
 
-        foreach ($pagosRecibidos as $p) {
+        $totalDolares = 0.0;
+        $totalBolivares = 0.0;
+
+       foreach ($pagosRecibidos as $p) {
             $titularLimpio = '';
             if (!empty($p->observacion)) {
                 $titularLimpio = preg_replace('/^(Titular:\s*|Emisor:\s*[^|]+\|\s*Titular:\s*)/i', '', $p->observacion);
@@ -700,13 +732,32 @@ class VentaController {
                 $titularLimpio = $p->cliente;
             }
             $p->titular = $titularLimpio;
+
+            // Tasa para este pago
+            $tasaEfectiva = $tasaDia > 1 ? $tasaDia : (((float)($p->tasa_cambio ?? 1) > 1) ? (float)$p->tasa_cambio : 1.0);
+
+            $moneda = strtoupper(trim($p->moneda ?? 'BS'));
+            $monto = (float)($p->monto ?? 0);
+            if ($moneda === 'VES' || $moneda === 'BS') {
+                $montoBs  = $monto;
+                $montoUsd = $tasaEfectiva > 0 ? ($montoBs / $tasaEfectiva) : 0;
+            } else {
+                // Pago registrado en dólares: se calcula a bolívares multiplicando por la tasa activa
+                $montoUsd = $monto;
+                $montoBs  = $montoUsd * $tasaEfectiva;
+            }
+
+            $p->monto_usd_calc = $montoUsd;
+            $p->monto_bs_calc  = $montoBs;
+
+            $totalDolares   += $montoUsd;
+            $totalBolivares += $montoBs;
         }
 
         $metodos = $this->db->query("SELECT id, nombre FROM metodos_pago WHERE activo = 1 ORDER BY nombre ASC")->fetchAll(PDO::FETCH_OBJ);
 
         require_once 'views/ventas/pagos_banco.php';
     }
-
     // =========================================================================
     // 5. RETIRO DE PEDIDOS (ENTREGA DE VENTAS PAGADAS)
     // =========================================================================
