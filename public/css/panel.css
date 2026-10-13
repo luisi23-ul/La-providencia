@@ -2356,7 +2356,7 @@ body:has(.panel.modo-master) { background: #eeeae3; }
 .cw-btn-peq { align-self: stretch; text-align: center; margin-top: 4px; padding: 6px; font-size: 10.5px; }
 @media (max-width: 900px) { .cfg-colores-cuerpo { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 560px) { .cw-hero { grid-template-columns: minmax(0, 1fr); } .cw-hero img { height: 120px; } .cw-nav { display: none; } .cw-cab { grid-template-columns: auto 1fr; } .cw-ics { justify-self: end; } }
-.nav a.master { margin: 4px 0; background: #e0a43a; color: #3d2a00; font-weight: 600; border-radius: 12px; box-shadow: 0 6px 14px -8px rgba(0, 0, 0, .55), inset 0 0 0 1px rgba(255, 255, 255, .25); transition: background-color 150ms ease, transform 120ms ease, box-shadow 150ms ease; }
+.nav a.master { justify-content: center; gap: 10px; padding-left: 16px; padding-right: 16px; min-height: 44px; margin: 6px 0; background: #e0a43a; color: #3d2a00; font-weight: 600; border-radius: 12px; box-shadow: 0 6px 14px -8px rgba(0, 0, 0, .55), inset 0 0 0 1px rgba(255, 255, 255, .25); transition: background-color 150ms ease, transform 120ms ease, box-shadow 150ms ease; }
 .nav a.master svg.i { color: currentColor; }
 .nav a.master:hover { background: #ebb553; color: #3d2a00; box-shadow: 0 8px 18px -8px rgba(0, 0, 0, .6), inset 0 0 0 1px rgba(255, 255, 255, .35); }
 .nav a.master:active { transform: scale(.97); }
