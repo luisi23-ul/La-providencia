@@ -13,12 +13,19 @@ $nombresCategoria = [];
 foreach ($categorias ?? [] as $cat) $nombresCategoria[(int) $cat->id] = $cat->nombre_categoria;
 
 $conVariantes = [];
+$catVisibles = [];
 try {
     $dbTienda = $GLOBALS['db'] ?? Database::connect();
     foreach ($dbTienda->query("SELECT DISTINCT id_producto FROM producto_variantes WHERE stock > 0 OR stock_online > 0")->fetchAll(PDO::FETCH_COLUMN) as $idVar) $conVariantes[(int) $idVar] = true;
+    foreach ($dbTienda->query("SELECT DISTINCT c.id, c.id_padre FROM productos p JOIN categorias c ON c.id = p.id_categoria WHERE p.estado = 1 AND p.deleted_at IS NULL")->fetchAll(PDO::FETCH_OBJ) as $cv) {
+        $catVisibles[(int) $cv->id] = true;
+        if ($cv->id_padre) $catVisibles[(int) $cv->id_padre] = true;
+    }
 } catch (Throwable $t) {
     $conVariantes = [];
+    $catVisibles = [];
 }
+$soloConProductos = fn($lista) => $catVisibles ? array_values(array_filter($lista, fn($c) => isset($catVisibles[(int) $c->id]))) : $lista;
 
 if (!function_exists('tarjetaProducto')) {
     function tarjetaProducto($p, $e, $usd, $bs, $foto, $nombresCategoria = [], $conVariantes = []) {

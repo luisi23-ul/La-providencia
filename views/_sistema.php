@@ -15,7 +15,7 @@ try {
 }
 
 // Variables directas de respaldo si no existiera la fila
-$nombreTienda    = $sistema->nombre_empresa ?? 'La Providencia';
+$nombreTienda    = trim((string) ($sistema->nombre_empresa ?? '')) ?: 'Aura Boutique';
 $rifTienda       = $sistema->rif ?? '';
 $telefonoTienda  = $sistema->telefono ?? '';
 $whatsappTienda  = $sistema->whatsapp ?? '';

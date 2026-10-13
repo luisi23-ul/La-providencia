@@ -3,7 +3,7 @@ require_once __DIR__ . '/layout/header.php';
 require_once __DIR__ . '/tienda/_comun.php';
 
 $listaProductos = $listaProductos ?? [];
-$categorias = $categorias ?? [];
+$categorias = $soloConProductos($categorias ?? []);
 $tallas = $tallas ?? [];
 $busqueda = trim((string) ($_GET['busqueda'] ?? ''));
 $catActual = (int) ($_GET['id_categoria'] ?? 0);

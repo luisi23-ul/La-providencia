@@ -2,16 +2,27 @@
 include __DIR__ . '/tienda/_comun.php';
 $categorias = $categorias ?? [];
 $novedades = $novedades ?? [];
+if (!$categorias || !$novedades) {
+    try {
+        $dbInicio = $GLOBALS['db'] ?? Database::connect();
+        if (!$categorias) $categorias = $dbInicio->query("SELECT * FROM categorias WHERE id_padre IS NULL ORDER BY nombre_categoria ASC")->fetchAll(PDO::FETCH_OBJ);
+        if (!$novedades) $novedades = $dbInicio->query("SELECT p.*, c.nombre_categoria FROM productos p LEFT JOIN categorias c ON c.id = p.id_categoria WHERE p.estado = 1 AND p.deleted_at IS NULL AND (p.stock > 0 OR p.stock_online > 0) ORDER BY p.id DESC LIMIT 8")->fetchAll(PDO::FETCH_OBJ);
+    } catch (Throwable $t) {
+        $categorias = $categorias ?: [];
+        $novedades = $novedades ?: [];
+    }
+}
 $titulo = trim((string) ($sistema->titulo_hero ?? '')) ?: 'Ropa que se siente tuya';
 $palabras = explode(' ', $titulo);
 $ultima = array_pop($palabras);
+$categorias = $soloConProductos($categorias);
 $conFoto = array_values(array_filter($categorias, fn($c) => !empty($c->imagen)));
 ?>
   <section class="hero">
     <div class="hero-txt">
       <span class="ceja">Nueva temporada</span>
       <h1><?= $e(implode(' ', $palabras)) ?> <em><?= $e($ultima) ?></em></h1>
-      <p><?= $e($sistema->subtitulo_hero ?? '') ?></p>
+      <p><?= $e(trim((string) ($sistema->subtitulo_hero ?? '')) ?: 'Blusas, conjuntos y básicos para todos los días. Elige tu talla y pídelo por WhatsApp.') ?></p>
       <a class="btn" href="index.php?action=ver_catalogo">Ver el catálogo</a>
     </div>
     <figure class="hero-foto"><img src="public/img/tienda/portada.webp" alt="Modelo con ropa de la nueva temporada" width="1200" height="1400" fetchpriority="high"></figure>
