@@ -2362,3 +2362,8 @@ body:has(.panel.modo-master) { background: #eeeae3; }
 .nav a.master:active { transform: scale(.97); }
 .panel.modo-master .nav a.master { background: #1d6a4f; color: #fff; }
 .panel.modo-master .nav a.master:hover { background: #227a5b; color: #fff; }
+
+.me-agregar { display: flex; gap: 8px; align-items: stretch; padding: 10px 14px; border-top: 1px solid var(--linea-2); background: var(--fondo); }
+.me-agregar > :first-child { flex: 1; min-width: 0; }
+.me-agregar .btn { flex: none; min-height: 42px; }
+

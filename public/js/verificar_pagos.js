@@ -117,12 +117,7 @@
       .then(function (res) {
         var d = res && res.detalles ? res.detalles : [];
         if (!d.length) { meLista.innerHTML = '<li class="me-cargando">Este pedido no tiene productos.</li>'; return; }
-        meLista.innerHTML = d.map(function (x) {
-          var pr = +x.precio_unitario;
-          return '<li data-precio="' + pr + '"><div class="me-nom"><b>' + esc(x.producto_nombre || 'Producto #' + x.id_producto) + '</b><span>' + usd(pr) + ' c/u</span></div>' +
-            '<span class="stepper me-step"><button type="button" data-me-menos aria-label="Uno menos">−</button><input type="number" name="productos[' + (+x.id_producto) + ']" value="' + (+x.cantidad) + '" min="0" inputmode="numeric" aria-label="Cantidad de ' + esc(x.producto_nombre || '') + '"><button type="button" data-me-mas aria-label="Uno más">+</button></span>' +
-            '<span class="me-sub"></span></li>';
-        }).join('');
+        meLista.innerHTML = d.map(function (x) { return filaProd(+x.id_producto, x.producto_nombre || 'Producto #' + x.id_producto, +x.precio_unitario, +x.cantidad); }).join('');
         totalEditar();
       })
       .catch(function () { meLista.innerHTML = '<li class="me-cargando">No se pudieron cargar los productos. Puedes guardar solo los datos del pago.</li>'; });
@@ -134,4 +129,24 @@
     totalEditar();
   });
   meLista.addEventListener('input', totalEditar);
+  function filaProd(id, nombre, pr, cant) {
+    return '<li data-precio="' + pr + '" data-id="' + id + '"><div class="me-nom"><b>' + esc(nombre) + '</b><span>' + usd(pr) + ' c/u</span></div>' +
+      '<span class="stepper me-step"><button type="button" data-me-menos aria-label="Uno menos">−</button><input type="number" name="productos[' + id + ']" value="' + cant + '" min="0" inputmode="numeric" aria-label="Cantidad de ' + esc(nombre) + '"><button type="button" data-me-mas aria-label="Uno más">+</button></span>' +
+      '<span class="me-sub"></span></li>';
+  }
+  var meNuevo = document.getElementById('me-nuevo'), meAgregar = document.getElementById('me-agregar');
+  if (meNuevo && meAgregar) meAgregar.addEventListener('click', function () {
+    var op = meNuevo.options[meNuevo.selectedIndex];
+    if (!op || !op.value) { Panel.avisar('Elige el producto que quieres agregar', 'aviso'); return; }
+    var ya = meLista.querySelector('li[data-id="' + op.value + '"] input');
+    if (ya) ya.value = (parseInt(ya.value, 10) || 0) + 1;
+    else {
+      var vacio = meLista.querySelector('.me-cargando'); if (vacio) vacio.remove();
+      meLista.insertAdjacentHTML('beforeend', filaProd(+op.value, op.dataset.nombre, +op.dataset.precio, 1));
+      meLista.lastElementChild.scrollIntoView({ block: 'nearest' });
+    }
+    meNuevo.value = ''; if (meNuevo._dsp) meNuevo._dsp.refrescar();
+    totalEditar();
+    Panel.avisar(op.dataset.nombre + ' agregado al pedido', 'ok');
+  });
 })();

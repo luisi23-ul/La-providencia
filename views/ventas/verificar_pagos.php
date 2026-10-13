@@ -11,6 +11,7 @@ $tabs = ['pendiente' => 'Por verificar', 'aprobado' => 'Aprobados', 'rechazado' 
 
 $db = Database::connect();
 $metodosList = $db->query("SELECT id, nombre FROM metodos_pago ORDER BY nombre ASC")->fetchAll(PDO::FETCH_OBJ);
+$productosLista = $db->query("SELECT id, nombre_producto, precio FROM productos WHERE deleted_at IS NULL AND estado = 1 ORDER BY nombre_producto ASC")->fetchAll(PDO::FETCH_OBJ);
 ?>
 <section class="contenido" id="p-verificar_pagos">
   <header class="cab">
@@ -102,8 +103,9 @@ $metodosList = $db->query("SELECT id, nombre FROM metodos_pago ORDER BY nombre A
         <input type="text" id="me-ref" name="referencia" inputmode="numeric" autocomplete="off" placeholder="Ej.: 004512">
       </div>
       <section class="me-prods" aria-labelledby="me-prods-tit">
-        <header><h4 id="me-prods-tit">Productos del pedido</h4><span class="ayuda">Pon 0 para quitar uno</span></header>
+        <header><h4 id="me-prods-tit">Productos del pedido</h4><span class="ayuda">Agrega otros o pon 0 para quitar</span></header>
         <ul id="me-lista-prods"></ul>
+        <div class="me-agregar"><select id="me-nuevo" data-buscador aria-label="Producto para agregar"><option value="">Buscar un producto para agregar…</option><?php foreach ($productosLista as $pl): ?><option value="<?= (int) $pl->id ?>" data-nombre="<?= $e($pl->nombre_producto) ?>" data-precio="<?= (float) $pl->precio ?>"><?= $e($pl->nombre_producto) ?> · <?= $usd($pl->precio) ?></option><?php endforeach; ?></select><button type="button" class="btn btn-sec" id="me-agregar"><svg class="i"><use href="#i-mas"/></svg>Agregar</button></div>
         <p class="me-total"><span>Nuevo total</span><b id="me-total">—</b></p>
       </section>
     </div>
