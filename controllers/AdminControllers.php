@@ -589,7 +589,7 @@ class AdminControllers {
         }
     }
 
-    // -------------------------------------------------------------------------
+// -------------------------------------------------------------------------
     // AJUSTES DE STOCK Y KARDEX
     // -------------------------------------------------------------------------
 
@@ -611,7 +611,8 @@ class AdminControllers {
 
         require_once 'views/inventario/ajustes.php';
     }
-   public function guardarAjuste() {
+
+    public function guardarAjuste() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header("Location: index.php?action=ajustes_inventario");
             exit();
@@ -648,11 +649,11 @@ class AdminControllers {
             $stmtUpd = $this->db->prepare("UPDATE productos SET stock = ? WHERE id = ?");
             $stmtUpd->execute([$nuevoStock, $idProducto]);
 
-            // Registrar en kardex
+            // Registrar en kardex con la columna unificada stock_resultante
             $stmtK = $this->db->prepare("
                 INSERT INTO kardex_inventario 
-                (id_producto, tipo_movimiento, canal, cantidad, stock_tienda_resultante, stock_online_resultante, observacion, id_usuario)
-                VALUES (?, ?, 'general', ?, ?, 0, ?, ?)
+                (id_producto, tipo_movimiento, canal, cantidad, stock_resultante, observacion, id_usuario)
+                VALUES (?, ?, 'general', ?, ?, ?, ?)
             ");
             $stmtK->execute([$idProducto, $tipo, $cantKardex, $nuevoStock, $observacion, $idUsuario]);
 
@@ -667,38 +668,40 @@ class AdminControllers {
             die("Error al guardar ajuste: " . $e->getMessage());
         }
     }
+
     public function kardex() {
-        $tipo = $_GET['tipo'] ?? '';
+        $tipo  = $_GET['tipo'] ?? '';
         $desde = $_GET['desde'] ?? '';
         $hasta = $_GET['hasta'] ?? '';
-        $q = trim($_GET['q'] ?? '');
+        $q     = trim($_GET['q'] ?? '');
 
         $where = ["1=1"];
         $params = [];
-        if (!empty($tipo)) { $where[] = "k.tipo_movimiento = ?"; $params[] = $tipo; }
-        if (!empty($desde)) { $where[] = "DATE(k.fecha) >= ?"; $params[] = $desde; }
-        if (!empty($hasta)) { $where[] = "DATE(k.fecha) <= ?"; $params[] = $hasta; }
+        if (!empty($tipo))  { $where[] = "k.tipo_movimiento = ?"; $params[] = $tipo; }
+        if (!empty($desde)) { $where[] = "DATE(k.fecha) >= ?";    $params[] = $desde; }
+        if (!empty($hasta)) { $where[] = "DATE(k.fecha) <= ?";    $params[] = $hasta; }
         if (!empty($q)) {
             $where[] = "(p.nombre_producto LIKE ? OR p.codigo LIKE ?)";
-            $params[] = "%$q%"; $params[] = "%$q%";
+            $params[] = "%$q%"; 
+            $params[] = "%$q%";
         }
 
         $sql = "SELECT k.fecha, p.nombre_producto, p.imagen, p.stock_minimo,
                        k.tipo_movimiento, k.canal, k.cantidad, 
-                       k.stock_tienda_resultante, k.stock_online_resultante, 
+                       k.stock_resultante,
                        k.id_referencia, k.observacion, COALESCE(u.nombre, 'Sistema') AS usuario
                 FROM kardex_inventario k
                 INNER JOIN productos p ON k.id_producto = p.id
                 LEFT JOIN usuarios u ON k.id_usuario = u.id
                 WHERE " . implode(' AND ', $where) . "
                 ORDER BY k.fecha DESC";
+                
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
         $movimientos = $stmt->fetchAll(PDO::FETCH_OBJ);
 
         require_once 'views/inventario/kardex.php';
     }
-
     // -------------------------------------------------------------------------
     // GRÁFICOS ANTIGUOS
     // -------------------------------------------------------------------------
