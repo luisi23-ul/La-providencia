@@ -1822,6 +1822,17 @@ body:has(.panel.modo-pos) .avisos { top: 76px; }
 .ajx-canal.igual .dif { background: var(--fondo); color: var(--texto-2); }
 .ajx-error { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; margin: 0; padding: 10px 14px; border-radius: 12px; background: var(--rojo-suave); color: var(--rojo); font-size: 14.5px; font-weight: 600; }
 .ajx-error svg.i { width: 18px; height: 18px; }
+.ajx-vars-campo[hidden] { display: none; }
+.ajx-vars-lbl { display: block; margin-bottom: 6px; font-size: 14.5px; font-weight: 600; color: var(--texto); }
+.ajx-vars { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.ajx-var { position: relative; display: grid; gap: 2px; padding: 10px 14px; border: 1.5px solid var(--linea); border-radius: 12px; background: var(--tarjeta); cursor: pointer; transition: border-color 150ms ease, background-color 150ms ease; }
+.ajx-var input { position: absolute; opacity: 0; pointer-events: none; }
+.ajx-var b { font-size: 15px; }
+.ajx-var small { font-size: 13px; color: var(--texto-2); font-variant-numeric: tabular-nums; }
+.ajx-var:has(input:checked) { border-color: var(--marca); background: var(--marca-tenue); box-shadow: 0 0 0 3px var(--marca-suave); }
+.ajx-var:has(input:focus-visible) { outline: 2px solid var(--marca); outline-offset: 2px; }
+.ajx-falta { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; margin: 0; padding: 12px 14px; border: 1.5px dashed var(--marca-borde); border-radius: 12px; background: var(--marca-tenue); color: var(--marca-fuerte); font-size: 14.5px; font-weight: 600; }
+.ajx-falta svg.i { width: 18px; height: 18px; }
 .ajx-acc { display: grid; grid-template-columns: 1fr 1.6fr; gap: 10px; }
 .ajx-acc .btn { min-height: 50px; justify-content: center; border-radius: 13px; font-size: 16px; font-weight: 600; }
 .ajx-ult { margin: 0; padding: 8px; list-style: none; display: grid; gap: 4px; }
@@ -1837,6 +1848,7 @@ body:has(.panel.modo-pos) .avisos { top: 76px; }
 @media (hover: hover) and (pointer: fine) {
   .ajx-tipo:not(:has(input:checked)):hover { border-color: var(--marca-claro); background: var(--marca-tenue); }
   .ajx-seg label:not(:has(input:checked)):hover { background: rgba(255, 255, 255, .7); color: var(--texto) !important; }
+  .ajx-var:not(:has(input:checked)):hover { border-color: var(--marca-claro); background: var(--marca-tenue); }
   .ajx-cant button:hover { background: var(--marca-tenue); border-color: var(--marca-borde); color: var(--marca-fuerte); }
 }
 @container marco (max-width: 640px) { .ajx-tipos, .ajx-queda, .ajx-campos { grid-template-columns: minmax(0, 1fr); } }
@@ -1957,9 +1969,9 @@ body:has(.panel.modo-pos) .avisos { top: 76px; }
 .cpx-nuevo-prod[hidden] { display: none; }
 @container marco (max-width: 640px) { .cpx-nuevo-prod { grid-template-columns: minmax(0, 1fr); margin: 0 10px; } }
 .fpx-var { padding: 16px 20px 20px; }
-.fpx-var-cab { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) 96px 96px 40px; gap: 10px; padding: 0 12px 8px; font-size: 13.5px; font-weight: 600; color: var(--texto-2); }
+.fpx-var-cab { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.2fr) 84px 40px; gap: 10px; padding: 0 12px 8px; font-size: 13.5px; font-weight: 600; color: var(--texto-2); }
 .fpx-var-lista { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
-.fpx-var-fila { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) 96px 96px 40px; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--linea); border-radius: 14px; background: var(--tarjeta); }
+.fpx-var-fila { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.2fr) 84px 40px; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--linea); border-radius: 14px; background: var(--tarjeta); }
 .fpx-var-campo label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); }
 .fpx .fpx-var-campo input, .fpx .fpx-var-campo select { width: 100%; min-height: 44px; border: 1.5px solid var(--linea); border-radius: 10px; padding: 0 12px; font-size: 15.5px; background: var(--tarjeta); }
 .fpx .fpx-var-campo .dsp-btn { min-height: 44px; }

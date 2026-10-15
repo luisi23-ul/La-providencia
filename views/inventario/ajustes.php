@@ -8,6 +8,15 @@ include __DIR__ . '/../admin/_abrir.php';
 $elegido = (int) ($_GET['producto'] ?? 0);
 $desde = null;
 foreach ($productos as $p) if ($elegido && (int) $p->id === $elegido) $desde = $p;
+$variantesPorProducto = [];
+try {
+    $dbAjustes = $GLOBALS['db'] ?? Database::connect();
+    foreach ($dbAjustes->query("SELECT id, id_producto, talla, color, modelo, stock FROM producto_variantes WHERE COALESCE(talla, '') <> '' OR COALESCE(color, '') <> '' OR COALESCE(modelo, '') <> '' ORDER BY id")->fetchAll(PDO::FETCH_OBJ) as $v) {
+        $variantesPorProducto[(int) $v->id_producto][] = [(int) $v->id, implode(' · ', array_filter([trim($v->talla ?? ''), trim($v->color ?? ''), trim($v->modelo ?? '')])), (int) $v->stock];
+    }
+} catch (Throwable $t) {
+    $variantesPorProducto = [];
+}
 $tipos = ['ajuste' => ['mas', 'Entrada'], 'merma' => ['basura', 'Merma'], 'transferencia' => ['camion', 'Entre canales']];
 ?>
 <section class="contenido">
@@ -43,6 +52,7 @@ $tipos = ['ajuste' => ['mas', 'Entrada'], 'merma' => ['basura', 'Merma'], 'trans
             </select>
           </div>
           <div class="ajx-prod ancho" id="aj-elegido"></div>
+          <div class="campo ancho ajx-vars-campo" id="aj-vars" hidden></div>
           <div class="ajx-campos ancho" id="aj-campos"></div>
           <div class="campo ancho"><label for="aj-obs">Observación</label><textarea id="aj-obs" name="observacion" rows="2" maxlength="255" placeholder="Ej.: Conteo del viernes, faltaban 2 en el estante."></textarea></div>
         </div>
@@ -81,5 +91,5 @@ $tipos = ['ajuste' => ['mas', 'Entrada'], 'merma' => ['basura', 'Merma'], 'trans
     </aside>
   </form>
 </section>
-<script type="application/json" id="datos-ajustes"><?= json_encode(array_map(fn($p) => ['id' => (int) $p->id, 'n' => $p->nombre_producto, 't' => (int) $p->stock, 'min' => (int) ($p->stock_minimo ?? 5), 'img' => !empty($p->imagen) ? 'public/uploads/' . $p->imagen : ''], $productos), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?></script>
+<script type="application/json" id="datos-ajustes"><?= json_encode(array_map(fn($p) => ['id' => (int) $p->id, 'n' => $p->nombre_producto, 't' => (int) $p->stock, 'min' => (int) ($p->stock_minimo ?? 5), 'img' => !empty($p->imagen) ? 'public/uploads/' . $p->imagen : '', 'v' => $variantesPorProducto[(int) $p->id] ?? []], $productos), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?></script>
 <?php include __DIR__ . '/../admin/_cerrar.php'; ?>

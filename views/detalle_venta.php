@@ -13,6 +13,10 @@ foreach ($pagos as $p) {
     elseif ($p->estado_verificacion === 'pendiente') $porVerificar += $enUsd($p);
 }
 $saldo = max(0, (float) $venta->total - $aprobado);
+$conTasa = array_filter($pagos, fn($p) => (float) ($p->tasa_cambio ?? 0) > 0);
+usort($conTasa, fn($x, $y) => strcmp((string) $x->fecha_pago, (string) $y->fecha_pago));
+$tasaVenta = $conTasa ? (float) reset($conTasa)->tasa_cambio : (float) $tasa;
+$bsVenta = fn($v) => number_format((float) $v * $tasaVenta, 2, ',', '.') . ' Bs';
 $saldada = $saldo < 0.005;
 $unidades = array_sum(array_map(fn($d) => $d->cantidad, $detalles));
 $verif = ['aprobado' => ['ok', 'Aprobado'], 'pendiente' => ['pend', 'Por verificar'], 'rechazado' => ['agot', 'Rechazado']];
@@ -77,7 +81,7 @@ if (in_array($estado, ['retirado', 'entregado', 'completado'], true)) {
     <div class="rc-lineas">
       <h3>Cuenta</h3>
       <div class="rc-linea"><span><?= count($detalles) === 1 ? '1 producto' : count($detalles) . ' productos' ?><?= $unidades != count($detalles) ? ' (' . (int) $unidades . ' unidades)' : '' ?></span><b><?= $usd($venta->total) ?></b></div>
-      <div class="rc-linea total"><span>Total</span><span><?= $usd($venta->total) ?> · <?= $bs($venta->total) ?></span></div>
+      <div class="rc-linea total"><span>Total</span><span><?= $usd($venta->total) ?> · <?= $bsVenta($venta->total) ?></span></div>
       <?php foreach ($pagos as $p): $vf = $verif[$p->estado_verificacion] ?? ['pend', $p->estado_verificacion]; ?>
       <div class="rc-linea <?= $vf[0] ?>"><span><?= $e($p->metodo) ?><span class="est <?= $vf[0] ?>"><?= $vf[1] ?></span></span><b><?= $p->estado_verificacion === 'aprobado' ? '− ' : '' ?><?= $usd($enUsd($p)) ?></b></div>
       <?php endforeach; ?>

@@ -91,7 +91,7 @@ $semanaTienda = array_sum(array_column($ventasSemana, 'tienda'));
       <header class="caja-cab"><h3 id="t-stock">Stock bajo</h3><a href="index.php?action=listado_productos">Ver inventario</a></header>
       <ul class="lista stock-l">
         <?php foreach ($stockBajo as $p): ?>
-          <li><?php if (!empty($p->imagen)): ?><img class="foto chica" src="public/uploads/<?= $e($p->imagen) ?>" alt="" width="36" height="36"><?php else: ?><span></span><?php endif; ?><div class="quien"><b><?= $e($p->nombre_producto) ?></b><span class="nums">Tienda <?= (int) $p->stock ?>, online <?= (int) ($p->stock_online ?? 0) ?> (mín. <?= (int) ($p->stock_minimo ?? 5) ?>)</span></div><span class="est <?= $p->stock + ($p->stock_online ?? 0) == 0 ? 'agot">Agotado' : 'bajo">Bajo' ?></span></li>
+          <li><?php if (!empty($p->imagen)): ?><img class="foto chica" src="public/uploads/<?= $e($p->imagen) ?>" alt="" width="36" height="36"><?php else: ?><span></span><?php endif; ?><div class="quien"><b><?= $e($p->nombre_producto) ?></b><span class="nums">Quedan <?= (int) $p->stock ?> (mín. <?= (int) ($p->stock_minimo ?? 5) ?>)</span></div><span class="est <?= (int) $p->stock === 0 ? 'agot">Agotado' : 'bajo">Bajo' ?></span></li>
         <?php endforeach; ?>
         <?php if (!$stockBajo): ?><li class="vacio-filtro" style="display:block">Todo el inventario está sobre el mínimo.</li><?php endif; ?>
       </ul>

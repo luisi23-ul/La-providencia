@@ -69,7 +69,7 @@ $filtro = $_GET['stock'] ?? '';
 $catSel = $_GET['categoria'] ?? '';
 
 $estadoDe = function ($p) {
-    $total = (int) $p->stock + (int) ($p->stock_online ?? 0);
+    $total = (int) $p->stock;
     if ($total === 0) return 'agot';
     return (int) $p->stock < (int) ($p->stock_minimo ?? 5) ? 'bajo' : 'ok';
 };

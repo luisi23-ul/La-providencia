@@ -25,6 +25,18 @@
     vista();
   }
 
+  function pintarVariantes() {
+    var p = producto(), caja = document.getElementById('aj-vars'), vs = p.v || [];
+    caja.hidden = !vs.length;
+    caja.innerHTML = vs.length ? '<span class="ajx-vars-lbl" id="aj-vars-t">Talla y color <span class="ob">*</span></span><div class="ajx-vars" role="radiogroup" aria-labelledby="aj-vars-t">' + vs.map(function (x) {
+      return '<label class="ajx-var"><input type="radio" name="id_variante" value="' + x[0] + '" required' + (vs.length === 1 ? ' checked' : '') + '><b>' + esc(x[1]) + '</b><small>' + x[2] + ' en stock</small></label>';
+    }).join('') + '</div>' : '';
+  }
+  function variante() {
+    var p = producto(), id = valor('id_variante');
+    return (p.v || []).filter(function (x) { return String(x[0]) === id; })[0] || null;
+  }
+
   function tarjeta(nombre, icono, antes, despues) {
     var d = despues - antes, clase = d < 0 ? 'baja' : d > 0 ? 'sube' : 'igual';
     var dif = d === 0 ? 'sin cambio' : (d > 0 ? '+' : '−') + Math.abs(d);
@@ -38,9 +50,21 @@
     var nt = t === 'merma' ? p.t - n : p.t + n;
     document.getElementById('aj-elegido').innerHTML = (p.img ? '<img src="' + esc(p.img) + '" alt="" width="64" height="64">' : '<span class="sin-foto"><svg class="i"><use href="#i-caja"/></svg></span>') +
       '<b>' + esc(p.n) + '</b><span class="dv-chip neutro">Mínimo ' + p.min + '</span><small>Stock ' + p.t + '</small>';
-    var invalido = nt < 0;
-    document.getElementById('aj-queda').innerHTML = tarjeta('Stock', 'caja', p.t, Math.max(0, nt)) +
-      (invalido ? '<p class="ajx-error"><svg class="i"><use href="#i-alerta"/></svg>No hay tantas unidades en stock.</p>' : '');
+    var conTallas = (p.v || []).length > 0, x = variante(), html, invalido;
+    if (conTallas && !x) {
+      invalido = true;
+      html = '<p class="ajx-falta"><svg class="i"><use href="#i-etiqueta"/></svg>Elige la talla y el color que vas a ajustar.</p>';
+    } else if (conTallas) {
+      var nv = t === 'merma' ? x[2] - n : x[2] + n;
+      invalido = nv < 0;
+      html = tarjeta(x[1], 'etiqueta', x[2], Math.max(0, nv)) + tarjeta('Total del producto', 'caja', p.t, Math.max(0, nt)) +
+        (invalido ? '<p class="ajx-error"><svg class="i"><use href="#i-alerta"/></svg>No hay tantas unidades de ' + esc(x[1]) + '.</p>' : '');
+    } else {
+      invalido = nt < 0;
+      html = tarjeta('Stock', 'caja', p.t, Math.max(0, nt)) +
+        (invalido ? '<p class="ajx-error"><svg class="i"><use href="#i-alerta"/></svg>No hay tantas unidades en stock.</p>' : '');
+    }
+    document.getElementById('aj-queda').innerHTML = html;
     document.getElementById('aj-guardar').disabled = invalido;
   }
 
@@ -52,9 +76,11 @@
     vista();
   });
   form.addEventListener('change', function (e) {
+    if (e.target === sel) pintarVariantes();
     if (e.target.name === 'tipo_movimiento' || e.target === sel) return pintarCampos();
     vista();
   });
   form.addEventListener('input', vista);
+  pintarVariantes();
   pintarCampos();
 })();

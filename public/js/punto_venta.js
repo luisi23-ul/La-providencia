@@ -529,11 +529,11 @@
 
   function textoVuelto(v) { return +v.vuelto > 0 ? (v.vuelto_moneda === 'USD' ? usd(v.vuelto) : bs(v.vuelto) + (v.vuelto_moneda === 'pago_movil' ? ' por pago móvil' : '')) : ''; }
   function mensajeTexto(v, tienda, num) {
-    var lineas = (v.lineas || []).map(function (l) { return l.cantidad + ' x ' + l.nombre + ': ' + usd(l.subtotal); }).join('\n');
+    var lineas = (v.lineas || []).map(function (l) { return l.cantidad + ' x ' + l.nombre + ': ' + bs(l.subtotal); }).join('\n');
     var pagos = (v.pagos || []).map(function (p) { return p.metodo + (p.referencia ? ' (ref. ' + p.referencia + ')' : '') + ': ' + (p.moneda === 'USD' ? usd(p.monto) : Panel.fmtBs(p.monto) + ' Bs'); }).join('\n');
     return '*' + tienda.nombre.toUpperCase() + '*' + (tienda.rif ? '\nRIF ' + tienda.rif : '') + (tienda.direccion ? '\n' + tienda.direccion : '') + (tienda.telefono ? '\n' + tienda.telefono : '') +
       '\n\n*NOTA DE ENTREGA N.º ' + num + '*\nFecha: ' + (v.fecha || '') + '\nCliente: ' + (v.cliente || 'Consumidor final') + (v.documento ? ' (' + v.documento + ')' : '') +
-      '\n\n' + lineas + '\n\n*TOTAL: ' + usd(v.total) + '*\nEquivalente: ' + bs(v.total) + ' (tasa BCV ' + TASA.toFixed(2) + ')\n\nPagos:\n' + pagos + (textoVuelto(v) ? '\nVuelto: ' + textoVuelto(v) : '') +
+      '\n\n' + lineas + '\n\n*TOTAL: ' + bs(v.total) + '*\nReferencia: ' + usd(v.total) + ' (tasa BCV ' + Panel.fmtBs(TASA) + ')\n\nPagos:\n' + pagos + (textoVuelto(v) ? '\nVuelto: ' + textoVuelto(v) : '') +
       (v.atendio || D.cajero ? '\nAtendido por: ' + (v.atendio || D.cajero) : '') + '\n\nDocumento no fiscal. Si necesita factura fiscal, solicítela en caja.\n¡Gracias por su compra!';
   }
 
@@ -604,12 +604,12 @@
       linea();
       x.font = '700 11px "Open Sans"'; x.fillStyle = T3; x.textAlign = 'left'; x.fillText('CANT. Y PRODUCTO', P, y + 10); x.textAlign = 'right'; x.fillText('TOTAL', W - P, y + 10); x.textAlign = 'left'; y += 22;
       lineas.forEach(function (l) {
-        y += 14; fila(l.cantidad + ' × ' + l.nombre, usd(l.subtotal), '400 13px "Open Sans"', '400 13px "Open Sans"', TX, TX);
-        x.font = '400 12px "Open Sans"'; x.fillStyle = T3; x.fillText(usd(+l.subtotal / Math.max(1, +l.cantidad)) + ' c/u' + (+l.descuento ? ', −' + (+l.descuento) + '%' : ''), P, y + 16); y += 22;
+        y += 14; fila(l.cantidad + ' × ' + l.nombre, bs(l.subtotal), '400 13px "Open Sans"', '400 13px "Open Sans"', TX, TX);
+        x.font = '400 12px "Open Sans"'; x.fillStyle = T3; x.fillText(bs(+l.subtotal / Math.max(1, +l.cantidad)) + ' c/u' + (+l.descuento ? ', −' + (+l.descuento) + '%' : ''), P, y + 16); y += 22;
       });
       linea();
-      y += 26; fila('TOTAL', usd(v.total), '600 16px Outfit', '700 30px Outfit', TX, TX);
-      y += 22; fila('Equivalente a tasa BCV ' + TASA.toFixed(2), bs(v.total), '400 13px "Open Sans"', '400 13px "Open Sans"', T2, T2); y += 10;
+      y += 26; fila('TOTAL', bs(v.total), '600 16px Outfit', '700 30px Outfit', TX, TX);
+      y += 22; fila('Referencia en $ · tasa BCV ' + Panel.fmtBs(TASA), usd(v.total), '400 13px "Open Sans"', '400 13px "Open Sans"', T2, T2); y += 10;
       linea();
       pagos.forEach(function (p) { y += 14; fila(p[0], p[1], '400 13px "Open Sans"', '700 13px "Open Sans"', T2, TX); y += 5; });
       linea();

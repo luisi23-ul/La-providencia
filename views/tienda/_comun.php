@@ -16,7 +16,7 @@ $conVariantes = [];
 $catVisibles = [];
 try {
     $dbTienda = $GLOBALS['db'] ?? Database::connect();
-    foreach ($dbTienda->query("SELECT DISTINCT id_producto FROM producto_variantes WHERE stock > 0 OR stock_online > 0")->fetchAll(PDO::FETCH_COLUMN) as $idVar) $conVariantes[(int) $idVar] = true;
+    foreach ($dbTienda->query("SELECT DISTINCT id_producto FROM producto_variantes WHERE stock > 0")->fetchAll(PDO::FETCH_COLUMN) as $idVar) $conVariantes[(int) $idVar] = true;
     foreach ($dbTienda->query("SELECT DISTINCT c.id, c.id_padre FROM productos p JOIN categorias c ON c.id = p.id_categoria WHERE p.estado = 1 AND p.deleted_at IS NULL")->fetchAll(PDO::FETCH_OBJ) as $cv) {
         $catVisibles[(int) $cv->id] = true;
         if ($cv->id_padre) $catVisibles[(int) $cv->id_padre] = true;
@@ -32,7 +32,7 @@ if (!function_exists('tarjetaProducto')) {
         $id = (int) ($p->id ?? 0);
         $nombre = $p->nombre_producto ?? '';
         $categoria = $nombresCategoria[(int) ($p->id_categoria ?? 0)] ?? ($p->nombre_categoria ?? '');
-        $stock = (int) (($p->stock_online ?? 0) > 0 ? $p->stock_online : ($p->stock ?? 0));
+        $stock = (int) ($p->stock ?? 0);
         $precio = (float) ($p->precio ?? 0);
         $url = 'index.php?action=ver_producto&amp;id=' . $id;
         $img = $foto($p->imagen ?? '');
