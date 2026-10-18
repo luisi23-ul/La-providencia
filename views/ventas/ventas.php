@@ -14,14 +14,14 @@ $f = [
 
 // Mapeo completo de estados soportados en BD
 $estados = [
-    'pendiente'   => ['pend', 'Pendiente de pago'],
+    'pendiente'    => ['pend', 'Pendiente de pago'],
     'por_verificar'=> ['pend', 'Por verificar'],
-    'por_retirar' => ['ok',   'Pagado, por retirar'],
-    'pagado'      => ['ok',   'Pagado, por retirar'],
-    'retirado'    => ['ok',   'Retirado'],
-    'entregado'   => ['ok',   'Retirado'],
-    'completado'  => ['ok',   'Completado'],
-    'cancelado'   => ['agot', 'Cancelado']
+    'por_retirar'  => ['ok',   'Pagado, por retirar'],
+    'pagado'       => ['ok',   'Pagado, por retirar'],
+    'retirado'     => ['ok',   'Retirado'],
+    'entregado'    => ['ok',   'Retirado'],
+    'completado'   => ['ok',   'Completado'],
+    'cancelado'    => ['agot', 'Cancelado']
 ];
 
 // Cálculo de métricas sobre las ventas filtradas
@@ -92,22 +92,24 @@ $pctOnline = $total > 0 ? (100 - $pctTienda) : 0;
           $keyEstado = empty($rawEst) ? 'pendiente' : strtolower($rawEst);
           $es = $estados[$keyEstado] ?? ['pend', ($rawEst ?: 'Pendiente')]; 
           $origen = ($v->origen_venta ?? 'online') === 'online' ? 'Online' : 'Tienda'; 
+          $nomMetodo = $v->metodo_nombre ?? $v->nombre_metodo ?? 'Efectivo';
+          $numOrden = (string)($v->numero_orden ?? $v->id ?? '');
         ?>
           <tr>
             <td class="t-tit">
               <div class="t-nombre">
-                <b>#<?= str_pad((string)$v->id, 4, '0', STR_PAD_LEFT) ?></b>
+                <b>#<?= $e($numOrden) ?></b>
                 <span><?= !empty($v->fecha) ? date('d/m, g:i a', strtotime($v->fecha)) : '—' ?></span>
               </div>
             </td>
             <td data-label="Cliente">
               <div class="t-nombre">
-                <b><?= $e($v->nombre_cliente ?? 'Cliente general') ?></b>
-                <span class="si-estrecho"><?= $origen ?>, <?= $e($v->nombre_metodo ?? 'General') ?></span>
+                <b><?= $e($v->nombre_cliente ?? 'Consumidor Final') ?></b>
+                <span class="si-estrecho"><?= $origen ?>, <?= $e($nomMetodo) ?></span>
               </div>
             </td>
             <td data-label="Origen" class="c-media"><span class="chip"><?= $origen ?></span></td>
-            <td data-label="Pago" class="c-media"><?= $e($v->nombre_metodo ?? 'N/A') ?></td>
+            <td data-label="Pago" class="c-media"><?= $e($nomMetodo) ?></td>
             <td class="num" data-label="Total">
               <b><?= $usd($v->total ?? 0) ?></b><br>
               <span class="muted"><?= $bs($v->total ?? 0) ?></span>
@@ -117,7 +119,7 @@ $pctOnline = $total > 0 ? (100 - $pctTienda) : 0;
             </td>
             <td class="t-acc">
               <div class="acc">
-                <a href="index.php?action=detalle_venta&id=<?= (int) $v->id ?>" class="ic-btn" aria-label="Ver venta #<?= (int) $v->id ?>">
+                <a href="index.php?action=detalle_venta&id=<?= urlencode($numOrden) ?>" class="ic-btn" aria-label="Ver venta #<?= $e($numOrden) ?>">
                   <svg class="i"><use href="#i-ojo"/></svg>
                 </a>
               </div>

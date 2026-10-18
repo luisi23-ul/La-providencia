@@ -119,9 +119,11 @@
     }).join('');
     $('pv-sin-productos').hidden = lista.length > 0;
   }
-  function agregar(id, vid) {
-    var p = prod(id), i = -1;
-    if (p.v && p.v.length && vid === undefined) { abrirVariante(p); return; }
+ function agregar(id, vid) {
+  var p = prod(id);
+  if (!p) return; // Si no existe el producto, no continuar ni romper la consola
+  var i = -1;
+  if (p.v && p.v.length && vid === undefined) { abrirVariante(p); return; }
     vid = vid || null;
     var x = vid ? p.v.filter(function (o) { return o[0] === vid; })[0] : null, tope = x ? x[3] : p.t, nom = p.n + (x ? ' ' + nomVar(x) : '');
     pv.lineas.forEach(function (l, k) { if (l.id === id && (l.v || null) === vid) i = k; });
@@ -219,7 +221,8 @@
   $('p-punto_venta').addEventListener('click', function (e) {
     var t = function (s) { return e.target.closest(s); };
     var b;
-    if ((b = t('[data-agregar]'))) return agregar(+b.getAttribute('data-agregar'));
+    // AHORA:
+if ((b = t('[data-agregar]'))) return agregar(b.getAttribute('data-agregar'));
     if ((b = t('[data-mas]'))) { var lm = pv.lineas[+b.getAttribute('data-mas')]; return agregar(lm.id, lm.v || null); }
     if ((b = t('[data-menos]'))) { var i = +b.getAttribute('data-menos'); if (pv.lineas[i].q <= 1) quitar(i); else { pv.lineas[i].q--; pintarPV(); } return; }
     if ((b = t('[data-editar]'))) { var k = +b.getAttribute('data-editar'); pv.edit = pv.edit === k ? -1 : k; pintarLineas(); if ($('pe-q')) $('pe-q').focus(); return; }
@@ -449,7 +452,7 @@
   $('pv-seguir').addEventListener('click', function () { mostrar('venta'); pintarPV(); volverAlLector(); });
   $('pv-cobro').addEventListener('click', function (e) {
     var t = function (s) { return e.target.closest(s); }, b;
-    if ((b = t('[data-tab]'))) { elegir(+b.getAttribute('data-tab')); pintarCobro(); enfocarMonto(); return; }
+   if ((b = t('[data-tab]'))) { elegir(b.getAttribute('data-tab')); pintarCobro(); enfocarMonto(); return; }
     if ((b = t('[data-rapido]'))) { cobro.monto = +b.getAttribute('data-rapido'); pintarCobro(); return; }
     if ((b = t('[data-vuelto]'))) { cobro.vueltoEn = b.getAttribute('data-vuelto'); pintarPie(); return; }
     if ((b = t('[data-quitar-pago]'))) { cobro.pagos.splice(+b.getAttribute('data-quitar-pago'), 1); elegir(cobro.m); pintarCobro(); return; }
