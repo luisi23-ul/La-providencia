@@ -39,16 +39,16 @@ $productosLista = $db->query("SELECT " . nombre_clave('producto') . ", nombre_pr
       <label class="buscar"><svg class="i"><use href="#i-buscar"/></svg><input type="search" placeholder="Cliente, n.º de venta o referencia" aria-label="Buscar pago" data-filtro-tabla="vf-cola" data-filtro-vacio="vf-sin-resultados"></label>
       <ul class="vf-items" id="vf-cola" data-paginar="10">
         <?php foreach ($pagos as $i => $p):
-          $esEf = stripos($p->metodo ?? '', 'efectivo') !== false || empty($p->requiere_referencia);
+          $esEf = stripos($p->metodo_nombre ?? '', 'efectivo') !== false || empty($p->requiere_referencia);
           $claseEstado = ['pendiente' => 'pend', 'rechazado' => 'rech'][ref('pago.estado', $p)] ?? '';
-          $mt = mb_strtolower($p->metodo ?? '');
+          $mt = mb_strtolower($p->metodo_nombre ?? '');
           $icono = $esEf ? 'efectivo' : (str_contains($mt, 'transfer') ? 'banco' : 'movil');
         ?>
         <li><button type="button" class="vf-item <?= $claseEstado ?>" data-pago="<?= $i ?>" aria-current="<?= $i === 0 ? 'true' : 'false' ?>">
           <span class="vf-ic"><svg class="i"><use href="#i-<?= $icono ?>"/></svg></span>
-          <b><?= $e($p->cliente) ?>, <?= $e(numero_ref('venta', ref('pago.venta', $p))) ?></b>
+          <b><?= $e($p->cliente_nombre) ?>, <?= $e(numero_ref('venta', ref('pago.venta', $p))) ?></b>
           <span class="m"><?= ($p->moneda ?? 'Bs') === 'USD' ? $usd($p->monto) : number_format((float) $p->monto, 2, ',', '.') . ' Bs' ?></span>
-          <small><?= $e($p->metodo) ?> · <?= $esEf ? 'en caja' : 'Ref. ' . $e($p->referencia ?: 'sin referencia') ?></small>
+          <small><?= $e($p->metodo_nombre) ?> · <?= $esEf ? 'en caja' : 'Ref. ' . $e($p->referencia ?: 'sin referencia') ?></small>
         </button></li>
         <?php endforeach; ?>
       </ul>
@@ -140,13 +140,13 @@ $titularDe = function ($obs) {
 <?php endif; ?>
 
 <script type="application/json" id="datos-pagos"><?= json_encode(array_map(function ($p) use ($tasa, $titularDe) {
-    $esEf = stripos($p->metodo ?? '', 'efectivo') !== false || empty($p->requiere_referencia);
+    $esEf = stripos($p->metodo_nombre ?? '', 'efectivo') !== false || empty($p->requiere_referencia);
     $titular = $titularDe($p->observacion ?? '');
     return [
         'id' => clave('pago', $p),
         'venta' => ref('pago.venta', $p),
-        'cliente' => $p->cliente,
-        'metodo' => $p->metodo,
+        'cliente' => $p->cliente_nombre,
+        'metodo' => $p->metodo_nombre,
         'id_metodo' => ref('pago.metodo', $p),
         'moneda' => $p->moneda ?? 'Bs',
         'monto' => (float) $p->monto,
@@ -154,7 +154,7 @@ $titularDe = function ($obs) {
         'ref' => $esEf ? '' : ($p->referencia ?? ''),
         'es_efectivo' => $esEf,
         'banco' => $esEf || ($p->banco ?? '') === 'Caja Física' ? '' : ($p->banco ?? ''),
-        'origen' => ($p->origen ?? '') === 'tienda_fisica' ? 'Tienda física' : (($p->origen ?? '') === 'online' ? 'Online' : ''),
+        'origen' => ($p->origen_venta ?? '') === 'tienda_fisica' ? 'Tienda física' : (($p->origen_venta ?? '') === 'online' ? 'Online' : ''),
         'registrado_por' => $p->registrado_por_nombre ?? '',
         'img' => !empty($p->comprobante_img) ? 'public/uploads/' . $p->comprobante_img : '',
         'fecha' => !empty($p->fecha_pago) ? date('d/m, g:i a', strtotime($p->fecha_pago)) : '',

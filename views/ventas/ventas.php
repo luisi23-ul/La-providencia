@@ -103,11 +103,11 @@ $pctOnline = $total > 0 ? (100 - $pctTienda) : 0;
             <td data-label="Cliente">
               <div class="t-nombre">
                 <b><?= $e($v->nombre_cliente ?? 'Cliente general') ?></b>
-                <span class="si-estrecho"><?= $origen ?>, <?= $e($v->nombre_metodo ?? 'General') ?></span>
+                <span class="si-estrecho"><?= $origen ?>, <?= $e($v->metodo_nombre ?? 'General') ?></span>
               </div>
             </td>
             <td data-label="Origen" class="c-media"><span class="chip"><?= $origen ?></span></td>
-            <td data-label="Pago" class="c-media"><?= $e($v->nombre_metodo ?? 'N/A') ?></td>
+            <td data-label="Pago" class="c-media"><?= $e($v->metodo_nombre ?? 'N/A') ?></td>
             <td class="num" data-label="Total">
               <b><?= $usd($v->total ?? 0) ?></b><br>
               <span class="muted"><?= $bs($v->total ?? 0) ?></span>

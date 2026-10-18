@@ -3,7 +3,7 @@ date_default_timezone_set('America/Caracas');
 
 $menu = 'pagos_banco';
 $tituloPagina = 'Pagos por banco';
-$pagosRecibidos = $pagosRecibidos ?? [];
+$pagosRecibidos = $pagos ?? [];
 $metodos = $metodos ?? [];
 $tasa = isset($tasa) && (float)$tasa > 1 ? (float)$tasa : 1.0;
 
@@ -17,7 +17,7 @@ $f = [
     'banco'  => $_GET['banco'] ?? '',
 ];
 
-$esEfectivo = fn($p) => empty($p->requiere_referencia) || stripos($p->metodo ?? '', 'efectivo') !== false || ($p->banco ?? '') === 'Caja Física';
+$esEfectivo = fn($p) => empty($p->requiere_referencia) || stripos($p->metodo_nombre ?? '', 'efectivo') !== false || ($p->banco ?? '') === 'Caja Física';
 $pagos = array_values(array_filter($pagosRecibidos, fn($p) => !$esEfectivo($p)));
 $tipos = array_values(array_filter($metodos, fn($m) => stripos($m->nombre, 'efectivo') === false));
 
@@ -128,8 +128,8 @@ $titular = function ($p) {
     if (preg_match('/Titular:\s*([^|]*?)(?:\s*\|\s*Tel:\s*(.*))?$/ui', $obs, $m)) {
         return [trim($m[1]), trim($m[2] ?? '')];
     }
-    if (!empty($p->titular)) {
-        return [$p->titular, ''];
+    if (!empty($p->titular_nombre)) {
+        return [$p->titular_nombre, ''];
     }
     if (!empty($p->cliente_cedula)) {
         return [$p->cliente_cedula, $p->cliente_telefono ?? ''];
@@ -239,8 +239,8 @@ $titular = function ($p) {
                   <span>Venta <?= $e(numero_ref('venta', ref('pago.venta', $p))) ?> · <?= ($p->origen_venta ?? '') === 'tienda_fisica' ? 'Tienda física' : 'Online' ?></span>
                 </div>
               </td>
-              <td data-label="Cliente"><?= $e(trim($p->cliente ?? '') ?: 'Cliente') ?></td>
-              <td data-label="Tipo"><span class="chip"><?= $e($p->metodo) ?></span></td>
+              <td data-label="Cliente"><?= $e(trim($p->cliente_nombre ?? '') ?: 'Cliente') ?></td>
+              <td data-label="Tipo"><span class="chip"><?= $e($p->metodo_nombre) ?></span></td>
               <td data-label="Banco"><b class="pb-tbanco"><?= $e($banco) ?></b></td>
               <td data-label="Referencia">
                 <span class="pb-ref">

@@ -12,7 +12,7 @@ class VentaModel {
         try {
             $this->db->beginTransaction();
 
-            // Generar correlativo para numero_orden (ej: ORD-1791823)
+            // Generar correlativo para numero_orden (ej: ORD-179182)
             $numeroOrden = 'ORD-' . strtoupper(substr(uniqid(), -6));
 
             $cedulaCliente = 'SIN_USUARIO';
@@ -43,7 +43,7 @@ class VentaModel {
                 $total
             ]);
 
-            // Inserción en detalle_ventas con PK Compuesta (numero_orden, linea)
+            // Inserción en detalle_ventas (PK: numero_orden, linea)
             $sqlDetalle = "INSERT INTO detalle_ventas (
                                 numero_orden, linea, codigo_producto, codigo_variante, 
                                 cantidad, costo_unitario, precio_unitario, descuento, subtotal
