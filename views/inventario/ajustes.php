@@ -19,7 +19,7 @@ try {
 } catch (Throwable $t) {
     $variantesPorProducto = [];
 }
-$tipos = ['ajuste' => ['mas', 'Entrada'], 'merma' => ['basura', 'Merma'], 'transferencia' => ['camion', 'Entre canales']];
+$tipos = ['ajuste' => ['mas', 'Entrada'], 'merma' => ['basura', 'Merma']];
 ?>
 <section class="contenido">
   <header class="cab">

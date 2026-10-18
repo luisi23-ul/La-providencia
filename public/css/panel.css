@@ -1266,6 +1266,7 @@ body:has(.panel.modo-pos) .avisos { top: 76px; }
 .filtros .buscar { flex: 1 1 240px; min-height: 46px; padding: 0 14px; border: 0; border-radius: 12px; background: var(--fondo); }
 .filtros .buscar input { min-height: 46px; font-size: 15px; }
 .filtros .buscar:focus-within { box-shadow: 0 0 0 2px var(--marca); background: var(--tarjeta); }
+.filtros.dos-filas .buscar { flex-basis: 100%; }
 .f-select { position: relative; display: flex; align-items: center; }
 .f-select > svg.i { position: absolute; left: 13px; z-index: 1; color: var(--texto-3); pointer-events: none; }
 .f-select select { min-height: 46px; min-width: 210px; padding: 0 14px 0 40px; border: 0; border-radius: 12px; background: var(--fondo); font-size: 15px; font-weight: 500; color: var(--texto); cursor: pointer; }

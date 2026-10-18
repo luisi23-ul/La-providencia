@@ -35,10 +35,9 @@ $url = fn($estado) => 'index.php?' . http_build_query(array_filter(['action' => 
   <section class="tabla-caja" aria-label="Listado de compras">
     <div class="tabla-scroll">
       <table class="tabla-resp" id="tabla-compras" data-paginar="10">
-        <thead><tr><th>Compra</th><th>Proveedor</th><th class="c-media">Destino</th><th class="num c-media">Productos</th><th class="num">Total</th><th>Estado</th><th class="num"></th></tr></thead>
+        <thead><tr><th>Compra</th><th>Proveedor</th><th class="num c-media">Productos</th><th class="num">Total</th><th>Estado</th><th class="num"></th></tr></thead>
         <tbody>
         <?php foreach ($lista as $c): 
-          $destino = ($c->destino_stock ?? '') === 'online' ? 'Online' : 'Tienda física'; 
           $infoPago = !empty($c->metodo_pago) ? $c->metodo_pago . (!empty($c->banco) ? ' (' . $c->banco . ')' : '') : '';
         ?>
           <tr>
@@ -54,13 +53,12 @@ $url = fn($estado) => 'index.php?' . http_build_query(array_filter(['action' => 
             <td data-label="Proveedor">
               <div class="t-nombre">
                 <b><?= $e($c->razon_social) ?></b>
-                <span class="si-estrecho"><?= $destino ?>, <?= (int) ($c->total_productos ?? 0) ?> productos</span>
+                <span class="si-estrecho"><?= (int) ($c->total_productos ?? 0) ?> productos</span>
                 <?php if ($infoPago): ?>
                   <small style="color: #64748b;"><?= $e($infoPago) ?></small>
                 <?php endif; ?>
               </div>
             </td>
-            <td data-label="Destino" class="c-media"><span class="chip"><?= $destino ?></span></td>
             <td class="num c-media" data-label="Productos"><?= (int) ($c->total_productos ?? 0) ?></td>
             <td class="num" data-label="Total"><b<?= $c->estado === 'anulado' ? ' style="text-decoration:line-through;color:var(--texto-3)"' : '' ?>><?= $usd($c->total) ?></b></td>
             <td data-label="Estado"><span class="est <?= $c->estado === 'anulado' ? 'agot' : 'ok' ?>"><?= $c->estado === 'anulado' ? 'Anulada' : 'Recibida' ?></span></td>

@@ -109,8 +109,8 @@ include __DIR__ . '/../admin/_abrir.php';
       <button type="button" class="ic-btn" data-quitar aria-label="Quitar producto"><svg class="i"><use href="#i-basura"/></svg></button>
     </div>
     <div class="cpx-nuevo-prod" hidden>
-      <div class="campo"><label>Código del producto nuevo</label><input name="nuevo_codigo[]" maxlength="50" autocomplete="off" placeholder="P-0080"></div>
-      <div class="campo"><label>Nombre del producto nuevo</label><input name="nuevo_nombre[]" maxlength="150" autocomplete="off" placeholder="Ej.: Blusa de lino manga corta"></div>
+      <div class="campo"><label>Código</label><input name="nuevo_codigo[]" maxlength="50" autocomplete="off" placeholder="P-0080"></div>
+      <div class="campo"><label>Nombre</label><input name="nuevo_nombre[]" maxlength="150" autocomplete="off" placeholder="Ej.: Blusa de lino manga corta"></div>
       <?php if ($categorias): ?>
       <div class="campo ancho"><label>Categoría</label>
         <select name="nuevo_categoria[]">

@@ -41,7 +41,7 @@ $pctOnline = $total > 0 ? (100 - $pctTienda) : 0;
     </div>
   </header>
 
-  <form class="filtros" method="GET" action="index.php" aria-label="Filtros">
+  <form class="filtros dos-filas" method="GET" action="index.php" aria-label="Filtros">
     <input type="hidden" name="action" value="ventas">
     <label class="buscar"><svg class="i"><use href="#i-buscar"/></svg><input type="search" name="q" value="<?= $e($f['q']) ?>" placeholder="Buscar por n.º de venta o cliente" aria-label="Buscar venta"></label>
     <?php $periodoFiltro = ['modo' => 'rango', 'todo' => true]; include __DIR__ . '/../admin/_periodo.php'; ?>

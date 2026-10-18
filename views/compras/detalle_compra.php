@@ -5,7 +5,6 @@ $detalles = $detalles ?? [];
 include __DIR__ . '/../admin/_abrir.php';
 $num = numero_doc('compra', $compra);
 $anulada = $compra->estado === 'anulado';
-$destino = 'Tienda';
 $unidades = array_sum(array_map(fn($d) => (int) $d->cantidad, $detalles));
 $ganancia = array_sum(array_map(fn($d) => (float) ($d->ganancia_total_linea ?? 0), $detalles));
 $margenTotal = (float) $compra->total > 0 ? ($ganancia / (float) $compra->total) * 100 : 0;
@@ -23,17 +22,16 @@ $pct = fn($v) => rtrim(rtrim(number_format((float) $v, 1), '0'), '.') . ' %';
     <div class="cab-txt"><small>Compra</small><div class="titulo-atras"><a href="index.php?action=compras" class="atras" aria-label="Volver a Compras"><svg class="i"><use href="#i-volver"/></svg></a><h2><?= $num ?></h2></div><p class="dv-fecha"><?= $fechaLarga ?></p></div>
     <div class="cab-acc dv-chips">
       <span class="dv-chip<?= $anulada ? ' agot' : '' ?>"><svg class="i"><use href="#i-<?= $anulada ? 'x' : 'check' ?>"/></svg><?= $anulada ? 'Anulada' : 'Recibida' ?></span>
-      <span class="dv-chip neutro"><svg class="i"><use href="#i-tienda"/></svg><?= $destino ?></span>
       <a href="index.php?action=exportar_pdf&amp;tipo=compra&amp;<?= url_clave('compra', $compra) ?>" target="_blank" class="btn btn-sec"><svg class="i"><use href="#i-archivo"/></svg>PDF</a>
       <?php if (!$anulada): ?>
       <form method="POST" action="index.php?action=anular_compra" class="dc-anular">
         <?= ocultos('compra', $compra) ?>
-        <button type="submit" class="btn btn-peligro" data-confirmar="¿Anular la compra <?= $num ?>?" data-confirmar-texto="Se restarán <?= $unidades ?> unidades del stock de <?= $destino ?> y quedará registrado en Movimientos. La compra no se borra: queda en el historial como anulada." data-confirmar-boton="Anular compra"><svg class="i"><use href="#i-x"/></svg>Anular compra</button>
+        <button type="submit" class="btn btn-peligro" data-confirmar="¿Anular la compra <?= $num ?>?" data-confirmar-texto="Se restarán <?= $unidades ?> unidades del stock y quedará registrado en Movimientos. La compra no se borra: queda en el historial como anulada." data-confirmar-boton="Anular compra"><svg class="i"><use href="#i-x"/></svg>Anular compra</button>
       </form>
       <?php endif; ?>
     </div>
   </header>
-  <?php if ($anulada): ?><p class="anulada-banda">Esta compra está anulada. Las unidades se restaron del stock de <?= $destino ?>.</p><?php endif; ?>
+  <?php if ($anulada): ?><p class="anulada-banda">Esta compra está anulada. Las unidades se restaron del stock.</p><?php endif; ?>
 
   <section class="rc dc-rc" aria-label="Cuenta de la compra">
     <div class="rc-lineas">
