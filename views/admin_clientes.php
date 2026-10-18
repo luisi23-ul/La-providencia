@@ -37,7 +37,7 @@ $tabs = ['1' => ['Activos', $activos], '0' => ['Desactivados', count($clientes) 
             </td>
             <td class="t-acc centro"><div class="acc">
               <?php if (!empty($c->telefono)): ?><a href="https://wa.me/58<?= $e(ltrim(preg_replace('/\D/', '', $c->telefono), '0')) ?>" target="_blank" rel="noopener" class="ic-btn" aria-label="Escribir a <?= $e($nombre) ?> por WhatsApp"><svg class="i"><use href="#i-wa"/></svg></a><?php endif; ?>
-              <button type="button" class="ic-btn" data-abrir-modal="modal-cliente" data-registro="<?= $e(json_encode((base_nueva() ? [] : registro_clave('cliente', $c)) + ['cedula' => $c->cedula ?? '', 'nombre' => $c->nombre ?? '', 'apellido' => $c->apellido ?? '', 'telefono' => $c->telefono ?? '', 'correo' => $c->correo ?? '', 'direccion' => $c->direccion ?? ''], JSON_UNESCAPED_UNICODE)) ?>" aria-label="Editar <?= $e($nombre) ?>"><svg class="i"><use href="#i-editar"/></svg></button>
+              <button type="button" class="ic-btn" data-abrir-modal="modal-cliente" data-registro="<?= $e(json_encode(['cedula' => $c->cedula ?? '', 'nombre' => $c->nombre ?? '', 'apellido' => $c->apellido ?? '', 'telefono' => $c->telefono ?? '', 'correo' => $c->correo ?? '', 'direccion' => $c->direccion ?? ''], JSON_UNESCAPED_UNICODE)) ?>" aria-label="Editar <?= $e($nombre) ?>"><svg class="i"><use href="#i-editar"/></svg></button>
             </div></td>
           </tr>
         <?php endforeach; ?>
@@ -51,10 +51,9 @@ $tabs = ['1' => ['Activos', $activos], '0' => ['Desactivados', count($clientes) 
 
 <dialog class="modal" id="modal-cliente" aria-labelledby="mcl-titulo">
   <form method="POST" action="index.php?action=guardar_cliente">
-    <?php if (!base_nueva()) echo ocultos('cliente'); ?>
     <header class="modal-cab"><span class="modal-ic"><svg class="i"><use href="#i-usuarios"/></svg></span><div><h3 id="mcl-titulo" data-si-edita="Editar cliente" data-si-crea="Nuevo cliente">Nuevo cliente</h3><p>Los campos con * son obligatorios.</p></div><button type="button" class="ic-btn" data-cerrar aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button></header>
     <div class="modal-cuerpo form-grid">
-      <div class="campo"><label for="mcl-ced">Cédula o RIF <span class="ob">*</span></label><input id="mcl-ced" name="cedula"<?= base_nueva() ? ' data-clave-fija' : '' ?> required placeholder="V-12345678" autocomplete="off"></div>
+      <div class="campo"><label for="mcl-ced">Cédula o RIF <span class="ob">*</span></label><input id="mcl-ced" name="cedula" data-clave-fija required placeholder="V-12345678" autocomplete="off"></div>
       <div class="campo"><label for="mcl-tel">Teléfono</label><input id="mcl-tel" name="telefono" type="tel" inputmode="tel" placeholder="0414-5550123"></div>
       <div class="campo"><label for="mcl-nom">Nombre <span class="ob">*</span></label><input id="mcl-nom" name="nombre" required></div>
       <div class="campo"><label for="mcl-ape">Apellido</label><input id="mcl-ape" name="apellido"></div>

@@ -35,13 +35,12 @@ $opcionCat = fn($c, $prefijo = '') => '<option value="' . htmlspecialchars(clave
   </header>
 
   <form class="fpx" id="form-producto" action="index.php?action=<?= $editando ? 'actualizar_producto' : 'guardar_producto' ?>" method="POST" enctype="multipart/form-data">
-    <?php if ($editando && !base_nueva()) echo ocultos('producto', $p); ?>
     <div class="fpx-col">
       <section class="fpx-sec" aria-labelledby="fp-t-info">
         <header><span class="fpx-ic"><svg class="i"><use href="#i-caja"/></svg></span><div><h3 id="fp-t-info">Información</h3><p>Lo que ve el cliente en la tienda online.</p></div></header>
         <div class="fpx-cuerpo">
           <div class="campo ancho"><label for="fp-nombre">Nombre <span class="ob">*</span></label><input id="fp-nombre" name="<?= $campo('nombre_producto', 'nombre') ?>" value="<?= $e($p->nombre_producto ?? '') ?>" required placeholder="Ej.: Blusa de lino manga corta"></div>
-          <div class="campo"><label for="fp-codigo">Código</label><input id="fp-codigo" name="codigo" value="<?= $e($codigo) ?>" autocomplete="off" placeholder="P-0013"<?= $editando && base_nueva() ? ' readonly' : '' ?>><span class="ayuda">Si lo dejas vacío se asigna uno solo.</span></div>
+          <div class="campo"><label for="fp-codigo">Código</label><input id="fp-codigo" name="codigo" value="<?= $e($codigo) ?>" autocomplete="off" placeholder="P-0013"<?= $editando ? ' readonly' : '' ?>><span class="ayuda">Si lo dejas vacío se asigna uno solo.</span></div>
           <div class="campo"><label for="fp-cat">Categoría <span class="ob">*</span></label>
             <select id="fp-cat" name="<?= campo('categoria.ref') ?>" required>
               <option value="">Elige una categoría</option>
@@ -124,7 +123,7 @@ $opcionCat = fn($c, $prefijo = '') => '<option value="' . htmlspecialchars(clave
 <script type="application/json" id="datos-atributos"><?= json_encode([
     'categorias' => array_map(fn($c) => ['id' => clave('categoria', $c), 'atributos' => array_map(fn($a) => ['nombre' => mb_strtolower(trim($a->nombre)), 'opciones' => array_values(array_filter(array_map('trim', explode(',', (string) ($a->opciones ?? '')))))], $c->atributos ?? [])], $categorias),
     // Limpiado: Ahora mapeamos únicamente el stock unificado de la variante
-    'variantes' => array_map(fn($v) => ['id' => clave('variante', $v), 'talla' => $v->talla ?? '', 'color' => $v->color ?? '', 'modelo' => $v->modelo ?? '', 'sku' => $v->sku ?? (base_nueva() ? clave('variante', $v) : ''), 'precio' => $v->precio ?? '', 'stock' => (int) $v->stock], $variantesGuardadas),
+    'variantes' => array_map(fn($v) => ['id' => clave('variante', $v), 'talla' => $v->talla ?? '', 'color' => $v->color ?? '', 'modelo' => $v->modelo ?? '', 'sku' => $v->sku ?? clave('variante', $v), 'precio' => $v->precio ?? '', 'stock' => (int) $v->stock], $variantesGuardadas),
     'editando' => (bool) $editando,
 ], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?></script>
 <?php include __DIR__ . '/admin/_cerrar.php'; ?>

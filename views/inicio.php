@@ -6,7 +6,7 @@ if (!$categorias || !$novedades) {
     try {
         $dbInicio = $GLOBALS['db'] ?? Database::connect();
         if (!$categorias) $categorias = $dbInicio->query("SELECT * FROM categorias WHERE " . sql_principal() . " ORDER BY nombre_categoria ASC")->fetchAll(PDO::FETCH_OBJ);
-        if (!$novedades) $novedades = $dbInicio->query("SELECT p.*, c.nombre_categoria FROM productos p LEFT JOIN categorias c ON c." . nombre_clave('categoria') . " = p." . nombre_clave('producto.categoria') . " WHERE p.estado = 1 AND " . sql_sin_borrar('p') . " AND p.stock > 0 ORDER BY " . (base_nueva() ? "p.created_at DESC, (SELECT MAX(v.created_at) FROM producto_variantes v WHERE v.codigo_producto = p.codigo) DESC, p.codigo DESC" : "p.id DESC") . " LIMIT 8")->fetchAll(PDO::FETCH_OBJ);
+        if (!$novedades) $novedades = $dbInicio->query("SELECT p.*, c.nombre_categoria FROM productos p LEFT JOIN categorias c ON c." . nombre_clave('categoria') . " = p." . nombre_clave('producto.categoria') . " WHERE p.estado = 1 AND " . sql_sin_borrar('p') . " AND p.stock > 0 ORDER BY " . "p.created_at DESC, (SELECT MAX(v.created_at) FROM producto_variantes v WHERE v.codigo_producto = p.codigo) DESC, p.codigo DESC" . " LIMIT 8")->fetchAll(PDO::FETCH_OBJ);
     } catch (Throwable $t) {
         $categorias = $categorias ?: [];
         $novedades = $novedades ?: [];

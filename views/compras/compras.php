@@ -45,7 +45,7 @@ $url = fn($estado) => 'index.php?' . http_build_query(array_filter(['action' => 
             <td class="t-tit">
               <div class="t-nombre">
                 <b><?= $e(numero_doc('compra', $c)) ?></b>
-                <span><?= date('d/m/Y', strtotime($c->fecha_compra)) ?><?= !base_nueva() && $c->numero_factura ? ', fact. ' . $e($c->numero_factura) : '' ?></span>
+                <span><?= date('d/m/Y', strtotime($c->fecha_compra)) ?></span>
                 <?php if (!empty($c->comprado_por)): ?>
                   <small style="color: #64748b;">Compró: <?= $e($c->comprado_por) ?></small>
                 <?php endif; ?>

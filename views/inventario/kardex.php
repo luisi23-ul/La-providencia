@@ -46,9 +46,9 @@ $pastilla = function ($n, $min) {
             $transf = $m->tipo_movimiento === 'transferencia';
             $refMov = ref('kardex.referencia', $m);
             $num = numero_ref('venta', $refMov);
-            $refCompra = base_nueva() ? [$m->rif_proveedor ?? '', $refMov] : $refMov;
+            $refCompra = [$m->rif_proveedor ?? '', $refMov];
             $origen = in_array($m->tipo_movimiento, ['venta_tienda', 'venta_online']) && $refMov !== '' ? '<a href="index.php?action=detalle_venta&amp;' . url_valor('venta', $refMov) . '" class="enlace">Venta ' . $e($num) . '</a>'
-                : (in_array($m->tipo_movimiento, ['compra', 'anulacion_compra']) && $refMov !== '' ? (base_nueva() && empty($m->rif_proveedor) ? 'Compra ' . $e($num) : '<a href="index.php?action=detalle_compra&amp;' . url_valor('compra', $refCompra) . '" class="enlace">Compra ' . $e($num) . '</a>')
+                : (in_array($m->tipo_movimiento, ['compra', 'anulacion_compra']) && $refMov !== '' ? (empty($m->rif_proveedor) ? 'Compra ' . $e($num) : '<a href="index.php?action=detalle_compra&amp;' . url_valor('compra', $refCompra) . '" class="enlace">Compra ' . $e($num) . '</a>')
                 : $e($m->observacion ?: 'Ajuste'));
             $min = (int) ($m->stock_minimo ?? 5);
             $stockTotal = (int) ($m->stock_resultante ?? 0);

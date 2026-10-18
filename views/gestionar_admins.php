@@ -74,10 +74,9 @@ $resumenRoles = implode(' · ', array_map(fn($n, $c) => $n . ' ' . $c, array_key
 
 <dialog class="modal" id="modal-admin" aria-labelledby="ma-titulo">
   <form method="POST" action="index.php?action=guardar_nuevo_admin" id="form-admin" data-crear="index.php?action=guardar_nuevo_admin" data-editar="index.php?action=actualizar_admin">
-    <?php if (!base_nueva()) echo ocultos('usuario'); ?>
     <header class="modal-cab"><span class="modal-ic"><svg class="i"><use href="#i-escudo"/></svg></span><div><h3 id="ma-titulo" data-si-crea="Nueva cuenta" data-si-edita="Editar cuenta">Nueva cuenta</h3><p>La persona entra al panel con este correo.</p></div><button type="button" class="ic-btn" data-cerrar aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button></header>
     <div class="modal-cuerpo form-grid">
-      <?php if (base_nueva()): ?><div class="campo"><label for="ma-cedula">Cédula <span class="ob">*</span></label><input id="ma-cedula" name="<?= campo('usuario') ?>" data-clave-fija required maxlength="20" placeholder="V-12345678" autocomplete="off"></div><?php endif; ?>
+      <div class="campo"><label for="ma-cedula">Cédula <span class="ob">*</span></label><input id="ma-cedula" name="<?= campo('usuario') ?>" data-clave-fija required maxlength="20" placeholder="V-12345678" autocomplete="off"></div>
       <div class="campo"><label for="ma-nombre">Nombre <span class="ob">*</span></label><input id="ma-nombre" name="nombre" required maxlength="100" autocomplete="off"></div>
       <div class="campo"><label for="ma-apellido">Apellido</label><input id="ma-apellido" name="apellido" maxlength="50" autocomplete="off"></div>
       <div class="campo"><label for="ma-correo">Correo <span class="ob">*</span></label><input id="ma-correo" name="correo" type="email" required maxlength="100" autocomplete="off"></div>

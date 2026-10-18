@@ -80,7 +80,6 @@ $productosLista = $db->query("SELECT " . nombre_clave('producto') . ", nombre_pr
 <dialog class="modal mediano" id="modal-editar-pago" aria-labelledby="me-titulo">
   <form method="POST" action="index.php?action=editar_pago_verificacion" id="me-form">
     <?= ocultos('pago.ref') ?>
-    <?php if (!base_nueva()) echo ocultos('venta.ref', null, 'me-id-venta'); ?>
     <input type="hidden" name="tasa_cambio" id="me-tasa" value="<?= $tasa ?>">
     <header class="modal-cab"><span class="modal-ic"><svg class="i"><use href="#i-editar"/></svg></span><div><h3 id="me-titulo">Editar pago</h3><p id="me-subtitulo"></p></div><button type="button" class="ic-btn" data-cerrar aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button></header>
     <div class="modal-cuerpo me-cuerpo">

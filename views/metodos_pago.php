@@ -3,10 +3,10 @@ require_once __DIR__ . '/admin/_claves.php';
 $menu = 'metodos_pago';
 $tituloPagina = 'Métodos de pago';
 $metodos = $metodos ?? array_map(fn($m) => (object) $m, [
-    [nombre_clave('metodo') => base_nueva() ? 'efectivo_bs' : 1, 'nombre' => 'Efectivo Bs', 'moneda' => 'Bs', 'requiere_referencia' => 0, 'en_tienda' => 1, 'en_online' => 1, 'datos' => '', 'activo' => 1],
-    [nombre_clave('metodo') => base_nueva() ? 'efectivo_usd' : 2, 'nombre' => 'Efectivo $', 'moneda' => 'USD', 'requiere_referencia' => 0, 'en_tienda' => 1, 'en_online' => 1, 'datos' => '', 'activo' => 1],
-    [nombre_clave('metodo') => base_nueva() ? 'transferencia' : 3, 'nombre' => 'Transferencia', 'moneda' => 'Bs', 'requiere_referencia' => 1, 'en_tienda' => 1, 'en_online' => 1, 'datos' => '', 'activo' => 1],
-    [nombre_clave('metodo') => base_nueva() ? 'pago_movil' : 4, 'nombre' => 'Pago Móvil', 'moneda' => 'Bs', 'requiere_referencia' => 1, 'en_tienda' => 1, 'en_online' => 1, 'datos' => '', 'activo' => 1],
+    [nombre_clave('metodo') => 'efectivo_bs', 'nombre' => 'Efectivo Bs', 'moneda' => 'Bs', 'requiere_referencia' => 0, 'en_tienda' => 1, 'en_online' => 1, 'datos' => '', 'activo' => 1],
+    [nombre_clave('metodo') => 'efectivo_usd', 'nombre' => 'Efectivo $', 'moneda' => 'USD', 'requiere_referencia' => 0, 'en_tienda' => 1, 'en_online' => 1, 'datos' => '', 'activo' => 1],
+    [nombre_clave('metodo') => 'transferencia', 'nombre' => 'Transferencia', 'moneda' => 'Bs', 'requiere_referencia' => 1, 'en_tienda' => 1, 'en_online' => 1, 'datos' => '', 'activo' => 1],
+    [nombre_clave('metodo') => 'pago_movil', 'nombre' => 'Pago Móvil', 'moneda' => 'Bs', 'requiere_referencia' => 1, 'en_tienda' => 1, 'en_online' => 1, 'datos' => '', 'activo' => 1],
 ]);
 include __DIR__ . '/admin/_abrir.php';
 $icono = function ($nombre) {
@@ -36,7 +36,6 @@ $activos = count(array_filter($metodos, fn($m) => $m->activo));
         </form>
       </div>
       <h3><?= $e($m->nombre) ?></h3>
-      <?php if (!base_nueva()): ?><p class="mp-datos"><?= !empty($m->datos) ? nl2br($e($m->datos)) : 'Sin datos para el cliente.' ?></p><?php endif; ?>
       <dl class="mp-props">
         <div><dt>Moneda</dt><dd><?= $usdM ? 'Dólares' : 'Bolívares' ?></dd></div>
         <div><dt>Dónde</dt><dd><?= $donde ?></dd></div>
@@ -72,7 +71,6 @@ $activos = count(array_filter($metodos, fn($m) => $m->activo));
           <li><label><span class="mm-op-ic"><svg class="i"><use href="#i-etiqueta"/></svg></span><span class="mm-op-txt"><b>Pedir referencia</b><small>Se pide el número del pago.</small></span><span class="interruptor"><input type="checkbox" name="requiere_referencia" value="1"></span></label></li>
         </ul>
       </div>
-      <?php if (!base_nueva()): ?><div class="campo"><label for="mm-datos">Datos para el cliente</label><textarea id="mm-datos" name="datos" rows="2" placeholder="Banco, teléfono, cédula o número de cuenta"></textarea><span class="ayuda">Se muestran al cliente cuando elige este método en la tienda online.</span></div><?php endif; ?>
     </div>
     <footer class="modal-pie"><button type="button" class="btn btn-sec" data-cerrar>Cancelar</button><button type="submit" class="btn btn-pri" data-si-crea="Guardar método" data-si-edita="Guardar cambios">Guardar método</button></footer>
   </form>
