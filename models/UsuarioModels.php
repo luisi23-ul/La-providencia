@@ -4,131 +4,144 @@ require_once 'config/db.php';
 class UsuarioModels {
     private $db;
 
-    // edgar preguntar anes de tocar
-    public function __construct() {
-        $this->db = Database::connect(); 
+    public function __construct($db = null) {
+        $this->db = $db ?: Database::connect();
     }
 
-    //  solo usuarios de un rol específico (rol 2 para admins)
-   public function obtenerUsuarioPorId($id) {
-    $stmt = $this->db->prepare("SELECT * FROM usuarios WHERE id = ?");
-    $stmt->execute([$id]);
-    return $stmt->fetch(PDO::FETCH_ASSOC);
-}
+    // Buscar por clave primaria natural (cédula)
+    public function obtenerUsuarioPorCedula($cedula) {
+        $stmt = $this->db->prepare("SELECT * FROM usuarios WHERE cedula = ?");
+        $stmt->execute([$cedula]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
 
-    // Registra un nuevo Admin parecido al  cliente pero con rol fijo
-public function registrarUsuarioModel($datos) {
-    $sql = "INSERT INTO usuarios (nombre, correo, clave, id_rol, permisos) VALUES (?, ?, ?, ?, ?)";
-    $stmt = $this->db->prepare($sql);
-    $stmt->execute([$datos['nombre'], $datos['correo'], $datos['clave'], $datos['rol'], $datos['permisos']]);
-}
+    // Compatibilidad si algún método viejo aún pasa el identificador como ID
+    public function obtenerUsuarioPorId($cedula) {
+        return $this->obtenerUsuarioPorCedula($cedula);
+    }
 
-    // Eliminar cualquier usuario 2 o 3
-  public function eliminarAdminModel($id) {
-    $sql = "UPDATE usuarios SET estado = 0 WHERE id = ?";
-    $stmt = $this->db->prepare($sql);
-    $stmt->execute([$id]);
-}
+    // Buscar usuario por correo para login
+    public function buscarUsuarioModel($datos) {
+        $sql = "SELECT cedula, nombre, apellido, correo, clave, codigo_rol, estado 
+                FROM usuarios 
+                WHERE correo = :correo LIMIT 1";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([":correo" => $datos["correo"]]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
 
     public function login($correo, $clave) {
-    // Cambiamos a la lógica de verificación de password_verify
-    $stmt = $this->db->prepare("SELECT * FROM usuarios WHERE correo = ? AND estado = 1 LIMIT 1");
-    $stmt->execute([$correo]);
-    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        $stmt = $this->db->prepare("SELECT * FROM usuarios WHERE correo = ? AND estado = 1 LIMIT 1");
+        $stmt->execute([$correo]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if ($user && password_verify($clave, $user['clave'])) {
-        return $user;
+        if ($user && password_verify($clave, $user['clave'])) {
+            return $user;
+        }
+        return false;
     }
-    return false;
-}
-// registra solos los clientes
+
     public function registrarClienteModel($datos) {
-        $sql = "INSERT INTO usuarios (nombre, apellido, telefono, correo, clave, id_rol) 
-                VALUES (?, ?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO usuarios (cedula, nombre, apellido, telefono, direccion, correo, clave, codigo_rol, estado) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, 'cliente', 1)";
         $stmt = $this->db->prepare($sql);
         return $stmt->execute([
-            $datos['nombre'], 
-            $datos['apellido'], 
-            $datos['telefono'], 
-            $datos['correo'], 
-            $datos['clave'], 
-            $datos['id_rol']
+            $datos['cedula'],
+            $datos['nombre'],
+            $datos['apellido'] ?? '',
+            $datos['telefono'] ?? '',
+            $datos['direccion'] ?? '',
+            $datos['correo'],
+            $datos['clave']
         ]);
     }
-public function verificarUsuario($email, $password) {
-    $sql = "SELECT * FROM usuarios WHERE email = :email";
-    $stmt = $this->db->prepare($sql);
-    $stmt->execute([':email' => $email]);
-    $usuario = $stmt->fetch(PDO::FETCH_OBJ);
 
-    // 1. Verificamos si el usuario existe
-    if ($usuario && password_verify($password, $usuario->password)) {
-        
-        if ($usuario->estado == 1) {
-            return $usuario; 
+    public function registrarUsuarioModel($datos) {
+        $sql = "INSERT INTO usuarios (cedula, nombre, apellido, telefono, direccion, correo, clave, codigo_rol, estado) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute([
+            $datos['cedula'],
+            $datos['nombre'],
+            $datos['apellido'] ?? '',
+            $datos['telefono'] ?? '',
+            $datos['direccion'] ?? '',
+            $datos['correo'],
+            $datos['clave'],
+            $datos['codigo_rol'],
+            $datos['estado'] ?? 1
+        ]);
+    }
+
+    public function obtenerUsuariosPorRol($codigo_rol) {
+        $stmt = $this->db->prepare("SELECT * FROM usuarios WHERE codigo_rol = ?");
+        $stmt->execute([$codigo_rol]);
+        return $stmt->fetchAll(PDO::FETCH_OBJ);
+    }
+
+    public function actualizarAdminModel($datos) {
+        if (!empty($datos['clave'])) {
+            $sql = "UPDATE usuarios 
+                    SET nombre = ?, apellido = ?, correo = ?, codigo_rol = ?, clave = ?, estado = ? 
+                    WHERE cedula = ?";
+            $stmt = $this->db->prepare($sql);
+            return $stmt->execute([
+                $datos['nombre'],
+                $datos['apellido'] ?? '',
+                $datos['correo'],
+                $datos['codigo_rol'],
+                password_hash($datos['clave'], PASSWORD_DEFAULT),
+                $datos['estado'] ?? 1,
+                $datos['cedula']
+            ]);
         } else {
-            return 'inactivo'; 
+            $sql = "UPDATE usuarios 
+                    SET nombre = ?, apellido = ?, correo = ?, codigo_rol = ?, estado = ? 
+                    WHERE cedula = ?";
+            $stmt = $this->db->prepare($sql);
+            return $stmt->execute([
+                $datos['nombre'],
+                $datos['apellido'] ?? '',
+                $datos['correo'],
+                $datos['codigo_rol'],
+                $datos['estado'] ?? 1,
+                $datos['cedula']
+            ]);
         }
     }
-    
-    return false;
-}
 
-public function buscarUsuarioModel($datos) {
-        $sql = "SELECT id, nombre, clave, id_rol, estado
-                FROM usuarios
-                WHERE correo = :correo";
-    
-    $stmt = $this->db->prepare($sql);
-    $stmt->execute([":correo" => $datos["correo"]]);
-    return $stmt->fetch(PDO::FETCH_ASSOC);
-}
-
-public function obtenerUsuariosPorRol($rol) {
-    $stmt = $this->db->prepare("SELECT * FROM usuarios WHERE id_rol = ?");
-    $stmt->execute([$rol]);
-    return $stmt->fetchAll(PDO::FETCH_OBJ);
-}
-
-public function actualizarAdminModel($datos) {
-    if (!empty($datos['clave'])) {
-        
-$sql = "UPDATE usuarios SET nombre = ?, correo = ?, permisos = ?, estado = ? WHERE id = ?";
-// ...
+    public function actualizarEstadoUsuario($cedula, $estado) {
+        $sql = "UPDATE usuarios SET estado = ? WHERE cedula = ?";
         $stmt = $this->db->prepare($sql);
-        $stmt->execute([
-            $datos['nombre'], 
-            $datos['correo'], 
-            password_hash($datos['clave'], PASSWORD_DEFAULT), 
-            $datos['permisos'], 
-            $datos['id']
-        ]);
-    } else {
-        $sql = "UPDATE usuarios SET nombre = ?, correo = ?, permisos = ? WHERE id = ?";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([
-            $datos['nombre'], 
-            $datos['correo'], 
-            $datos['permisos'], 
-            $datos['id']
-        ]);
-    }
-}
-
-public function listarAdministradores() {
-        $admins = $this->modelo->obtenerUsuariosPorRol(2); 
-        
-        include "views/listado_administradores.php";
+        return $stmt->execute([$estado, $cedula]);
     }
 
-public function actualizarEstadoUsuario($id, $estado) {
-    $sql = "UPDATE usuarios SET estado = ? WHERE id = ?";
-    $stmt = $this->db->prepare($sql);
-    $stmt->execute([$estado, $id]);
-}
+    public function eliminarAdminModel($cedula) {
+        return $this->actualizarEstadoUsuario($cedula, 0);
+    }
 
-public function obtenerClientes() {
-        $sql = "SELECT id, nombre, correo, estado FROM usuarios WHERE id_rol = 3 ORDER BY id DESC";
+    public function obtenerClientes() {
+        $sql = "SELECT cedula, nombre, apellido, correo, telefono, estado 
+                FROM usuarios 
+                WHERE codigo_rol = 'cliente' 
+                ORDER BY nombre ASC";
         return $this->db->query($sql)->fetchAll(PDO::FETCH_OBJ);
+    }
+
+    public function obtenerVenta($numero_orden) {
+        $stmt = $this->db->prepare("SELECT * FROM ventas WHERE numero_orden = ?");
+        $stmt->execute([$numero_orden]);
+        return $stmt->fetch(PDO::FETCH_OBJ);
+    }
+
+    public function obtenerDetalles($numero_orden) {
+        $sql = "SELECT dv.*, p.nombre_producto 
+                FROM detalle_ventas dv
+                INNER JOIN productos p ON dv.codigo_producto = p.codigo
+                WHERE dv.numero_orden = ?
+                ORDER BY dv.linea ASC";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$numero_orden]);
+        return $stmt->fetchAll(PDO::FETCH_OBJ);
     }
 }
