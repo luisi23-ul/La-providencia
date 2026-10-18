@@ -18,7 +18,7 @@ $db = Database::connect();
 
 $usuarioC = new UsuarioController($db); 
 $adminC   = new AdminControllers(); 
-$ventaC   = new VentaController($db);
+$ventaC   = new VentasController($db);
 $reporteC = new ReporteController($db);
 $masterC  = new MasterController($db);
 $provC    = new ProveedorController($db);
@@ -207,11 +207,13 @@ if ($action == 'crear_pedido') {
 }
 
 // -----------------------------------------------------------------------------
-// BLOQUE DE SEGURIDAD MASTER (Solo Rol 1 y 2)
+// BLOQUE DE SEGURIDAD MASTER (Acepta 'master', 'administrador', 1 y 2)
 // -----------------------------------------------------------------------------
 if (in_array($action, $acciones_master)) {
-    if (isset($_SESSION['rol']) && ($_SESSION['rol'] == 1 || $_SESSION['rol'] == 2)) {
-       switch ($action) {
+    $rol = strtolower(trim((string)($_SESSION['codigo_rol'] ?? $_SESSION['rol'] ?? '')));
+    
+    if ($rol === 'master' || $rol === 'administrador' || $rol === '1' || $rol === '2') {
+        switch ($action) {
             case 'dashboard_master':         $masterC->mostrarDashboard_master(); break;
             case 'gestionar_admins':         $masterC->gestionarAdmins(); break;
             case 'nuevo_admin':              $masterC->nuevoAdmin(); break;
