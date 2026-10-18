@@ -185,7 +185,7 @@ document.addEventListener('change', function(e) {
     'clientes' => array_map(fn($c) => [
         'id' => clave('cliente', $c),
         'doc' => $c->cedula ?? '',
-        'n' => trim($c->nombre . ' ' . ($c->apellido ?? '')),
+        'n' => trim(($c->nombre_razon_social ?? $c->nombre ?? '') . ' ' . ($c->apellido ?? '')),
         'tel' => $c->telefono ?? '',
     ], $clientes),
     'venta' => $ventaRegistrada ?? null,

@@ -1,7 +1,7 @@
 <?php
 if (defined('CLAVES_BASE')) return;
 
-const CLAVES_BASE = 'viejo';
+const CLAVES_BASE = 'nuevo';
 
 const CLAVES_NOMBRES = [
     'viejo' => [
