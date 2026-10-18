@@ -1,17 +1,18 @@
 <?php
+require_once __DIR__ . '/../admin/_claves.php';
 $menu = 'verificar_pagos';
 $tituloPagina = 'Verificar pagos';
 $scripts = ['verificar_pagos'];
 $pagos = $pagos ?? [];
-$conteo = $conteo ?? ['pendiente' => count(array_filter($pagos, fn($p) => $p->estado_verificacion === 'pendiente'))];
+$conteo = $conteo ?? ['pendiente' => count(array_filter($pagos, fn($p) => ref('pago.estado', $p) === 'pendiente'))];
 include __DIR__ . '/../admin/_abrir.php';
 $estado = $_GET['estado'] ?? 'pendiente';
 $fecha = $_GET['fecha'] ?? '';
 $tabs = ['pendiente' => 'Por verificar', 'aprobado' => 'Aprobados', 'rechazado' => 'Rechazados'];
 
 $db = Database::connect();
-$metodosList = $db->query("SELECT id, nombre FROM metodos_pago ORDER BY nombre ASC")->fetchAll(PDO::FETCH_OBJ);
-$productosLista = $db->query("SELECT id, nombre_producto, precio FROM productos WHERE deleted_at IS NULL AND estado = 1 ORDER BY nombre_producto ASC")->fetchAll(PDO::FETCH_OBJ);
+$metodosList = $db->query("SELECT " . nombre_clave('metodo') . ", nombre FROM metodos_pago ORDER BY nombre ASC")->fetchAll(PDO::FETCH_OBJ);
+$productosLista = $db->query("SELECT " . nombre_clave('producto') . ", nombre_producto, precio FROM productos WHERE " . sql_sin_borrar() . " AND estado = 1 ORDER BY nombre_producto ASC")->fetchAll(PDO::FETCH_OBJ);
 ?>
 <section class="contenido" id="p-verificar_pagos">
   <header class="cab">
@@ -39,13 +40,13 @@ $productosLista = $db->query("SELECT id, nombre_producto, precio FROM productos 
       <ul class="vf-items" id="vf-cola" data-paginar="10">
         <?php foreach ($pagos as $i => $p):
           $esEf = stripos($p->metodo ?? '', 'efectivo') !== false || empty($p->requiere_referencia);
-          $claseEstado = ['pendiente' => 'pend', 'rechazado' => 'rech'][$p->estado_verificacion] ?? '';
+          $claseEstado = ['pendiente' => 'pend', 'rechazado' => 'rech'][ref('pago.estado', $p)] ?? '';
           $mt = mb_strtolower($p->metodo ?? '');
           $icono = $esEf ? 'efectivo' : (str_contains($mt, 'transfer') ? 'banco' : 'movil');
         ?>
         <li><button type="button" class="vf-item <?= $claseEstado ?>" data-pago="<?= $i ?>" aria-current="<?= $i === 0 ? 'true' : 'false' ?>">
           <span class="vf-ic"><svg class="i"><use href="#i-<?= $icono ?>"/></svg></span>
-          <b><?= $e($p->cliente) ?>, #<?= str_pad($p->id_venta, 4, '0', STR_PAD_LEFT) ?></b>
+          <b><?= $e($p->cliente) ?>, <?= $e(numero_ref('venta', ref('pago.venta', $p))) ?></b>
           <span class="m"><?= ($p->moneda ?? 'Bs') === 'USD' ? $usd($p->monto) : number_format((float) $p->monto, 2, ',', '.') . ' Bs' ?></span>
           <small><?= $e($p->metodo) ?> · <?= $esEf ? 'en caja' : 'Ref. ' . $e($p->referencia ?: 'sin referencia') ?></small>
         </button></li>
@@ -60,7 +61,7 @@ $productosLista = $db->query("SELECT id, nombre_producto, precio FROM productos 
 
 <dialog class="modal chico" id="modal-rechazo" aria-labelledby="mr-titulo">
   <form method="POST" action="index.php?action=rechazar_pago">
-    <input type="hidden" name="id" id="mr-id">
+    <?= ocultos('pago') ?>
     <header class="modal-cab"><span class="modal-ic peligro"><svg class="i"><use href="#i-x"/></svg></span><div><h3 id="mr-titulo">Rechazar pago</h3><p>El cliente verá este motivo.</p></div></header>
     <div class="modal-cuerpo">
       <div class="campo">
@@ -78,16 +79,16 @@ $productosLista = $db->query("SELECT id, nombre_producto, precio FROM productos 
 
 <dialog class="modal mediano" id="modal-editar-pago" aria-labelledby="me-titulo">
   <form method="POST" action="index.php?action=editar_pago_verificacion" id="me-form">
-    <input type="hidden" name="id_pago" id="me-id-pago">
-    <input type="hidden" name="id_venta" id="me-id-venta">
+    <?= ocultos('pago.ref') ?>
+    <?php if (!base_nueva()) echo ocultos('venta.ref', null, 'me-id-venta'); ?>
     <input type="hidden" name="tasa_cambio" id="me-tasa" value="<?= $tasa ?>">
     <header class="modal-cab"><span class="modal-ic"><svg class="i"><use href="#i-editar"/></svg></span><div><h3 id="me-titulo">Editar pago</h3><p id="me-subtitulo"></p></div><button type="button" class="ic-btn" data-cerrar aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button></header>
     <div class="modal-cuerpo me-cuerpo">
       <div class="me-fila">
         <div class="campo">
           <label for="me-metodo">Método de pago <span class="ob">*</span></label>
-          <select id="me-metodo" name="id_metodo_pago" required>
-            <?php foreach ($metodosList as $m): ?><option value="<?= (int) $m->id ?>"><?= $e($m->nombre) ?></option><?php endforeach; ?>
+          <select id="me-metodo" name="<?= campo('metodo.ref') ?>" required>
+            <?php foreach ($metodosList as $m): ?><option value="<?= $e(clave('metodo', $m)) ?>"><?= $e($m->nombre) ?></option><?php endforeach; ?>
           </select>
         </div>
         <div class="campo">
@@ -105,7 +106,7 @@ $productosLista = $db->query("SELECT id, nombre_producto, precio FROM productos 
       <section class="me-prods" aria-labelledby="me-prods-tit">
         <header><h4 id="me-prods-tit">Productos del pedido</h4><span class="ayuda">Agrega otros o pon 0 para quitar</span></header>
         <ul id="me-lista-prods"></ul>
-        <div class="me-agregar"><select id="me-nuevo" data-buscador aria-label="Producto para agregar"><option value="">Buscar un producto para agregar…</option><?php foreach ($productosLista as $pl): ?><option value="<?= (int) $pl->id ?>" data-nombre="<?= $e($pl->nombre_producto) ?>" data-precio="<?= (float) $pl->precio ?>"><?= $e($pl->nombre_producto) ?> · <?= $usd($pl->precio) ?></option><?php endforeach; ?></select><button type="button" class="btn btn-sec" id="me-agregar"><svg class="i"><use href="#i-mas"/></svg>Agregar</button></div>
+        <div class="me-agregar"><select id="me-nuevo" data-buscador aria-label="Producto para agregar"><option value="">Buscar un producto para agregar…</option><?php foreach ($productosLista as $pl): ?><option value="<?= $e(clave('producto', $pl)) ?>" data-nombre="<?= $e($pl->nombre_producto) ?>" data-precio="<?= (float) $pl->precio ?>"><?= $e($pl->nombre_producto) ?> · <?= $usd($pl->precio) ?></option><?php endforeach; ?></select><button type="button" class="btn btn-sec" id="me-agregar"><svg class="i"><use href="#i-mas"/></svg>Agregar</button></div>
         <p class="me-total"><span>Nuevo total</span><b id="me-total">—</b></p>
       </section>
     </div>
@@ -116,7 +117,7 @@ $productosLista = $db->query("SELECT id, nombre_producto, precio FROM productos 
   </form>
 </dialog>
 
-<form id="form-aprobar" method="POST" action="index.php?action=aprobar_pago" hidden><input type="hidden" name="id" id="ap-id"></form>
+<form id="form-aprobar" method="POST" action="index.php?action=aprobar_pago" hidden><?= ocultos('pago') ?></form>
 
 <?php
 $alerta = $_SESSION['alerta'] ?? null;
@@ -134,7 +135,7 @@ $titularDe = function ($obs) {
     'tipo' => ['success' => 'ok', 'error' => 'error', 'warning' => 'aviso', 'info' => 'info'][$alerta['tipo'] ?? 'info'] ?? 'info',
     'titulo' => $alerta['titulo'] ?? '',
     'texto' => $alerta['texto'] ?? '',
-    'deshacer' => !empty($alerta['deshacer_id']) ? 'index.php?action=deshacer_pago&id=' . (int) $alerta['deshacer_id'] : '',
+    'deshacer' => !empty($alerta['deshacer_id']) ? 'index.php?action=deshacer_pago&' . html_entity_decode(url_valor('pago', $alerta['deshacer_id'])) : '',
 ], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?></script>
 <?php endif; ?>
 
@@ -142,11 +143,11 @@ $titularDe = function ($obs) {
     $esEf = stripos($p->metodo ?? '', 'efectivo') !== false || empty($p->requiere_referencia);
     $titular = $titularDe($p->observacion ?? '');
     return [
-        'id' => (int) $p->id,
-        'venta' => (int) $p->id_venta,
+        'id' => clave('pago', $p),
+        'venta' => ref('pago.venta', $p),
         'cliente' => $p->cliente,
         'metodo' => $p->metodo,
-        'id_metodo' => (int) ($p->id_metodo_pago ?? 0),
+        'id_metodo' => ref('pago.metodo', $p),
         'moneda' => $p->moneda ?? 'Bs',
         'monto' => (float) $p->monto,
         'tasa' => (float) ($p->tasa_cambio ?? 0) > 1 ? (float) $p->tasa_cambio : (float) $tasa,
@@ -157,10 +158,10 @@ $titularDe = function ($obs) {
         'registrado_por' => $p->registrado_por_nombre ?? '',
         'img' => !empty($p->comprobante_img) ? 'public/uploads/' . $p->comprobante_img : '',
         'fecha' => !empty($p->fecha_pago) ? date('d/m, g:i a', strtotime($p->fecha_pago)) : '',
-        'estado' => $p->estado_verificacion,
+        'estado' => ref('pago.estado', $p),
         'por' => $p->verificado_por_nombre ?? '',
         'cuando' => !empty($p->fecha_verificacion) ? date('d/m, g:i a', strtotime($p->fecha_verificacion)) : '',
-        'motivo' => $p->estado_verificacion === 'rechazado' ? ($p->observacion ?? '') : '',
+        'motivo' => ref('pago.estado', $p) === 'rechazado' ? ($p->observacion ?? '') : '',
         'titular' => $esEf ? null : $titular,
         'total' => (float) ($p->total_venta ?? 0),
         'previos' => (float) ($p->pagado_aprobado ?? 0),

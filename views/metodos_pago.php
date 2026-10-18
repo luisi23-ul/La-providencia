@@ -1,11 +1,12 @@
 <?php
+require_once __DIR__ . '/admin/_claves.php';
 $menu = 'metodos_pago';
 $tituloPagina = 'Métodos de pago';
 $metodos = $metodos ?? array_map(fn($m) => (object) $m, [
-    ['id' => 1, 'nombre' => 'Efectivo Bs', 'moneda' => 'Bs', 'requiere_referencia' => 0, 'en_tienda' => 1, 'en_online' => 1, 'datos' => '', 'activo' => 1],
-    ['id' => 2, 'nombre' => 'Efectivo $', 'moneda' => 'USD', 'requiere_referencia' => 0, 'en_tienda' => 1, 'en_online' => 1, 'datos' => '', 'activo' => 1],
-    ['id' => 3, 'nombre' => 'Transferencia', 'moneda' => 'Bs', 'requiere_referencia' => 1, 'en_tienda' => 1, 'en_online' => 1, 'datos' => '', 'activo' => 1],
-    ['id' => 4, 'nombre' => 'Pago Móvil', 'moneda' => 'Bs', 'requiere_referencia' => 1, 'en_tienda' => 1, 'en_online' => 1, 'datos' => '', 'activo' => 1],
+    [nombre_clave('metodo') => base_nueva() ? 'efectivo_bs' : 1, 'nombre' => 'Efectivo Bs', 'moneda' => 'Bs', 'requiere_referencia' => 0, 'en_tienda' => 1, 'en_online' => 1, 'datos' => '', 'activo' => 1],
+    [nombre_clave('metodo') => base_nueva() ? 'efectivo_usd' : 2, 'nombre' => 'Efectivo $', 'moneda' => 'USD', 'requiere_referencia' => 0, 'en_tienda' => 1, 'en_online' => 1, 'datos' => '', 'activo' => 1],
+    [nombre_clave('metodo') => base_nueva() ? 'transferencia' : 3, 'nombre' => 'Transferencia', 'moneda' => 'Bs', 'requiere_referencia' => 1, 'en_tienda' => 1, 'en_online' => 1, 'datos' => '', 'activo' => 1],
+    [nombre_clave('metodo') => base_nueva() ? 'pago_movil' : 4, 'nombre' => 'Pago Móvil', 'moneda' => 'Bs', 'requiere_referencia' => 1, 'en_tienda' => 1, 'en_online' => 1, 'datos' => '', 'activo' => 1],
 ]);
 include __DIR__ . '/admin/_abrir.php';
 $icono = function ($nombre) {
@@ -30,20 +31,20 @@ $activos = count(array_filter($metodos, fn($m) => $m->activo));
       <div class="mp-cab">
         <span class="mp-ic fpx-ic"><svg class="i"><use href="#i-<?= $icono($m->nombre) ?>"/></svg></span>
         <form method="POST" action="index.php?action=cambiar_estado_metodo">
-          <input type="hidden" name="id" value="<?= (int) $m->id ?>"><input type="hidden" name="activo" value="<?= $m->activo ? 0 : 1 ?>">
+          <?= ocultos('metodo', $m) ?><input type="hidden" name="activo" value="<?= $m->activo ? 0 : 1 ?>">
           <label class="interruptor"><input type="checkbox" <?= $m->activo ? 'checked' : '' ?> onchange="this.form.submit()" aria-label="<?= $m->activo ? 'Apagar' : 'Activar' ?> <?= $e($m->nombre) ?>"><span><?= $m->activo ? 'Activo' : 'Apagado' ?></span></label>
         </form>
       </div>
       <h3><?= $e($m->nombre) ?></h3>
-      <p class="mp-datos"><?= !empty($m->datos) ? nl2br($e($m->datos)) : 'Sin datos para el cliente.' ?></p>
+      <?php if (!base_nueva()): ?><p class="mp-datos"><?= !empty($m->datos) ? nl2br($e($m->datos)) : 'Sin datos para el cliente.' ?></p><?php endif; ?>
       <dl class="mp-props">
         <div><dt>Moneda</dt><dd><?= $usdM ? 'Dólares' : 'Bolívares' ?></dd></div>
         <div><dt>Dónde</dt><dd><?= $donde ?></dd></div>
         <div><dt>Referencia</dt><dd><?= $m->requiere_referencia ? 'Se pide' : 'No se pide' ?></dd></div>
       </dl>
       <footer class="mp-pie">
-        <a href="index.php?action=ver_reporte&amp;metodo=<?= (int) $m->id ?>" class="btn btn-sec btn-peq"><svg class="i"><use href="#i-grafico"/></svg>Ver lo cobrado</a>
-        <button type="button" class="btn btn-sec btn-peq" data-abrir-modal="modal-metodo" data-registro="<?= $e(json_encode(['id' => $m->id, 'nombre' => $m->nombre, 'moneda' => $m->moneda ?? 'Bs', 'en_tienda' => $m->en_tienda, 'en_online' => $m->en_online, 'requiere_referencia' => $m->requiere_referencia, 'datos' => $m->datos ?? ''], JSON_UNESCAPED_UNICODE)) ?>"><svg class="i"><use href="#i-editar"/></svg>Editar</button>
+        <a href="index.php?action=ver_reporte&amp;<?= url_clave('metodo', $m) ?>" class="btn btn-sec btn-peq"><svg class="i"><use href="#i-grafico"/></svg>Ver lo cobrado</a>
+        <button type="button" class="btn btn-sec btn-peq" data-abrir-modal="modal-metodo" data-registro="<?= $e(json_encode(registro_clave('metodo', $m) + ['nombre' => $m->nombre, 'moneda' => $m->moneda ?? 'Bs', 'en_tienda' => $m->en_tienda, 'en_online' => $m->en_online, 'requiere_referencia' => $m->requiere_referencia, 'datos' => $m->datos ?? ''], JSON_UNESCAPED_UNICODE)) ?>"><svg class="i"><use href="#i-editar"/></svg>Editar</button>
       </footer>
     </li>
     <?php endforeach; ?>
@@ -52,7 +53,7 @@ $activos = count(array_filter($metodos, fn($m) => $m->activo));
 
 <dialog class="modal" id="modal-metodo" aria-labelledby="mm-titulo">
   <form method="POST" action="index.php?action=guardar_metodo_pago">
-    <input type="hidden" name="id">
+    <?= ocultos('metodo') ?>
     <header class="modal-cab"><span class="modal-ic"><svg class="i"><use href="#i-tarjeta"/></svg></span><div><h3 id="mm-titulo" data-si-edita="Editar método de pago" data-si-crea="Nuevo método de pago">Nuevo método de pago</h3></div><button type="button" class="ic-btn" data-cerrar aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button></header>
     <div class="modal-cuerpo mm-cuerpo">
       <div class="mm-fila">
@@ -71,7 +72,7 @@ $activos = count(array_filter($metodos, fn($m) => $m->activo));
           <li><label><span class="mm-op-ic"><svg class="i"><use href="#i-etiqueta"/></svg></span><span class="mm-op-txt"><b>Pedir referencia</b><small>Se pide el número del pago.</small></span><span class="interruptor"><input type="checkbox" name="requiere_referencia" value="1"></span></label></li>
         </ul>
       </div>
-      <div class="campo"><label for="mm-datos">Datos para el cliente</label><textarea id="mm-datos" name="datos" rows="2" placeholder="Banco, teléfono, cédula o número de cuenta"></textarea><span class="ayuda">Se muestran al cliente cuando elige este método en la tienda online.</span></div>
+      <?php if (!base_nueva()): ?><div class="campo"><label for="mm-datos">Datos para el cliente</label><textarea id="mm-datos" name="datos" rows="2" placeholder="Banco, teléfono, cédula o número de cuenta"></textarea><span class="ayuda">Se muestran al cliente cuando elige este método en la tienda online.</span></div><?php endif; ?>
     </div>
     <footer class="modal-pie"><button type="button" class="btn btn-sec" data-cerrar>Cancelar</button><button type="submit" class="btn btn-pri" data-si-crea="Guardar método" data-si-edita="Guardar cambios">Guardar método</button></footer>
   </form>

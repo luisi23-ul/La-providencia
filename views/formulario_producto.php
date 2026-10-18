@@ -1,22 +1,23 @@
 <?php
+require_once __DIR__ . '/admin/_claves.php';
 $menu = 'listado_productos';
 $editando = isset($p) && $p;
 $tituloPagina = $editando ? 'Editar producto' : 'Nuevo producto';
 $scripts = ['inventario'];
-$categorias = $categorias ?? [];
+$categorias = sin_relleno($categorias ?? [], 'categoria');
 include __DIR__ . '/admin/_abrir.php';
 
 
-$codigo = $editando ? ($p->codigo ?? ('P-' . str_pad($p->id, 4, '0', STR_PAD_LEFT))) : '';
+$codigo = $editando ? ($p->codigo ?? ('P-' . str_pad(clave('producto', $p), 4, '0', STR_PAD_LEFT))) : '';
 $campo = fn($crear, $editar) => $editando ? $editar : $crear;
 $visible = (int) ($p->estado ?? 1) === 1;
 $variantesGuardadas = $editando ? ($p->variantes ?? []) : [];
-$principales = array_filter($categorias, fn($c) => empty($c->id_padre));
+$principales = array_filter($categorias, fn($c) => empty(ref('categoria.padre', $c)));
 $hijas = [];
-foreach ($categorias as $c) if (!empty($c->id_padre)) $hijas[$c->id_padre][] = $c;
+foreach ($categorias as $c) if (!empty(ref('categoria.padre', $c))) $hijas[ref('categoria.padre', $c)][] = $c;
 $nombreCategoria = '';
-foreach ($categorias as $c) if ($editando && (string) $c->id === (string) ($p->id_categoria ?? '')) $nombreCategoria = $c->nombre_categoria;
-$opcionCat = fn($c, $prefijo = '') => '<option value="' . (int) $c->id . '"' . ((string) ($p->id_categoria ?? '') === (string) $c->id ? ' selected' : '') . '>' . $prefijo . htmlspecialchars($c->nombre_categoria, ENT_QUOTES, 'UTF-8') . '</option>';
+foreach ($categorias as $c) if ($editando && clave('categoria', $c) === ($editando ? ref('producto.categoria', $p) : '')) $nombreCategoria = $c->nombre_categoria;
+$opcionCat = fn($c, $prefijo = '') => '<option value="' . htmlspecialchars(clave('categoria', $c), ENT_QUOTES, 'UTF-8') . '"' . (($editando ? ref('producto.categoria', $p) : '') === clave('categoria', $c) ? ' selected' : '') . '>' . $prefijo . htmlspecialchars($c->nombre_categoria, ENT_QUOTES, 'UTF-8') . '</option>';
 ?>
 <section class="contenido">
 
@@ -34,19 +35,19 @@ $opcionCat = fn($c, $prefijo = '') => '<option value="' . (int) $c->id . '"' . (
   </header>
 
   <form class="fpx" id="form-producto" action="index.php?action=<?= $editando ? 'actualizar_producto' : 'guardar_producto' ?>" method="POST" enctype="multipart/form-data">
-    <?php if ($editando): ?><input type="hidden" name="id" value="<?= (int) $p->id ?>"><?php endif; ?>
+    <?php if ($editando && !base_nueva()) echo ocultos('producto', $p); ?>
     <div class="fpx-col">
       <section class="fpx-sec" aria-labelledby="fp-t-info">
         <header><span class="fpx-ic"><svg class="i"><use href="#i-caja"/></svg></span><div><h3 id="fp-t-info">Información</h3><p>Lo que ve el cliente en la tienda online.</p></div></header>
         <div class="fpx-cuerpo">
           <div class="campo ancho"><label for="fp-nombre">Nombre <span class="ob">*</span></label><input id="fp-nombre" name="<?= $campo('nombre_producto', 'nombre') ?>" value="<?= $e($p->nombre_producto ?? '') ?>" required placeholder="Ej.: Blusa de lino manga corta"></div>
-          <div class="campo"><label for="fp-codigo">Código</label><input id="fp-codigo" name="codigo" value="<?= $e($codigo) ?>" autocomplete="off" placeholder="P-0013"><span class="ayuda">Si lo dejas vacío se asigna uno solo.</span></div>
+          <div class="campo"><label for="fp-codigo">Código</label><input id="fp-codigo" name="codigo" value="<?= $e($codigo) ?>" autocomplete="off" placeholder="P-0013"<?= $editando && base_nueva() ? ' readonly' : '' ?>><span class="ayuda">Si lo dejas vacío se asigna uno solo.</span></div>
           <div class="campo"><label for="fp-cat">Categoría <span class="ob">*</span></label>
-            <select id="fp-cat" name="id_categoria" required>
+            <select id="fp-cat" name="<?= campo('categoria.ref') ?>" required>
               <option value="">Elige una categoría</option>
               <?php foreach ($principales as $padre): ?>
                 <?= $opcionCat($padre) ?>
-                <?php foreach ($hijas[$padre->id] ?? [] as $sub) echo $opcionCat($sub, '↳ '); ?>
+                <?php foreach ($hijas[clave('categoria', $padre)] ?? [] as $sub) echo $opcionCat($sub, '↳ '); ?>
               <?php endforeach; ?>
             </select>
           </div>
@@ -84,7 +85,7 @@ $opcionCat = fn($c, $prefijo = '') => '<option value="' . (int) $c->id . '"' . (
           <div class="fpx-st"><span class="ic"><svg class="i"><use href="#i-tienda"/></svg></span><label for="fp-st">Unidades</label><input id="fp-st" name="stock" type="number" min="0" inputmode="numeric" value="<?= (int) ($p->stock ?? 0) ?>"<?= $editando ? ' readonly' : '' ?>></div>
           <div class="fpx-st min"><span class="ic"><svg class="i"><use href="#i-alerta"/></svg></span><label for="fp-sm">Avisar cuando baje de</label><input id="fp-sm" name="stock_minimo" type="number" min="0" inputmode="numeric" value="<?= (int) ($p->stock_minimo ?? 5) ?>"></div>
           <?php if ($editando): ?>
-          <div class="fpx-ajuste" id="fp-ajuste"><span>¿Contaste y no cuadra? Corrígelo con un ajuste.</span><a href="index.php?action=ajustes_inventario&amp;producto=<?= (int) $p->id ?>" class="btn btn-sec"><svg class="i"><use href="#i-ajuste"/></svg>Ajustar stock</a></div>
+          <div class="fpx-ajuste" id="fp-ajuste"><span>¿Contaste y no cuadra? Corrígelo con un ajuste.</span><a href="index.php?action=ajustes_inventario&amp;<?= url_clave('producto', $p, 'ajuste') ?>" class="btn btn-sec"><svg class="i"><use href="#i-ajuste"/></svg>Ajustar stock</a></div>
           <?php endif; ?>
         </div>
       </section>
@@ -121,9 +122,9 @@ $opcionCat = fn($c, $prefijo = '') => '<option value="' . (int) $c->id . '"' . (
   </div>
 </section>
 <script type="application/json" id="datos-atributos"><?= json_encode([
-    'categorias' => array_map(fn($c) => ['id' => (int) $c->id, 'atributos' => array_map(fn($a) => ['nombre' => mb_strtolower(trim($a->nombre)), 'opciones' => array_values(array_filter(array_map('trim', explode(',', (string) ($a->opciones ?? '')))))], $c->atributos ?? [])], $categorias),
+    'categorias' => array_map(fn($c) => ['id' => clave('categoria', $c), 'atributos' => array_map(fn($a) => ['nombre' => mb_strtolower(trim($a->nombre)), 'opciones' => array_values(array_filter(array_map('trim', explode(',', (string) ($a->opciones ?? '')))))], $c->atributos ?? [])], $categorias),
     // Limpiado: Ahora mapeamos únicamente el stock unificado de la variante
-    'variantes' => array_map(fn($v) => ['id' => (int) $v->id, 'talla' => $v->talla ?? '', 'color' => $v->color ?? '', 'modelo' => $v->modelo ?? '', 'sku' => $v->sku ?? '', 'precio' => $v->precio ?? '', 'stock' => (int) $v->stock], $variantesGuardadas),
+    'variantes' => array_map(fn($v) => ['id' => clave('variante', $v), 'talla' => $v->talla ?? '', 'color' => $v->color ?? '', 'modelo' => $v->modelo ?? '', 'sku' => $v->sku ?? (base_nueva() ? clave('variante', $v) : ''), 'precio' => $v->precio ?? '', 'stock' => (int) $v->stock], $variantesGuardadas),
     'editando' => (bool) $editando,
 ], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?></script>
 <?php include __DIR__ . '/admin/_cerrar.php'; ?>

@@ -27,17 +27,17 @@ $lista = $tab === 'pendiente' ? $porRetirar : $entregados;
       <table class="tabla-resp" data-paginar="10">
         <thead><tr><th>Pedido</th><th>Cliente</th><th class="c-media">Pago</th><th class="num">Total</th><th>Entrega</th></tr></thead>
         <tbody>
-        <?php foreach ($lista as $v): $num = '#' . str_pad($v->id, 4, '0', STR_PAD_LEFT); ?>
+        <?php foreach ($lista as $v): $num = numero_doc('venta', $v); ?>
           <tr>
-            <td class="t-tit"><div class="t-nombre"><b><?= $num ?></b><span>Pagado <?= date('d/m, g:i a', strtotime($v->fecha)) ?></span></div></td>
+            <td class="t-tit"><div class="t-nombre"><b><?= $e($num) ?></b><span>Pagado <?= date('d/m, g:i a', strtotime($v->fecha)) ?></span></div></td>
             <td data-label="Cliente"><div class="t-nombre"><b><?= $e($v->nombre_cliente) ?></b><?php if (!empty($v->telefono)): ?><span class="tel-cli"><?= $e($v->telefono) ?></span><?php endif; ?></div></td>
             <td data-label="Pago" class="c-media centro"><span class="chip"><?= $e($v->nombre_metodo ?? $v->metodo_pago ?? $v->pago ?? 'Pago Móvil') ?></span></td>
             <td class="num" data-label="Total"><b><?= $usd($v->total) ?></b><br><span class="muted"><?= number_format($v->total_bs ?? ((float)$v->total * (float)($tasa ?? 1)), 2, ',', '.') ?> Bs</span></td>
             <td class="t-acc centro">
               <?php if (in_array($v->estado, ['pagado', 'por_retirar'])): ?>
-                <div class="acc"><button type="button" class="btn btn-ok btn-peq" data-abrir-modal="modal-entrega" data-registro="<?= $e(json_encode(['id' => $v->id, 'cliente' => $v->nombre_cliente, 'pedido' => $num])) ?>"><svg class="i"><use href="#i-bolsa"/></svg>Entregar</button></div>
+                <div class="acc"><button type="button" class="btn btn-ok btn-peq" data-abrir-modal="modal-entrega" data-registro="<?= $e(json_encode(registro_clave('venta', $v) + ['cliente' => $v->nombre_cliente, 'pedido' => $num])) ?>"><svg class="i"><use href="#i-bolsa"/></svg>Entregar</button></div>
               <?php else: ?>
-                <span class="entrega-ok"><b>Entregado</b><?= $e(trim(($v->fecha_entrega ?? '') ? date('d/m, g:i a', strtotime($v->fecha_entrega)) . '. ' : '') . (!empty($v->retirado_por) ? 'Retiró ' . $v->retirado_por . '.' : 'Retiró el cliente.')) ?></span>
+                <span class="entrega-ok"><b>Entregado</b><?= $e(trim(!es_vacio($v->fecha_entrega ?? null) ? date('d/m, g:i a', strtotime($v->fecha_entrega)) . '. ' : '') . (!empty($v->retirado_por) ? 'Retiró ' . $v->retirado_por . '.' : 'Retiró el cliente.')) ?></span>
               <?php endif; ?>
             </td>
           </tr>
@@ -52,7 +52,7 @@ $lista = $tab === 'pendiente' ? $porRetirar : $entregados;
 <dialog class="modal chico" id="modal-entrega" aria-labelledby="me-titulo">
   <form method="GET" action="index.php">
     <input type="hidden" name="action" value="procesar_retiro">
-    <input type="hidden" name="id">
+    <?= ocultos('venta') ?>
     <header class="modal-cab"><span class="modal-ic"><svg class="i"><use href="#i-bolsa"/></svg></span><div><h3 id="me-titulo">Entregar pedido</h3><p>Confirma quién se lo lleva.</p></div><button type="button" class="ic-btn" data-cerrar aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button></header>
     <div class="modal-cuerpo" style="display:flex;flex-direction:column;gap:12px">
       <div class="campo"><span class="lbl">¿Quién lo retira?</span>

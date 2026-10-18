@@ -4,12 +4,12 @@
   var productos = D.productos, metodos = D.metodos, clientes = D.clientes;
   var pv = { lineas: [], edit: -1, cliente: null, nuevoCliente: null, cat: '' };
   var r2 = function (v) { return Math.round(v * 100) / 100; };
-  var prod = function (id) { return productos.filter(function (p) { return p.id === id; })[0]; };
+  var prod = function (id) { return productos.filter(function (p) { return String(p.id) === String(id); })[0]; };
   var precioL = function (l) { return l.p != null ? l.p : prod(l.id).precio; };
   var totalL = function (l) { return r2(precioL(l) * l.q * (1 - l.d / 100)); };
   var totalPV = function () { return r2(pv.lineas.reduce(function (s, l) { return s + totalL(l); }, 0)); };
-  var cantEn = function (id) { return pv.lineas.reduce(function (s, x) { return x.id === id ? s + x.q : s; }, 0); };
-  var variante = function (l) { return l.v ? (prod(l.id).v || []).filter(function (x) { return x[0] === l.v; })[0] : null; };
+  var cantEn = function (id) { return pv.lineas.reduce(function (s, x) { return String(x.id) === String(id) ? s + x.q : s; }, 0); };
+  var variante = function (l) { return l.v ? (prod(l.id).v || []).filter(function (x) { return String(x[0]) === String(l.v); })[0] : null; };
   var topeL = function (l) { var x = variante(l); return x ? x[3] : (l.v ? 0 : prod(l.id).t); };
   var nomVar = function (x) { return [x[1], x[2]].filter(Boolean).join(' / '); };
   var stockP = function (p) { return p.v && p.v.length ? p.v.reduce(function (s, x) { return s + x[3]; }, 0) : p.t; };
@@ -67,7 +67,7 @@
         '</div>' : '') + '</li>';
     }).join('');
   }
-  function libreLinea(o, l) { return o[3] - pv.lineas.reduce(function (s, y) { return y !== l && y.v === o[0] ? s + y.q : s; }, 0); }
+  function libreLinea(o, l) { return o[3] - pv.lineas.reduce(function (s, y) { return y !== l && String(y.v) === String(o[0]) ? s + y.q : s; }, 0); }
   function editorPrenda(l, x) {
     var vs = prod(l.id).v, tallas = unicos(vs.map(function (o) { return o[1]; })), colores = unicos(vs.filter(function (o) { return o[1] === x[1]; }).map(function (o) { return o[2]; }));
     var fila = function (tit, ops, sel, attr, de) {
@@ -84,7 +84,7 @@
     var l = pv.lineas[i], vs = prod(l.id).v, x = variante(l);
     var cand = vs.filter(function (o) { return o[1] === talla && libreLinea(o, l) > 0; });
     var n = cand.filter(function (o) { return o[2] === color; })[0] || cand.filter(function (o) { return o[2] === x[2]; })[0] || cand[0];
-    if (!n || n[0] === l.v) return;
+    if (!n || String(n[0]) === String(l.v)) return;
     var otra = pv.lineas.filter(function (y) { return y !== l && y.v === n[0]; })[0];
     if (otra) { otra.q = Math.min(n[3], otra.q + l.q); pv.lineas.splice(i, 1); pv.edit = pv.lineas.indexOf(otra); avisar('Se juntó con la línea de ' + nomVar(n), 'info'); }
     else { var tope = libreLinea(n, l); if (l.q > tope) { l.q = tope; avisar('Solo quedan ' + tope + ' de ' + nomVar(n), 'aviso'); } l.v = n[0]; }
@@ -123,8 +123,8 @@
     var p = prod(id), i = -1;
     if (p.v && p.v.length && vid === undefined) { abrirVariante(p); return; }
     vid = vid || null;
-    var x = vid ? p.v.filter(function (o) { return o[0] === vid; })[0] : null, tope = x ? x[3] : p.t, nom = p.n + (x ? ' ' + nomVar(x) : '');
-    pv.lineas.forEach(function (l, k) { if (l.id === id && (l.v || null) === vid) i = k; });
+    var x = vid ? p.v.filter(function (o) { return String(o[0]) === String(vid); })[0] : null, tope = x ? x[3] : p.t, nom = p.n + (x ? ' ' + nomVar(x) : '');
+    pv.lineas.forEach(function (l, k) { if (String(l.id) === String(id) && String(l.v || '') === String(vid || '')) i = k; });
     if (i >= 0) {
       if (pv.lineas[i].q >= tope) { avisar('Solo quedan ' + tope + ' de ' + nom + ' en tienda y ya están en el ticket', 'aviso'); return; }
       pv.lineas[i].q++;
@@ -135,7 +135,7 @@
     pv.edit = -1; pintarPV(); volverAlLector();
   }
   var mv = { p: null, talla: null, color: null };
-  function libres(x) { return x[3] - pv.lineas.reduce(function (s, l) { return l.v === x[0] ? s + l.q : s; }, 0); }
+  function libres(x) { return x[3] - pv.lineas.reduce(function (s, l) { return String(l.v) === String(x[0]) ? s + l.q : s; }, 0); }
   function abrirVariante(p) {
     mv = { p: p, talla: null, color: null };
     var tallas = unicos(p.v.map(function (x) { return x[1]; }));
@@ -219,7 +219,7 @@
   $('p-punto_venta').addEventListener('click', function (e) {
     var t = function (s) { return e.target.closest(s); };
     var b;
-    if ((b = t('[data-agregar]'))) return agregar(+b.getAttribute('data-agregar'));
+    if ((b = t('[data-agregar]'))) return agregar(b.getAttribute('data-agregar'));
     if ((b = t('[data-mas]'))) { var lm = pv.lineas[+b.getAttribute('data-mas')]; return agregar(lm.id, lm.v || null); }
     if ((b = t('[data-menos]'))) { var i = +b.getAttribute('data-menos'); if (pv.lineas[i].q <= 1) quitar(i); else { pv.lineas[i].q--; pintarPV(); } return; }
     if ((b = t('[data-editar]'))) { var k = +b.getAttribute('data-editar'); pv.edit = pv.edit === k ? -1 : k; pintarLineas(); if ($('pe-q')) $('pe-q').focus(); return; }
@@ -302,7 +302,7 @@
   });
   $('mcl-final').addEventListener('click', function () { pv.cliente = null; pv.nuevoCliente = null; $('modal-cliente').close(); pintarPV(); });
 
-  var met = function (id) { return metodos.filter(function (m) { return m.id === id; })[0]; };
+  var met = function (id) { return metodos.filter(function (m) { return String(m.id) === String(id); })[0]; };
   var metodoInicial = function () { return (metodos.filter(function (m) { return m.mon === '$' && !m.ref; })[0] || metodos[0]).id; };
   var pUsd = function (p) { return met(p.m).mon === '$' ? p.monto : p.monto / TASA; };
   var fmtMon = function (v, mon) { return mon === '$' ? usd(v) : Panel.fmtBs(v) + ' Bs'; };
@@ -363,7 +363,7 @@
     }).join('') + '</div>' : '';
 
     var tabs = '<div class="pc-tabs" role="radiogroup" aria-label="Método de pago">' + metodos.map(function (x) {
-      return '<button type="button" role="radio" class="pc-tab" data-tab="' + x.id + '" aria-checked="' + (x.id === cobro.m) + '"><svg class="i"><use href="#i-' + icono(x) + '"/></svg>' + esc(x.n) + '</button>';
+      return '<button type="button" role="radio" class="pc-tab" data-tab="' + x.id + '" aria-checked="' + (String(x.id) === String(cobro.m)) + '"><svg class="i"><use href="#i-' + icono(x) + '"/></svg>' + esc(x.n) + '</button>';
     }).join('') + '</div>';
 
     var recibe = '<div class="pc-recibe"><label for="pc-monto">' + (m.ref ? '¿Cuánto paga por ' + esc(m.n) + '?' : '¿Cuánto te da el cliente?') + '</label>' +
@@ -449,7 +449,7 @@
   $('pv-seguir').addEventListener('click', function () { mostrar('venta'); pintarPV(); volverAlLector(); });
   $('pv-cobro').addEventListener('click', function (e) {
     var t = function (s) { return e.target.closest(s); }, b;
-    if ((b = t('[data-tab]'))) { elegir(+b.getAttribute('data-tab')); pintarCobro(); enfocarMonto(); return; }
+    if ((b = t('[data-tab]'))) { elegir(b.getAttribute('data-tab')); pintarCobro(); enfocarMonto(); return; }
     if ((b = t('[data-rapido]'))) { cobro.monto = +b.getAttribute('data-rapido'); pintarCobro(); return; }
     if ((b = t('[data-vuelto]'))) { cobro.vueltoEn = b.getAttribute('data-vuelto'); pintarPie(); return; }
     if ((b = t('[data-quitar-pago]'))) { cobro.pagos.splice(+b.getAttribute('data-quitar-pago'), 1); elegir(cobro.m); pintarCobro(); return; }
@@ -505,11 +505,11 @@
     }
     var f = $('form-venta'), campos = [];
     var add = function (n, v) { campos.push('<input type="hidden" name="' + n + '" value="' + esc(v) + '">'); };
-    if (pv.cliente && pv.cliente.id) add('id_usuario', pv.cliente.id);
+    if (pv.cliente && pv.cliente.id) add(campoClave('cliente.ref'), pv.cliente.id);
     if (pv.nuevoCliente) Object.keys(pv.nuevoCliente).forEach(function (k) { add('nuevo_cliente[' + k + ']', pv.nuevoCliente[k]); });
-    pv.lineas.forEach(function (l) { add('id_producto[]', l.id); add('id_variante[]', l.v || ''); add('cantidad[]', l.q); add('precio_unitario[]', precioL(l)); add('descuento[]', l.d); });
+    pv.lineas.forEach(function (l) { add(campoClave('producto.ref') + '[]', l.id); add(campoClave('variante.ref') + '[]', l.v || ''); add('cantidad[]', l.q); add('precio_unitario[]', precioL(l)); add('descuento[]', l.d); });
     cobro.pagos.forEach(function (p) {
-      add('id_metodo_pago[]', p.m);
+      add(campoClave('metodo.ref') + '[]', p.m);
       add('monto[]', p.monto);
       add('tasa_cambio[]', TASA);
       add('referencia[]', p.ref || '');
@@ -621,9 +621,9 @@
 
   function telefonoWa(t) { var d = String(t || '').replace(/\D/g, ''); if (d.charAt(0) === '0') d = '58' + d.slice(1); return /^58\d{10}$/.test(d) ? d : ''; }
   function comprobante(v) {
-    var num = String(v.id).padStart(4, '0');
+    var numerico = /^\d+$/.test(String(v.id)), num = numerico ? String(v.id).padStart(4, '0') : String(v.id), etiqueta = (numerico ? '#' : '') + num;
     mostrar('listo');
-    $('pv-tk-titulo').textContent = 'Venta #' + num;
+    $('pv-tk-titulo').textContent = 'Venta ' + etiqueta;
     $('pv-tk-meta').textContent = (v.fecha || '').replace(/\.$/, '') + ((v.atendio || D.cajero) ? '. Atendió ' + (v.atendio || D.cajero) : '');
     $('pv-cliente').classList.add('con-cliente');
     $('pv-cliente').innerHTML = '<span class="avatar">' + esc(v.cliente ? iniciales(v.cliente) : 'CF') + '</span><span><b>' + esc(v.cliente || 'Consumidor final') + '</b><span class="cifra">' + esc(v.documento || (v.cliente ? '' : 'Sin cédula ni RIF')) + '</span></span>';
@@ -633,7 +633,7 @@
     $('pv-total').textContent = usd(v.total); $('pv-bs').textContent = bs(v.total);
     $('pv-pagos-r').innerHTML = (v.pagos || []).map(function (p) { return '<div><span>' + esc(p.metodo) + (p.referencia ? ', ref. ' + esc(p.referencia) : '') + '</span><b class="cifra">' + (p.moneda === 'USD' ? usd(p.monto) : Panel.fmtBs(p.monto) + ' Bs') + '</b></div>'; }).join('') +
       (textoVuelto(v) ? '<div><span>Vuelto</span><b class="cifra">' + textoVuelto(v) + '</b></div>' : '');
-    $('pl-titulo').textContent = 'Venta #' + num + ' registrada';
+    $('pl-titulo').textContent = 'Venta ' + etiqueta + ' registrada';
     $('pl-entrega').hidden = !textoVuelto(v);
     if (textoVuelto(v)) {
       $('pl-vuelto').textContent = v.vuelto_moneda === 'USD' ? usd(v.vuelto) : bs(v.vuelto);

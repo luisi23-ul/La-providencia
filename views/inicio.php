@@ -5,8 +5,8 @@ $novedades = $novedades ?? [];
 if (!$categorias || !$novedades) {
     try {
         $dbInicio = $GLOBALS['db'] ?? Database::connect();
-        if (!$categorias) $categorias = $dbInicio->query("SELECT * FROM categorias WHERE id_padre IS NULL ORDER BY nombre_categoria ASC")->fetchAll(PDO::FETCH_OBJ);
-        if (!$novedades) $novedades = $dbInicio->query("SELECT p.*, c.nombre_categoria FROM productos p LEFT JOIN categorias c ON c.id = p.id_categoria WHERE p.estado = 1 AND p.deleted_at IS NULL AND p.stock > 0 ORDER BY p.id DESC LIMIT 8")->fetchAll(PDO::FETCH_OBJ);
+        if (!$categorias) $categorias = $dbInicio->query("SELECT * FROM categorias WHERE " . sql_principal() . " ORDER BY nombre_categoria ASC")->fetchAll(PDO::FETCH_OBJ);
+        if (!$novedades) $novedades = $dbInicio->query("SELECT p.*, c.nombre_categoria FROM productos p LEFT JOIN categorias c ON c." . nombre_clave('categoria') . " = p." . nombre_clave('producto.categoria') . " WHERE p.estado = 1 AND " . sql_sin_borrar('p') . " AND p.stock > 0 ORDER BY " . (base_nueva() ? "(SELECT MAX(v.created_at) FROM producto_variantes v WHERE v.codigo_producto = p.codigo) DESC, p.codigo DESC" : "p.id DESC") . " LIMIT 8")->fetchAll(PDO::FETCH_OBJ);
     } catch (Throwable $t) {
         $categorias = $categorias ?: [];
         $novedades = $novedades ?: [];
@@ -32,13 +32,13 @@ $conFoto = array_values(array_filter($categorias, fn($c) => !empty($c->imagen)))
   <section class="mosaico" aria-labelledby="t-cat">
     <h2 class="sec-tit" id="t-cat">Compra por categoría</h2>
     <?php foreach (array_slice($conFoto, 0, 5) as $i => $c): ?>
-    <a class="tesela<?= $i === 0 ? ' grande' : '' ?>" href="index.php?action=ver_catalogo&amp;id_categoria=<?= (int) $c->id ?>"><img src="<?= $e($foto($c->imagen)) ?>" alt="" loading="lazy"><span><?= $e($c->nombre_categoria) ?><i class="ti ti-arrow-right" aria-hidden="true"></i></span></a>
+    <a class="tesela<?= $i === 0 ? ' grande' : '' ?>" href="index.php?action=ver_catalogo&amp;<?= url_clave('categoria', $c) ?>"><img src="<?= $e($foto($c->imagen)) ?>" alt="" loading="lazy"><span><?= $e($c->nombre_categoria) ?><i class="ti ti-arrow-right" aria-hidden="true"></i></span></a>
     <?php endforeach; ?>
   </section>
   <?php elseif ($categorias): ?>
   <section class="lista" aria-labelledby="t-cat" style="padding-bottom:0">
     <div class="lista-cab"><h2 class="sec-tit" id="t-cat">Compra por categoría</h2></div>
-    <div class="chips"><?php foreach ($categorias as $c): ?><a href="index.php?action=ver_catalogo&amp;id_categoria=<?= (int) $c->id ?>"><?= $e($c->nombre_categoria) ?></a><?php endforeach; ?></div>
+    <div class="chips"><?php foreach ($categorias as $c): ?><a href="index.php?action=ver_catalogo&amp;<?= url_clave('categoria', $c) ?>"><?= $e($c->nombre_categoria) ?></a><?php endforeach; ?></div>
   </section>
   <?php endif; ?>
 

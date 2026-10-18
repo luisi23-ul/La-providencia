@@ -1,20 +1,21 @@
 <?php
+require_once __DIR__ . '/../admin/_claves.php';
 $menu = 'categorias';
 $tituloPagina = 'Categorías';
 $scripts = ['categorias'];
-$categorias = $categorias ?? [];
-$categoriasPrincipales = array_filter($categorias, fn($c) => empty($c->id_padre));
+$categorias = sin_relleno($categorias ?? [], 'categoria');
+$categoriasPrincipales = array_filter($categorias, fn($c) => empty(ref('categoria.padre', $c)));
 include __DIR__ . '/../admin/_abrir.php';
 $hijas = [];
-foreach ($categorias as $c) if (!empty($c->id_padre)) $hijas[$c->id_padre][] = $c;
+foreach ($categorias as $c) if (!empty(ref('categoria.padre', $c))) $hijas[ref('categoria.padre', $c)][] = $c;
 $ordenadas = [];
 foreach ($categorias as $c) {
-    if (!empty($c->id_padre)) continue;
+    if (!empty(ref('categoria.padre', $c))) continue;
     $ordenadas[] = [$c, false];
-    foreach ($hijas[$c->id] ?? [] as $h) $ordenadas[] = [$h, true];
+    foreach ($hijas[clave('categoria', $c)] ?? [] as $h) $ordenadas[] = [$h, true];
 }
-$idsPadre = array_column(array_filter($categorias, fn($c) => empty($c->id_padre)), 'id');
-foreach ($categorias as $c) if (!empty($c->id_padre) && !in_array($c->id_padre, $idsPadre)) $ordenadas[] = [$c, true];
+$idsPadre = array_map(fn($c) => clave('categoria', $c), array_filter($categorias, fn($c) => empty(ref('categoria.padre', $c))));
+foreach ($categorias as $c) if (!empty(ref('categoria.padre', $c)) && !in_array(ref('categoria.padre', $c), $idsPadre, true)) $ordenadas[] = [$c, true];
 ?>
 <section class="contenido">
   <header class="cab">
@@ -34,11 +35,11 @@ foreach ($categorias as $c) if (!empty($c->id_padre) && !in_array($c->id_padre, 
                 $clave = mb_strtolower(trim($a->nombre));
                 if (isset($vistos[$clave])) continue;
                 $vistos[$clave] = true;
-                $atr[] = ['id' => (int) $a->id, 'nombre' => $a->nombre, 'opciones' => $a->opciones ?? ''];
+                $atr[] = ['id' => clave('atributo', $a), 'nombre' => $a->nombre, 'opciones' => $a->opciones ?? ''];
             }
             $productos = (int) ($c->total_productos ?? 0);
             $unidades = (int) ($c->total_unidades ?? 0);
-            $subs = $esSub ? [] : ($hijas[$c->id] ?? []);
+            $subs = $esSub ? [] : ($hijas[clave('categoria', $c)] ?? []);
             $prodTotal = $productos + array_sum(array_map(fn($h) => (int) ($h->total_productos ?? 0), $subs));
             $uniTotal = $unidades + array_sum(array_map(fn($h) => (int) ($h->total_unidades ?? 0), $subs)); ?>
           <tr class="<?= $esSub ? 'cat-sub' : 'cat-padre' ?>">
@@ -55,10 +56,10 @@ foreach ($categorias as $c) if (!empty($c->id_padre) && !in_array($c->id_padre, 
             <td class="num" data-label="Productos"><?= $prodTotal ?><?php if ($subs && $prodTotal !== $productos): ?><small class="cat-incl">con subcategorías</small><?php endif; ?></td>
             <td class="num c-media" data-label="Unidades en stock"><?= number_format($uniTotal, 0, ',', '.') ?></td>
             <td class="t-acc"><div class="acc">
-              <button type="button" class="ic-btn" data-categoria="<?= $e(json_encode(['id' => (int) $c->id, 'nombre' => $c->nombre_categoria, 'id_padre' => $c->id_padre ?? '', 'atributos' => $atr], JSON_UNESCAPED_UNICODE)) ?>" aria-label="Editar <?= $e($c->nombre_categoria) ?>"><svg class="i"><use href="#i-editar"/></svg></button>
+              <button type="button" class="ic-btn" data-categoria="<?= $e(json_encode(['id' => clave('categoria', $c), 'nombre' => $c->nombre_categoria, 'id_padre' => ref('categoria.padre', $c), 'atributos' => $atr], JSON_UNESCAPED_UNICODE)) ?>" aria-label="Editar <?= $e($c->nombre_categoria) ?>"><svg class="i"><use href="#i-editar"/></svg></button>
               <form method="POST" action="index.php?action=eliminar_categoria">
-                <input type="hidden" name="id" value="<?= (int) $c->id ?>">
-                <button type="submit" class="ic-btn" aria-label="Eliminar <?= $e($c->nombre_categoria) ?>" <?= $productos ? 'data-bloqueo="No se puede eliminar ' . $e($c->nombre_categoria) . '" data-bloqueo-texto="Tiene ' . $productos . ($productos === 1 ? ' producto' : ' productos') . '. Muévelos a otra categoría antes de eliminarla." data-bloqueo-enlace="index.php?action=listado_productos&amp;categoria=' . (int) $c->id . '"' : ($subs ? 'data-bloqueo="No se puede eliminar ' . $e($c->nombre_categoria) . '" data-bloqueo-texto="Tiene ' . (count($subs) === 1 ? '1 subcategoría' : count($subs) . ' subcategorías') . '. Elimínalas o cámbialas de categoría principal antes."' : 'data-confirmar="¿Eliminar la categoría ' . $e($c->nombre_categoria) . '?" data-confirmar-texto="Esta acción no se puede deshacer." data-confirmar-boton="Eliminar"') ?>><svg class="i"><use href="#i-basura"/></svg></button>
+                <?= ocultos('categoria', $c) ?>
+                <button type="submit" class="ic-btn" aria-label="Eliminar <?= $e($c->nombre_categoria) ?>" <?= $productos ? 'data-bloqueo="No se puede eliminar ' . $e($c->nombre_categoria) . '" data-bloqueo-texto="Tiene ' . $productos . ($productos === 1 ? ' producto' : ' productos') . '. Muévelos a otra categoría antes de eliminarla." data-bloqueo-enlace="index.php?action=listado_productos&amp;categoria=' . clave('categoria', $c) . '"' : ($subs ? 'data-bloqueo="No se puede eliminar ' . $e($c->nombre_categoria) . '" data-bloqueo-texto="Tiene ' . (count($subs) === 1 ? '1 subcategoría' : count($subs) . ' subcategorías') . '. Elimínalas o cámbialas de categoría principal antes."' : 'data-confirmar="¿Eliminar la categoría ' . $e($c->nombre_categoria) . '?" data-confirmar-texto="Esta acción no se puede deshacer." data-confirmar-boton="Eliminar"') ?>><svg class="i"><use href="#i-basura"/></svg></button>
               </form>
             </div></td>
           </tr>
@@ -73,16 +74,16 @@ foreach ($categorias as $c) if (!empty($c->id_padre) && !in_array($c->id_padre, 
 
 <dialog class="modal" id="modal-categoria" aria-labelledby="mcat-titulo">
   <form method="POST" action="index.php?action=guardar_categoria" id="form-categoria">
-    <input type="hidden" name="id" id="mcat-id">
+    <?= ocultos('categoria', null, 'mcat-id') ?>
     <header class="modal-cab"><span class="modal-ic"><svg class="i"><use href="#i-etiqueta"/></svg></span><div><h3 id="mcat-titulo">Nueva categoría</h3></div><button type="button" class="ic-btn" data-cerrar aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button></header>
     <div class="modal-cuerpo" style="display:flex;flex-direction:column;gap:16px">
       <div class="campo">
         <label for="mcat-padre">Categoría principal (opcional)</label>
-        <select name="id_padre" id="mcat-padre" style="width: 100%;">
+        <select name="<?= campo('categoria.padre') ?>" id="mcat-padre" style="width: 100%;">
           <option value="">Ninguna (Es categoría principal)</option>
           <option value="nueva_padre" style="color:#166534; font-weight:bold;">+ Crear nueva categoría padre</option>
           <?php foreach ($categoriasPrincipales as $cp): ?>
-            <option value="<?= (int) $cp->id ?>"><?= $e($cp->nombre_categoria) ?></option>
+            <option value="<?= $e(clave('categoria', $cp)) ?>"><?= $e($cp->nombre_categoria) ?></option>
           <?php endforeach; ?>
         </select>
         <span class="ayuda">Si es una subcategoría (ej. Ropa → Caballeros), selecciona la categoría padre aquí.</span>
@@ -114,7 +115,7 @@ foreach ($categorias as $c) if (!empty($c->id_padre) && !in_array($c->id_padre, 
 
 <template id="tpl-atributo">
   <li class="atr-fila">
-    <input type="hidden" name="atributo_id[]">
+    <input type="hidden" name="<?= campo('atributo') ?>[]">
     <div class="campo"><label>Atributo</label><input name="atributo_nombre[]" maxlength="50" placeholder="Ej.: Talla" required></div>
     <div class="campo"><label>Opciones</label><input name="atributo_opciones[]" placeholder="Ej.: Individual, Matrimonial, Queen"></div>
     <button type="button" class="ic-btn" data-quitar-atributo aria-label="Quitar atributo"><svg class="i"><use href="#i-basura"/></svg></button>

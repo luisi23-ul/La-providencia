@@ -37,11 +37,11 @@ foreach ($lista as $v) { $d = date('Y-m-d', strtotime($v->fecha)); $porDia[$d] =
         <tbody>
         <?php foreach ($lista as $v): ?>
           <tr>
-            <td class="t-tit"><div class="t-nombre"><b>#<?= str_pad($v->id, 4, '0', STR_PAD_LEFT) ?></b><span><?= date('d/m/Y, g:i a', strtotime($v->fecha)) ?></span></div></td>
+            <td class="t-tit"><div class="t-nombre"><b><?= $e(numero_doc('venta', $v)) ?></b><span><?= date('d/m/Y, g:i a', strtotime($v->fecha)) ?></span></div></td>
             <td data-label="Cliente"><?= $e($v->nombre_cliente) ?></td>
             <td class="num" data-label="Total"><b><?= $usd($v->total) ?></b></td>
             <td class="num c-media" data-label="En bolívares"><?= number_format($v->total_bs ?? $v->total * $tasa, 2, ',', '.') ?> Bs</td>
-            <td class="t-acc"><div class="acc"><a href="index.php?action=detalle_venta&id=<?= (int) $v->id ?>" class="ic-btn" aria-label="Ver venta #<?= (int) $v->id ?>"><svg class="i"><use href="#i-ojo"/></svg></a></div></td>
+            <td class="t-acc"><div class="acc"><a href="index.php?action=detalle_venta&amp;<?= url_clave('venta', $v) ?>" class="ic-btn" aria-label="Ver venta <?= $e(numero_doc('venta', $v)) ?>"><svg class="i"><use href="#i-ojo"/></svg></a></div></td>
           </tr>
         <?php endforeach; ?>
         </tbody>

@@ -7,7 +7,7 @@ $productos = $productos ?? [];
 $metodos = $metodos ?? [];
 $clientes = $clientes ?? [];
 include __DIR__ . '/../admin/_abrir.php';
-$categorias = array_values(array_unique(array_filter(array_map(fn($p) => $p->nombre_categoria ?? '', $productos))));
+$categorias = array_values(array_unique(array_filter(array_map(fn($p) => categoria_de($p), $productos))));
 ?>
 <section class="pantalla pv" id="p-punto_venta">
   <header class="pv-top">
@@ -164,18 +164,18 @@ document.addEventListener('change', function(e) {
 
 <script type="application/json" id="datos-pos"><?= json_encode([
     'productos' => array_map(fn($p) => [
-        'id' => (int) $p->id,
-        'c' => $p->codigo ?? ('P-' . str_pad($p->id, 4, '0', STR_PAD_LEFT)),
+        'id' => clave('producto', $p),
+        'c' => $p->codigo ?? ('P-' . str_pad(clave('producto', $p), 4, '0', STR_PAD_LEFT)),
         'n' => $p->nombre_producto,
         'precio' => (float) $p->precio,
         't' => (int) $p->stock,
         'min' => (int) ($p->stock_minimo ?? 5),
-        'cat' => $p->nombre_categoria ?? '',
+        'cat' => categoria_de($p),
         'img' => !empty($p->imagen) ? 'public/uploads/' . $p->imagen : '',
-        'v' => array_values(array_map(fn($x) => [(int) $x->id, trim($x->talla ?? ''), trim(($x->color ?? '') . (!empty($x->modelo) ? ' ' . $x->modelo : '')), (int) $x->stock], array_filter($p->variantes ?? [], fn($x) => (int) $x->stock > 0))),
+        'v' => array_values(array_map(fn($x) => [clave('variante', $x), trim($x->talla ?? ''), trim(($x->color ?? '') . (!empty($x->modelo) ? ' ' . $x->modelo : '')), (int) $x->stock], array_filter($p->variantes ?? [], fn($x) => (int) $x->stock > 0))),
     ], $productos),
     'metodos' => array_values(array_map(fn($m) => [
-        'id' => (int) $m->id,
+        'id' => clave('metodo', $m),
         'n' => $m->nombre,
         'mon' => ($m->moneda ?? 'Bs') === 'USD' ? '$' : 'Bs',
         'ref' => !empty($m->requiere_referencia) ? 'Referencia' : '',
@@ -183,7 +183,7 @@ document.addEventListener('change', function(e) {
         'es_efectivo' => stripos($m->nombre ?? '', 'efectivo') !== false,
     ], array_filter($metodos, fn($m) => ($m->activo ?? 1) && ($m->en_tienda ?? 1)))),
     'clientes' => array_map(fn($c) => [
-        'id' => (int) $c->id,
+        'id' => clave('cliente', $c),
         'doc' => $c->cedula ?? '',
         'n' => trim($c->nombre . ' ' . ($c->apellido ?? '')),
         'tel' => $c->telefono ?? '',

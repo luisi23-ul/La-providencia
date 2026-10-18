@@ -1,6 +1,6 @@
 <dialog class="modal" id="modal-proveedor" aria-labelledby="mp-titulo">
   <form method="POST" action="index.php?action=guardar_proveedor" id="form-proveedor">
-    <input type="hidden" name="id" id="mp-id">
+    <?php if (!base_nueva()) echo ocultos('proveedor', null, 'mp-id'); ?>
     <input type="hidden" name="volver" value="<?= $e($_GET['action'] ?? 'proveedores') ?>">
     <header class="modal-cab">
       <span class="modal-ic"><svg class="i"><use href="#i-camion"/></svg></span>
@@ -13,7 +13,7 @@
     <div class="modal-cuerpo form-grid">
       <div class="campo">
         <label for="mp-rif">RIF o cédula <span class="ob">*</span></label>
-        <input id="mp-rif" name="rif_cedula" placeholder="J-30876541-2" required autocomplete="off" pattern="[JGVEjgve]-?\d{6,9}(-?\d)?">
+        <input id="mp-rif" name="<?= campo('proveedor.rif') ?>"<?= base_nueva() ? ' data-clave-fija' : '' ?> placeholder="J-30876541-2" required autocomplete="off" pattern="[JGVEjgve]-?\d{6,9}(-?\d)?">
         <span class="ayuda">Con letra y guiones: J, G, V o E.</span>
       </div>
       <div class="campo">
@@ -60,8 +60,10 @@ document.addEventListener('click', function(e) {
   if (btn) {
     try {
       const data = JSON.parse(btn.getAttribute('data-registro'));
-      document.getElementById('mp-id').value = data.id || '';
-      document.getElementById('mp-rif').value = data.rif_cedula || '';
+      const mid = document.getElementById('mp-id'), mrif = document.getElementById('mp-rif');
+      if (mid) mid.value = data[mid.name] || '';
+      mrif.value = data[mrif.name] || '';
+      mrif.readOnly = mrif.hasAttribute('data-clave-fija');
       document.getElementById('mp-rs').value = data.razon_social || '';
       document.getElementById('mp-tel').value = data.telefono || '';
       document.getElementById('mp-correo').value = data.correo || '';

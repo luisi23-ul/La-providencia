@@ -29,11 +29,11 @@
     var p = producto(), caja = document.getElementById('aj-vars'), vs = p.v || [];
     caja.hidden = !vs.length;
     caja.innerHTML = vs.length ? '<span class="ajx-vars-lbl" id="aj-vars-t">Talla y color <span class="ob">*</span></span><div class="ajx-vars" role="radiogroup" aria-labelledby="aj-vars-t">' + vs.map(function (x) {
-      return '<label class="ajx-var"><input type="radio" name="id_variante" value="' + x[0] + '" required' + (vs.length === 1 ? ' checked' : '') + '><b>' + esc(x[1]) + '</b><small>' + x[2] + ' en stock</small></label>';
+      return '<label class="ajx-var"><input type="radio" name="' + campoClave('variante.ref') + '" value="' + esc(x[0]) + '" required' + (vs.length === 1 ? ' checked' : '') + '><b>' + esc(x[1]) + '</b><small>' + x[2] + ' en stock</small></label>';
     }).join('') + '</div>' : '';
   }
   function variante() {
-    var p = producto(), id = valor('id_variante');
+    var p = producto(), id = valor(campoClave('variante.ref'));
     return (p.v || []).filter(function (x) { return String(x[0]) === id; })[0] || null;
   }
 

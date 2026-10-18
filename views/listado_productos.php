@@ -1,8 +1,9 @@
 <?php
+require_once __DIR__ . '/admin/_claves.php';
 $menu = 'listado_productos';
 $tituloPagina = 'Productos';
 $listaProductos = $listaProductos ?? $productos ?? [];
-$categorias = $categorias ?? array_map(fn($id, $n) => (object) ['id' => $id, 'nombre_categoria' => $n], [1, 2, 3], ['Aluminio', 'Lencería', 'Plástico']);
+$categorias = sin_relleno($categorias ?? array_map(fn($id, $n) => (object) ['id' => $id, 'nombre_categoria' => $n], [1, 2, 3], ['Aluminio', 'Lencería', 'Plástico']), 'categoria');
 include __DIR__ . '/admin/_abrir.php';
 $tallasDe = function ($p, $donde = 't') use ($e) {
     if (empty($p->resumen_variantes)) return '';
@@ -25,7 +26,7 @@ $tallasDe = function ($p, $donde = 't') use ($e) {
     if (count($colores) === 1) {
         $html .= '<small class="vr-colores">' . $e(reset($colores)) . '</small>';
     } elseif ($colores) {
-        $id = 'vr-pop-' . $donde . (int) $p->id;
+        $id = 'vr-pop-' . $donde . preg_replace('/[^A-Za-z0-9_-]/', '-', clave('producto', $p));
         $tallas = array_keys($porTalla) ?: [''];
         $tabla = '<table class="vr-matriz"><thead><tr><th scope="col"><span class="sr-only">Color</span></th>';
         foreach ($tallas as $ta) $tabla .= '<th scope="col">' . $e($ta !== '' ? $ta : 'Stock') . '</th>';
@@ -56,10 +57,10 @@ $categoriasPrincipales = [];
 $subcategoriasPorPadre = [];
 
 foreach ($categorias as $c) {
-    $nombreCat[$c->id] = $c->nombre_categoria;
-    if (!empty($c->id_padre)) {
-        $padresCat[$c->id] = $c->id_padre;
-        $subcategoriasPorPadre[$c->id_padre][] = $c;
+    $nombreCat[clave('categoria', $c)] = $c->nombre_categoria;
+    if (!empty(ref('categoria.padre', $c))) {
+        $padresCat[clave('categoria', $c)] = ref('categoria.padre', $c);
+        $subcategoriasPorPadre[ref('categoria.padre', $c)][] = $c;
     } else {
         $categoriasPrincipales[] = $c;
     }
@@ -82,7 +83,7 @@ foreach ($listaProductos as $p) {
 }
 
 $lista = array_filter($listaProductos, function ($p) use ($filtro, $catSel, $estadoDe) {
-    if ($catSel !== '' && (string) $p->id_categoria !== $catSel) return false;
+    if ($catSel !== '' && ref('producto.categoria', $p) !== $catSel) return false;
     if ($filtro === 'bajo') return $estadoDe($p) !== 'ok';
     if ($filtro === 'agotado') return $estadoDe($p) === 'agot';
     return true;
@@ -115,15 +116,15 @@ $url = fn($stock) => 'index.php?' . http_build_query(array_filter(['action' => '
       <select name="categoria" aria-label="Categoría" data-auto-enviar data-desplegable>
         <option value="">Todas las categorías</option>
         <?php foreach ($categoriasPrincipales as $cp): ?>
-          <?php if (!empty($subcategoriasPorPadre[$cp->id])): ?>
+          <?php if (!empty($subcategoriasPorPadre[clave('categoria', $cp)])): ?>
             <optgroup label="<?= $e($cp->nombre_categoria) ?>">
-              <option value="<?= (int) $cp->id ?>"<?= $catSel === (string) $cp->id ? ' selected' : '' ?>><?= $e($cp->nombre_categoria) ?> (General)</option>
-              <?php foreach ($subcategoriasPorPadre[$cp->id] as $sub): ?>
-                <option value="<?= (int) $sub->id ?>"<?= $catSel === (string) $sub->id ? ' selected' : '' ?>>↳ <?= $e($sub->nombre_categoria) ?></option>
+              <option value="<?= $e(clave('categoria', $cp)) ?>"<?= $catSel === clave('categoria', $cp) ? ' selected' : '' ?>><?= $e($cp->nombre_categoria) ?> (General)</option>
+              <?php foreach ($subcategoriasPorPadre[clave('categoria', $cp)] as $sub): ?>
+                <option value="<?= $e(clave('categoria', $sub)) ?>"<?= $catSel === clave('categoria', $sub) ? ' selected' : '' ?>>↳ <?= $e($sub->nombre_categoria) ?></option>
               <?php endforeach; ?>
             </optgroup>
           <?php else: ?>
-            <option value="<?= (int) $cp->id ?>"<?= $catSel === (string) $cp->id ? ' selected' : '' ?>><?= $e($cp->nombre_categoria) ?></option>
+            <option value="<?= $e(clave('categoria', $cp)) ?>"<?= $catSel === clave('categoria', $cp) ? ' selected' : '' ?>><?= $e($cp->nombre_categoria) ?></option>
           <?php endif; ?>
         <?php endforeach; ?>
       </select>
@@ -148,11 +149,11 @@ $url = fn($stock) => 'index.php?' . http_build_query(array_filter(['action' => '
         </thead>
         <tbody>
         <?php foreach ($lista as $p):
-            $codigo = $p->codigo ?? ('P-' . str_pad($p->id, 4, '0', STR_PAD_LEFT));
+            $codigo = $p->codigo ?? ('P-' . str_pad(clave('producto', $p), 4, '0', STR_PAD_LEFT));
             
             // Detección de subcategoría y categoría padre
-            $catId = $p->id_categoria ?? null;
-            $cat = $p->nombre_categoria ?? ($nombreCat[$catId] ?? 'Sin categoría');
+            $catId = (ref('producto.categoria', $p) ?: null);
+            $cat = categoria_de($p) ?: ($nombreCat[$catId] ?? 'Sin categoría');
             $padreId = $padresCat[$catId] ?? null;
             $padreNombre = $p->nombre_categoria_padre ?? ($padreId ? ($nombreCat[$padreId] ?? '') : '');
 
@@ -195,9 +196,9 @@ $url = fn($stock) => 'index.php?' . http_build_query(array_filter(['action' => '
             </td>
             <td>
               <div class="acc">
-                <a href="index.php?action=editar&id=<?= (int) $p->id ?>" class="ic-btn" aria-label="Editar <?= $e($p->nombre_producto) ?>"><svg class="i"><use href="#i-editar"/></svg></a>
-                <a href="index.php?action=ajustes_inventario&producto=<?= (int) $p->id ?>" class="ic-btn" aria-label="Ajustar stock de <?= $e($p->nombre_producto) ?>"><svg class="i"><use href="#i-ajuste"/></svg></a>
-                <a href="index.php?action=eliminar_producto&id=<?= (int) $p->id ?>" class="ic-btn" aria-label="Quitar <?= $e($p->nombre_producto) ?> del catálogo" data-confirmar="¿Quitar <?= $e($p->nombre_producto) ?> del catálogo?" data-confirmar-texto="No se borra: deja de mostrarse." data-confirmar-boton="Quitar del catálogo" data-confirmar-tipo="aviso"><svg class="i"><use href="#i-basura"/></svg></a>
+                <a href="index.php?action=editar&<?= url_clave('producto', $p) ?>" class="ic-btn" aria-label="Editar <?= $e($p->nombre_producto) ?>"><svg class="i"><use href="#i-editar"/></svg></a>
+                <a href="index.php?action=ajustes_inventario&<?= url_clave('producto', $p, 'ajuste') ?>" class="ic-btn" aria-label="Ajustar stock de <?= $e($p->nombre_producto) ?>"><svg class="i"><use href="#i-ajuste"/></svg></a>
+                <a href="index.php?action=eliminar_producto&<?= url_clave('producto', $p) ?>" class="ic-btn" aria-label="Quitar <?= $e($p->nombre_producto) ?> del catálogo" data-confirmar="¿Quitar <?= $e($p->nombre_producto) ?> del catálogo?" data-confirmar-texto="No se borra: deja de mostrarse." data-confirmar-boton="Quitar del catálogo" data-confirmar-tipo="aviso"><svg class="i"><use href="#i-basura"/></svg></a>
               </div>
             </td>
           </tr>
@@ -208,9 +209,9 @@ $url = fn($stock) => 'index.php?' . http_build_query(array_filter(['action' => '
 
     <ul class="tarjetas-prod" data-paginar="10">
       <?php foreach ($lista as $p):
-          $codigo = $p->codigo ?? ('P-' . str_pad($p->id, 4, '0', STR_PAD_LEFT));
-          $catId = $p->id_categoria ?? null;
-          $cat = $p->nombre_categoria ?? ($nombreCat[$catId] ?? 'Sin categoría');
+          $codigo = $p->codigo ?? ('P-' . str_pad(clave('producto', $p), 4, '0', STR_PAD_LEFT));
+          $catId = (ref('producto.categoria', $p) ?: null);
+          $cat = categoria_de($p) ?: ($nombreCat[$catId] ?? 'Sin categoría');
           $padreId = $padresCat[$catId] ?? null;
           $padreNombre = $p->nombre_categoria_padre ?? ($padreId ? ($nombreCat[$padreId] ?? '') : '');
           $s = $estadoDe($p); ?>
@@ -224,8 +225,8 @@ $url = fn($stock) => 'index.php?' . http_build_query(array_filter(['action' => '
           <div class="t-precio"><?= $usd($p->precio) ?></div>
           <div class="t-stock">Stock <b><?= (int) $p->stock ?></b> <?php if ($s === 'bajo'): ?><span class="est bajo">Bajo</span><?php elseif ($s === 'agot'): ?><span class="est agot">Agotado</span><?php endif; ?></div>
           <div class="t-acc">
-            <a href="index.php?action=editar&id=<?= (int) $p->id ?>" class="btn btn-sec btn-peq"><svg class="i"><use href="#i-editar"/></svg>Editar</a>
-            <a href="index.php?action=ajustes_inventario&producto=<?= (int) $p->id ?>" class="btn btn-sec btn-peq"><svg class="i"><use href="#i-ajuste"/></svg>Ajustar stock</a>
+            <a href="index.php?action=editar&<?= url_clave('producto', $p) ?>" class="btn btn-sec btn-peq"><svg class="i"><use href="#i-editar"/></svg>Editar</a>
+            <a href="index.php?action=ajustes_inventario&<?= url_clave('producto', $p, 'ajuste') ?>" class="btn btn-sec btn-peq"><svg class="i"><use href="#i-ajuste"/></svg>Ajustar stock</a>
           </div>
         </li>
       <?php endforeach; ?>

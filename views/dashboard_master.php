@@ -36,10 +36,10 @@ $listaRoles = $nombresRoles ? implode(', ', $nombresRoles) . ' y ' . $ultimoRol 
       <?php if ($actividad): ?>
         <ul class="lista mi-act">
           <?php foreach ($actividad as $a):
-              $t = strtotime($a->fecha); ?>
+              $t = strtotime(ref('auditoria.fecha', $a)); ?>
             <li>
               <span class="mi-av" aria-hidden="true"><?= $e(mb_strtoupper(mb_substr($a->usuario ?? 'S', 0, 1))) ?></span>
-              <div class="quien"><b><?= $e($a->usuario ?? 'Sistema') ?></b><span><?= $e($a->descripcion) ?></span></div>
+              <div class="quien"><b><?= $e($a->usuario ?? 'Sistema') ?></b><span><?= $e(ref('auditoria.descripcion', $a)) ?></span></div>
               <time class="muted" datetime="<?= date('c', $t) ?>" style="white-space:nowrap"><?= date('Y-m-d', $t) === date('Y-m-d') ? str_replace(['am', 'pm'], ['a. m.', 'p. m.'], date('g:i a', $t)) : date('d/m', $t) ?></time>
             </li>
           <?php endforeach; ?>

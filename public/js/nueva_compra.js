@@ -13,9 +13,9 @@
   function campo(li, nombre) { return li.querySelector('[name="' + nombre + '[]"]'); }
 
   function agregar(abrir) {
-    var li = tpl.content.firstElementChild.cloneNode(true), sel = campo(li, 'id_producto');
+    var li = tpl.content.firstElementChild.cloneNode(true), sel = campo(li, campoClave('producto.ref'));
     n++;
-    sel.innerHTML = '<option value="">Elige un producto</option><option value="nuevo">+ Producto nuevo (no está en el inventario)</option>' + productos.map(function (p) { return '<option value="' + p.id + '">' + Panel.esc(p.c + ' · ' + p.n) + '</option>'; }).join('');
+    sel.innerHTML = '<option value="">Elige un producto</option><option value="nuevo">+ Producto nuevo (no está en el inventario)</option>' + productos.map(function (p) { return '<option value="' + Panel.esc(p.id) + '">' + Panel.esc(p.c + ' · ' + p.n) + '</option>'; }).join('');
     li.querySelectorAll('.cpx-rg-num .campo').forEach(function (c, i) { var id = 'rg-' + n + '-' + i; c.querySelector('label').htmlFor = id; c.querySelector('input').id = id; });
     lista.appendChild(li);
     resumen();
@@ -25,11 +25,11 @@
   }
 
   function elegir(li) {
-    var p = prod(campo(li, 'id_producto').value), cab = li.querySelector('.cpx-rg-cab'), foto = cab.querySelector('.sin-foto, img');
+    var p = prod(campo(li, campoClave('producto.ref')).value), cab = li.querySelector('.cpx-rg-cab'), foto = cab.querySelector('.sin-foto, img');
     if (p && p.img) { var img = document.createElement('img'); img.src = p.img; img.alt = ''; img.width = 52; img.height = 52; foto.replaceWith(img); }
     else if (foto.tagName === 'IMG') { var s = document.createElement('span'); s.className = 'sin-foto'; s.innerHTML = '<svg class="i"><use href="#i-caja"/></svg>'; foto.replaceWith(s); }
     
-    var esNuevo = campo(li, 'id_producto').value === 'nuevo', bloque = li.querySelector('.cpx-nuevo-prod');
+    var esNuevo = campo(li, campoClave('producto.ref')).value === 'nuevo', bloque = li.querySelector('.cpx-nuevo-prod');
     bloque.hidden = !esNuevo;
     bloque.querySelectorAll('input, select').forEach(function (i) { i.required = esNuevo; if (!esNuevo) i.value = ''; });
     Panel.refrescarSelects(bloque);
@@ -40,7 +40,7 @@
       if (p && p.variantes && p.variantes.length > 0) {
         selVar.innerHTML = '<option value="0">Elige variante...</option>' + p.variantes.map(function (v) {
           var label = [v.talla, v.color, v.modelo].filter(Boolean).join(' - ') || ('Variante #' + v.id);
-          return '<option value="' + v.id + '">' + Panel.esc(label + ' (Stock: ' + v.stock + ')') + '</option>';
+          return '<option value="' + Panel.esc(v.id) + '">' + Panel.esc(label + ' (Stock: ' + v.stock + ')') + '</option>';
         }).join('');
         selVar.style.display = 'inline-block';
       } else {
@@ -77,7 +77,7 @@
   }
 
   function pintar(li) {
-    var p = prod(campo(li, 'id_producto').value);
+    var p = prod(campo(li, campoClave('producto.ref')).value);
     var cant = parseInt(campo(li, 'cantidad').value, 10) || 0, c = parseFloat(campo(li, 'costo_unitario').value) || 0, v = parseFloat(campo(li, 'precio_venta').value) || 0;
     li.querySelector('.cpx-sub b').textContent = usd(cant * c);
     var st = li.querySelector('.cpx-stock');
@@ -100,7 +100,7 @@
   function resumen() {
     var filas = lista.querySelectorAll('.cpx-rg'), elegidos = 0, unid = 0, total = 0, precios = 0, repetido = false, vistos = {};
     filas.forEach(function (li) {
-      var id = campo(li, 'id_producto').value;
+      var id = campo(li, campoClave('producto.ref')).value;
       if (!id) return;
       elegidos++;
       var cant = parseInt(campo(li, 'cantidad').value, 10) || 0, c = parseFloat(campo(li, 'costo_unitario').value) || 0;
@@ -108,7 +108,7 @@
       if (+li.querySelector('.cpx-precio input[type=hidden]').value) precios++;
       
       // Permitir mismo producto si tiene variante distinta
-      var vId = (campo(li, 'id_variante') ? campo(li, 'id_variante').value : '') || '0';
+      var vId = (campo(li, campoClave('variante.ref')) ? campo(li, campoClave('variante.ref')).value : '') || '0';
       var claveUnica = id + '_' + vId;
       if (id && id !== 'nuevo') { 
         if (vistos[claveUnica]) repetido = true; 
@@ -132,8 +132,8 @@
 
   lista.addEventListener('change', function (e) {
     var li = e.target.closest('.cpx-rg');
-    if (e.target.name === 'id_producto[]') elegir(li);
-    else if (e.target.name === 'id_variante[]') resumen();
+    if (e.target.name === campoClave('producto.ref') + '[]') elegir(li);
+    else if (e.target.name === campoClave('variante.ref') + '[]') resumen();
     else if (e.target.type === 'checkbox') pintar(li);
   });
   lista.addEventListener('input', function (e) {

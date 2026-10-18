@@ -7,12 +7,12 @@ $roles = $roles ?? [];
 $permisos = $permisos ?? [];
 $rolPermisos = $rolPermisos ?? [];
 include __DIR__ . '/../admin/_abrir.php';
-$roles = array_values(array_filter($roles, fn($r) => (int) $r->id !== 3));
-usort($roles, fn($a, $b) => (int) $a->id <=> (int) $b->id);
+$roles = array_values(array_filter($roles, fn($r) => !es_rol('cliente', clave('rol', $r))));
+usort($roles, fn($a, $b) => [!es_rol('master', clave('rol', $a)), clave('rol', $a)] <=> [!es_rol('master', clave('rol', $b)), clave('rol', $b)]);
 $porModulo = [];
 foreach ($permisos as $p) $porModulo[$p->modulo][] = $p;
-$editables = array_values(array_filter($roles, fn($r) => (int) $r->id !== 1));
-$primerRol = $editables ? (int) $editables[0]->id : 1;
+$editables = array_values(array_filter($roles, fn($r) => !es_rol('master', clave('rol', $r))));
+$primerRol = $editables ? clave('rol', $editables[0]) : rol_valor('master');
 $iconoModulo = fn($m) => ['compras' => 'carrito', 'gestión' => 'ajuste', 'gestion' => 'ajuste', 'inicio' => 'inicio', 'inventario' => 'etiqueta', 'master' => 'escudo', 'ventas' => 'recibo'][mb_strtolower(trim($m))] ?? 'lista';
 ?>
 <section class="contenido">
@@ -24,19 +24,19 @@ $iconoModulo = fn($m) => ['compras' => 'carrito', 'gestión' => 'ajuste', 'gesti
   <?php if ($roles && $permisos): ?>
   <div class="seg roles-movil" role="group" aria-label="Rol">
     <?php foreach ($roles as $r): ?>
-      <button type="button" data-ver-rol="<?= (int) $r->id ?>" aria-pressed="<?= (int) $r->id === $primerRol ? 'true' : 'false' ?>"><?= $e($r->nombre_rol) ?></button>
+      <button type="button" data-ver-rol="<?= $e(clave('rol', $r)) ?>" aria-pressed="<?= clave('rol', $r) === $primerRol ? 'true' : 'false' ?>"><?= $e($r->nombre_rol) ?></button>
     <?php endforeach; ?>
   </div>
 
   <form method="POST" action="index.php?action=guardar_permisos" id="form-permisos" class="cfg" style="max-width:none">
     <section class="tabla-caja" aria-label="Permisos por rol">
       <div class="tabla-scroll">
-        <table class="matriz" id="matriz" data-rol="<?= $primerRol ?>">
+        <table class="matriz" id="matriz" data-rol="<?= $e($primerRol) ?>">
           <thead><tr>
             <th>Permiso</th>
             <?php foreach ($roles as $r):
                 $n = (int) ($r->total_usuarios ?? 0); ?>
-              <th data-r="<?= (int) $r->id ?>" class="rol-cab"><?= $e($r->nombre_rol) ?><small><?= (int) $r->id === 1 ? 'todo' : $n . ' ' . ($n === 1 ? 'persona' : 'personas') ?></small></th>
+              <th data-r="<?= $e(clave('rol', $r)) ?>" class="rol-cab"><?= $e($r->nombre_rol) ?><small><?= es_rol('master', clave('rol', $r)) ? 'todo' : $n . ' ' . ($n === 1 ? 'persona' : 'personas') ?></small></th>
             <?php endforeach; ?>
           </tr></thead>
           <tbody>
@@ -44,11 +44,11 @@ $iconoModulo = fn($m) => ['compras' => 'carrito', 'gestión' => 'ajuste', 'gesti
             <tr class="grupo"><td colspan="<?= count($roles) + 1 ?>"><span class="rp-grupo"><span class="rp-ic"><svg class="i"><use href="#i-<?= $iconoModulo($modulo) ?>"/></svg></span><b><?= $e($modulo) ?></b><small><?= count($lista) ?> <?= count($lista) === 1 ? 'permiso' : 'permisos' ?></small></span></td></tr>
             <?php foreach ($lista as $p): ?>
               <tr>
-                <td><span class="perm"><b title="<?= $e($p->codigo) ?>"><?= $e($p->nombre) ?></b></span></td>
+                <td><span class="perm"><b title="<?= $e($p->codigo ?? clave('permiso', $p)) ?>"><?= $e($p->nombre) ?></b></span></td>
                 <?php foreach ($roles as $r):
-                    $master = (int) $r->id === 1;
-                    $tiene = $master || in_array((int) $p->id, array_map('intval', $rolPermisos[$r->id] ?? []), true); ?>
-                  <td data-r="<?= (int) $r->id ?>"><?php if ($master): ?><span class="rp-siempre" title="El Master siempre tiene este permiso"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span class="sr-only">Siempre</span></span><?php else: ?><label class="rp-celda"><input type="checkbox" class="rp-casilla" name="permisos[<?= (int) $r->id ?>][]" value="<?= (int) $p->id ?>" aria-label="<?= $e($p->nombre . ' · ' . $r->nombre_rol) ?>" <?= $tiene ? 'checked' : '' ?>></label><?php endif; ?></td>
+                    $master = es_rol('master', clave('rol', $r));
+                    $tiene = $master || in_array(clave('permiso', $p), array_map('strval', $rolPermisos[clave('rol', $r)] ?? []), true); ?>
+                  <td data-r="<?= $e(clave('rol', $r)) ?>"><?php if ($master): ?><span class="rp-siempre" title="El Master siempre tiene este permiso"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span class="sr-only">Siempre</span></span><?php else: ?><label class="rp-celda"><input type="checkbox" class="rp-casilla" name="permisos[<?= $e(clave('rol', $r)) ?>][]" value="<?= $e(clave('permiso', $p)) ?>" aria-label="<?= $e($p->nombre . ' · ' . $r->nombre_rol) ?>" <?= $tiene ? 'checked' : '' ?>></label><?php endif; ?></td>
                 <?php endforeach; ?>
               </tr>
             <?php endforeach; ?>
@@ -57,7 +57,7 @@ $iconoModulo = fn($m) => ['compras' => 'carrito', 'gestión' => 'ajuste', 'gesti
         </table>
       </div>
     </section>
-    <?php foreach ($roles as $r): if ((int) $r->id !== 1): ?><input type="hidden" name="roles[]" value="<?= (int) $r->id ?>"><?php endif; endforeach; ?>
+    <?php foreach ($roles as $r): if (!es_rol('master', clave('rol', $r))): ?><input type="hidden" name="<?= campo('rol') ?>[]" value="<?= $e(clave('rol', $r)) ?>"><?php endif; endforeach; ?>
     <div class="barra-guardar">
       <span class="sub-resumen" id="cambios-perm">Sin cambios</span>
       <div class="acciones-pago" style="flex:0 1 auto">

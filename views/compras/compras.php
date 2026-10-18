@@ -38,14 +38,14 @@ $url = fn($estado) => 'index.php?' . http_build_query(array_filter(['action' => 
         <thead><tr><th>Compra</th><th>Proveedor</th><th class="c-media">Destino</th><th class="num c-media">Productos</th><th class="num">Total</th><th>Estado</th><th class="num"></th></tr></thead>
         <tbody>
         <?php foreach ($lista as $c): 
-          $destino = $c->destino_stock === 'online' ? 'Online' : 'Tienda física'; 
+          $destino = ($c->destino_stock ?? '') === 'online' ? 'Online' : 'Tienda física'; 
           $infoPago = !empty($c->metodo_pago) ? $c->metodo_pago . (!empty($c->banco) ? ' (' . $c->banco . ')' : '') : '';
         ?>
           <tr>
             <td class="t-tit">
               <div class="t-nombre">
-                <b>#<?= str_pad((string)$c->id, 4, '0', STR_PAD_LEFT) ?></b>
-                <span><?= date('d/m/Y', strtotime($c->fecha_compra)) ?><?= $c->numero_factura ? ', fact. ' . $e($c->numero_factura) : '' ?></span>
+                <b><?= $e(numero_doc('compra', $c)) ?></b>
+                <span><?= date('d/m/Y', strtotime($c->fecha_compra)) ?><?= !base_nueva() && $c->numero_factura ? ', fact. ' . $e($c->numero_factura) : '' ?></span>
                 <?php if (!empty($c->comprado_por)): ?>
                   <small style="color: #64748b;">Compró: <?= $e($c->comprado_por) ?></small>
                 <?php endif; ?>
@@ -64,7 +64,7 @@ $url = fn($estado) => 'index.php?' . http_build_query(array_filter(['action' => 
             <td class="num c-media" data-label="Productos"><?= (int) ($c->total_productos ?? 0) ?></td>
             <td class="num" data-label="Total"><b<?= $c->estado === 'anulado' ? ' style="text-decoration:line-through;color:var(--texto-3)"' : '' ?>><?= $usd($c->total) ?></b></td>
             <td data-label="Estado"><span class="est <?= $c->estado === 'anulado' ? 'agot' : 'ok' ?>"><?= $c->estado === 'anulado' ? 'Anulada' : 'Recibida' ?></span></td>
-            <td class="t-acc"><div class="acc"><a href="index.php?action=detalle_compra&id=<?= (int) $c->id ?>" class="ic-btn" aria-label="Ver compra #<?= (int) $c->id ?>"><svg class="i"><use href="#i-ojo"/></svg></a></div></td>
+            <td class="t-acc"><div class="acc"><a href="index.php?action=detalle_compra&amp;<?= url_clave('compra', $c) ?>" class="ic-btn" aria-label="Ver compra <?= $e(numero_doc('compra', $c)) ?>"><svg class="i"><use href="#i-ojo"/></svg></a></div></td>
           </tr>
         <?php endforeach; ?>
         </tbody>

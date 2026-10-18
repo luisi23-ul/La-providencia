@@ -39,8 +39,8 @@ $iniciales = strtoupper(implode('', array_map(fn($p) => mb_substr($p, 0, 1), arr
 $rolNombre = $_SESSION['nombre_rol'] ?? null;
 if (!$rolNombre) {
     try {
-        $stmtR = $GLOBALS['db']->prepare("SELECT nombre_rol FROM roles WHERE id = ?");
-        $stmtR->execute([(int)$rol]);
+        $stmtR = $GLOBALS['db']->prepare("SELECT nombre_rol FROM roles WHERE " . nombre_clave('rol') . " = ?");
+        $stmtR->execute([(string)$rol]);
         $rolNombre = $stmtR->fetchColumn() ?: 'Personal';
         $_SESSION['nombre_rol'] = $rolNombre;
     } catch (Exception $e) {
@@ -73,7 +73,7 @@ if (!$rolNombre) {
     <nav class="nav">
       <?php if ($panelMaster): ?>
         <a href="index.php?action=dashboard" class="master"><svg class="i"><use href="#i-panel"/></svg>Panel Admin</a>
-      <?php elseif ($rol == 1): ?>
+      <?php elseif (es_rol('master', $rol)): ?>
         <a href="index.php?action=dashboard_master" class="master"><svg class="i"><use href="#i-escudo"/></svg>Panel Master</a>
       <?php endif; ?>
       <a href="index.php?action=inicio"><svg class="i"><use href="#i-tienda"/></svg>Ver tienda</a>

@@ -96,7 +96,7 @@ $pctOnline = $total > 0 ? (100 - $pctTienda) : 0;
           <tr>
             <td class="t-tit">
               <div class="t-nombre">
-                <b>#<?= str_pad((string)$v->id, 4, '0', STR_PAD_LEFT) ?></b>
+                <b><?= $e(numero_doc('venta', $v)) ?></b>
                 <span><?= !empty($v->fecha) ? date('d/m, g:i a', strtotime($v->fecha)) : '—' ?></span>
               </div>
             </td>
@@ -117,7 +117,7 @@ $pctOnline = $total > 0 ? (100 - $pctTienda) : 0;
             </td>
             <td class="t-acc">
               <div class="acc">
-                <a href="index.php?action=detalle_venta&id=<?= (int) $v->id ?>" class="ic-btn" aria-label="Ver venta #<?= (int) $v->id ?>">
+                <a href="index.php?action=detalle_venta&amp;<?= url_clave('venta', $v) ?>" class="ic-btn" aria-label="Ver venta <?= $e(numero_doc('venta', $v)) ?>">
                   <svg class="i"><use href="#i-ojo"/></svg>
                 </a>
               </div>

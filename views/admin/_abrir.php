@@ -1,6 +1,7 @@
 <?php
+require_once __DIR__ . '/_claves.php';
 $permisosUsuario = $_SESSION['permisos'] ?? [];
-$rol = $_SESSION['rol'] ?? 0;
+$rol = $_SESSION[nombre_clave('sesion.rol')] ?? '';
 $panelMaster = $panelMaster ?? false;
 
 $equivalencias = [
@@ -20,7 +21,7 @@ $equivalencias = [
 ];
 
 $puede = function($codigo) use ($rol, $permisosUsuario, $equivalencias) {
-    if ((int)$rol === 1 || in_array('*', $permisosUsuario, true)) {
+    if (es_rol('master', $rol) || in_array('*', $permisosUsuario, true)) {
         return true;
     }
 

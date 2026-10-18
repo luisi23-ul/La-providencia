@@ -1,16 +1,17 @@
 <?php
+require_once __DIR__ . '/admin/_claves.php';
 $menu = 'gestionar_admins';
 $tituloPagina = 'Administradores';
 $panelMaster = true;
 $scripts = ['administradores'];
-$admins = $admins ?? [];
+$admins = sin_relleno($admins ?? [], 'usuario');
 $roles = $roles ?? [];
 include __DIR__ . '/admin/_abrir.php';
-$miId = $_SESSION['id_usuario'] ?? null;
-$claseRol = [1 => 'master', 2 => '', 4 => 'vendedor'];
-$nombreRol = array_column(array_map(fn($r) => (array) $r, $roles), 'nombre_rol', 'id') + [1 => 'Master', 2 => 'Administrador', 4 => 'Vendedor', 5 => 'Cajero'];
+$miId = usuario_sesion();
+$claseRol = [rol_valor('master') => 'master', rol_valor('admin') => '', rol_valor('vendedor') => 'vendedor'];
+$nombreRol = array_column(array_map(fn($r) => (array) $r, $roles), 'nombre_rol', nombre_clave('rol')) + [rol_valor('master') => 'Master', rol_valor('admin') => 'Administrador', rol_valor('vendedor') => 'Vendedor', rol_valor('cajero') => 'Cajero'];
 $acceso = function ($fecha) {
-    if (!$fecha) return 'Nunca';
+    if (es_vacio($fecha)) return 'Nunca';
     $t = strtotime($fecha);
     $hora = str_replace(['am', 'pm'], ['a. m.', 'p. m.'], date('g:i a', $t));
     if (date('Y-m-d', $t) === date('Y-m-d')) return 'Hoy, ' . $hora;
@@ -20,7 +21,7 @@ $acceso = function ($fecha) {
 $activas = count(array_filter($admins, fn($a) => (int) $a->estado === 1));
 $desactivadas = count($admins) - $activas;
 $porRol = [];
-foreach ($admins as $a) $porRol[$nombreRol[$a->id_rol] ?? 'Sin rol'] = ($porRol[$nombreRol[$a->id_rol] ?? 'Sin rol'] ?? 0) + 1;
+foreach ($admins as $a) $porRol[$nombreRol[ref('usuario.rol', $a)] ?? 'Sin rol'] = ($porRol[$nombreRol[ref('usuario.rol', $a)] ?? 'Sin rol'] ?? 0) + 1;
 arsort($porRol);
 $resumenRoles = implode(' · ', array_map(fn($n, $c) => $n . ' ' . $c, array_keys($porRol), $porRol));
 ?>
@@ -42,23 +43,23 @@ $resumenRoles = implode(' · ', array_map(fn($n, $c) => $n . ' ' . $c, array_key
         <thead><tr><th>Persona</th><th>Rol</th><th class="c-media">Último acceso</th><th>Cuenta</th><th class="num">Editar</th></tr></thead>
         <tbody>
         <?php foreach ($admins as $a):
-            $yo = $miId !== null && (int) $a->id === (int) $miId;
+            $yo = $miId !== '' && clave('usuario', $a) === $miId;
             $nombre = trim(($a->nombre ?? '') . ' ' . ($a->apellido ?? ''));
             $ult = $acceso($a->ultimo_acceso ?? null); ?>
           <tr<?= $yo ? ' class="ad-yo"' : '' ?>>
             <td class="t-tit"><div class="ad-persona"><span class="ad-av" aria-hidden="true"><?= $e(mb_strtoupper(mb_substr($a->nombre ?? '?', 0, 1) . mb_substr($a->apellido ?? '', 0, 1))) ?></span><div class="t-nombre"><b><?= $e($nombre) ?><?php if ($yo): ?> <span class="ad-tu">Tú</span><?php endif; ?></b><span><?= $e($a->correo) ?></span><span class="si-estrecho">Último acceso: <?= $e($ult) ?></span></div></div></td>
-            <td data-label="Rol"><span class="rol-chip <?= $claseRol[$a->id_rol] ?? 'otro' ?>"><?= $e($nombreRol[$a->id_rol] ?? 'Sin rol') ?></span></td>
+            <td data-label="Rol"><span class="rol-chip <?= $claseRol[ref('usuario.rol', $a)] ?? 'otro' ?>"><?= $e($nombreRol[ref('usuario.rol', $a)] ?? 'Sin rol') ?></span></td>
             <td data-label="Último acceso" class="c-media<?= $ult === 'Nunca' ? ' muted' : '' ?>"><?= $e($ult) ?></td>
             <td data-label="Cuenta">
               <?php if ($yo): ?>
                 <span class="muted">Tu cuenta</span>
               <?php else: ?>
-                <label class="interruptor"><input type="checkbox" data-admin-estado="<?= (int) $a->id ?>" <?= $a->estado == 1 ? 'checked' : '' ?>><span><?= $a->estado == 1 ? 'Activa' : 'Desactivada' ?></span></label>
+                <label class="interruptor"><input type="checkbox" data-admin-estado="<?= $e(clave('usuario', $a)) ?>" <?= $a->estado == 1 ? 'checked' : '' ?>><span><?= $a->estado == 1 ? 'Activa' : 'Desactivada' ?></span></label>
               <?php endif; ?>
             </td>
             <td class="t-acc"><div class="acc">
               <?php if (!$yo): ?>
-                <button type="button" class="ic-btn" data-abrir-modal="modal-admin" data-registro="<?= $e(json_encode(['id' => (int) $a->id, 'nombre' => $a->nombre, 'apellido' => $a->apellido ?? '', 'correo' => $a->correo, 'id_rol' => (int) $a->id_rol], JSON_UNESCAPED_UNICODE)) ?>" aria-label="Editar a <?= $e($nombre) ?>"><svg class="i"><use href="#i-editar"/></svg></button>
+                <button type="button" class="ic-btn" data-abrir-modal="modal-admin" data-registro="<?= $e(json_encode(registro_clave('usuario', $a) + ['nombre' => $a->nombre, 'apellido' => $a->apellido ?? '', 'correo' => $a->correo, campo('rol.ref') => ref('usuario.rol', $a)], JSON_UNESCAPED_UNICODE)) ?>" aria-label="Editar a <?= $e($nombre) ?>"><svg class="i"><use href="#i-editar"/></svg></button>
               <?php endif; ?>
             </div></td>
           </tr>
@@ -73,17 +74,18 @@ $resumenRoles = implode(' · ', array_map(fn($n, $c) => $n . ' ' . $c, array_key
 
 <dialog class="modal" id="modal-admin" aria-labelledby="ma-titulo">
   <form method="POST" action="index.php?action=guardar_nuevo_admin" id="form-admin" data-crear="index.php?action=guardar_nuevo_admin" data-editar="index.php?action=actualizar_admin">
-    <input type="hidden" name="id">
+    <?php if (!base_nueva()) echo ocultos('usuario'); ?>
     <header class="modal-cab"><span class="modal-ic"><svg class="i"><use href="#i-escudo"/></svg></span><div><h3 id="ma-titulo" data-si-crea="Nueva cuenta" data-si-edita="Editar cuenta">Nueva cuenta</h3><p>La persona entra al panel con este correo.</p></div><button type="button" class="ic-btn" data-cerrar aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button></header>
     <div class="modal-cuerpo form-grid">
+      <?php if (base_nueva()): ?><div class="campo"><label for="ma-cedula">Cédula <span class="ob">*</span></label><input id="ma-cedula" name="<?= campo('usuario') ?>" data-clave-fija required maxlength="20" placeholder="V-12345678" autocomplete="off"></div><?php endif; ?>
       <div class="campo"><label for="ma-nombre">Nombre <span class="ob">*</span></label><input id="ma-nombre" name="nombre" required maxlength="100" autocomplete="off"></div>
       <div class="campo"><label for="ma-apellido">Apellido</label><input id="ma-apellido" name="apellido" maxlength="50" autocomplete="off"></div>
       <div class="campo"><label for="ma-correo">Correo <span class="ob">*</span></label><input id="ma-correo" name="correo" type="email" required maxlength="100" autocomplete="off"></div>
       <div class="campo"><label for="ma-rol">Rol <span class="ob">*</span></label>
-        <select id="ma-rol" name="id_rol" required>
-          <?php foreach ($roles ?: [(object) ['id' => 2, 'nombre_rol' => 'Administrador'], (object) ['id' => 4, 'nombre_rol' => 'Vendedor'], (object) ['id' => 5, 'nombre_rol' => 'Cajero']] as $r):
-              if ((int) $r->id === 1 || (int) $r->id === 3) continue; ?>
-            <option value="<?= (int) $r->id ?>"><?= $e($r->nombre_rol) ?></option>
+        <select id="ma-rol" name="<?= campo('rol.ref') ?>" required>
+          <?php foreach ($roles ?: [(object) [nombre_clave('rol') => rol_valor('admin'), 'nombre_rol' => 'Administrador'], (object) [nombre_clave('rol') => rol_valor('vendedor'), 'nombre_rol' => 'Vendedor'], (object) [nombre_clave('rol') => rol_valor('cajero'), 'nombre_rol' => 'Cajero']] as $r):
+              if (es_rol('master', clave('rol', $r)) || es_rol('cliente', clave('rol', $r))) continue; ?>
+            <option value="<?= $e(clave('rol', $r)) ?>"><?= $e($r->nombre_rol) ?></option>
           <?php endforeach; ?>
         </select>
         <a href="index.php?action=roles_permisos" class="enlace ayuda">Ver qué puede hacer cada rol</a>

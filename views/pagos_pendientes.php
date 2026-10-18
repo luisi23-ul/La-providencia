@@ -1,4 +1,4 @@
-
+<?php require_once __DIR__ . '/admin/_claves.php'; ?>
 <link rel="stylesheet" href="public/css/dashboard.css?v=<?php echo time(); ?>">
 
 <section class="panel-administracion">
@@ -67,7 +67,7 @@
                             </td>
                             <td>
                                 <?php if ($venta->estado == 'pendiente'): ?>
-                                    <a href="index.php?action=confirmar_pago&id=<?php echo $venta->id; ?>" class="btn-tabla-success">
+                                    <a href="index.php?action=confirmar_pago&<?= url_clave('venta', $venta) ?>" class="btn-tabla-success">
                                         <i class="fas fa-check"></i> Confirmar
                                     </a>
                                 <?php else: ?>
@@ -75,7 +75,7 @@
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <a href="index.php?action=detalle_venta&id=<?php echo $venta->id; ?>" class="btn-tabla-info">
+                                <a href="index.php?action=detalle_venta&<?= url_clave('venta', $venta) ?>" class="btn-tabla-info">
                                     <i class="fas fa-eye"></i> Ver Detalle
                                 </a>
                             </td>

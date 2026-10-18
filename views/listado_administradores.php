@@ -1,4 +1,4 @@
-<link rel="stylesheet" href="public/css/dashboard.css?v=<?php echo time(); ?>">
+<?php require_once __DIR__ . '/admin/_claves.php'; ?><link rel="stylesheet" href="public/css/dashboard.css?v=<?php echo time(); ?>">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <section class="panel-administracion">
@@ -42,11 +42,11 @@
             <td class="col-accion">
                 <div class="acciones-container">
                     <?php if ($admin->estado == 1): ?>
-                        <a href="index.php?action=toggle_admin&id=<?php echo $admin->id; ?>&estado=0" class="btn-toggle-mini btn-desactivar">
+                        <a href="index.php?action=toggle_admin&<?= url_clave('usuario', $admin) ?>&estado=0" class="btn-toggle-mini btn-desactivar">
                             <i class="fas fa-toggle-off"></i> Desactivar
                         </a>
                     <?php else: ?>
-                        <a href="index.php?action=toggle_admin&id=<?php echo $admin->id; ?>&estado=1" class="btn-toggle-mini btn-activar">
+                        <a href="index.php?action=toggle_admin&<?= url_clave('usuario', $admin) ?>&estado=1" class="btn-toggle-mini btn-activar">
                             <i class="fas fa-toggle-on"></i> Activar
                         </a>
                     <?php endif; ?>

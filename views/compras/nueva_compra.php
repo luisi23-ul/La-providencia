@@ -1,15 +1,16 @@
 <?php
+require_once __DIR__ . '/../admin/_claves.php';
 $menu = 'compras';
 $tituloPagina = 'Registrar compra';
 $scripts = ['nueva_compra'];
 $proveedores = $proveedores ?? [];
 $productos = $productos ?? $listaProductos ?? [];
 $metodos = $metodos ?? [];
-$empleados = $empleados ?? [];
-$categorias = $categorias ?? [];
-$catPrincipales = array_filter($categorias, fn($c) => empty($c->id_padre));
+$empleados = sin_relleno($empleados ?? [], 'usuario');
+$categorias = sin_relleno($categorias ?? [], 'categoria');
+$catPrincipales = array_filter($categorias, fn($c) => empty(ref('categoria.padre', $c)));
 $catHijas = [];
-foreach ($categorias as $c) if (!empty($c->id_padre)) $catHijas[$c->id_padre][] = $c;
+foreach ($categorias as $c) if (!empty(ref('categoria.padre', $c))) $catHijas[ref('categoria.padre', $c)][] = $c;
 $bancosLista = ['Banesco', 'Banco de Venezuela', 'Mercantil', 'Banco Provincial', 'BNC Nacional de Crédito', 'Bancaribe', 'Banco Exterior', 'Banco Plaza', 'Banco del Tesoro', 'Banco Bicentenario', 'Banplus', '100% Banco', 'Caja chica', 'Otro'];
 include __DIR__ . '/../admin/_abrir.php';
 ?>
@@ -27,9 +28,9 @@ include __DIR__ . '/../admin/_abrir.php';
         <header><span class="fpx-ic"><svg class="i"><use href="#i-recibo"/></svg></span><div><h3 id="c-t-fac">Proveedor y factura</h3><p>Los datos de la factura que te entregaron.</p></div></header>
         <div class="fpx-cuerpo">
           <div class="campo"><label for="c-prov">Proveedor <span class="ob">*</span></label>
-            <select id="c-prov" name="id_proveedor" required>
+            <select id="c-prov" name="<?= campo('proveedor.ref') ?>" required>
               <option value="">Elige un proveedor</option>
-              <?php foreach ($proveedores as $p): ?><option value="<?= (int) $p->id ?>"><?= $e($p->razon_social . ' · ' . $p->rif_cedula) ?></option><?php endforeach; ?>
+              <?php foreach ($proveedores as $p): ?><option value="<?= $e(clave('proveedor', $p)) ?>"><?= $e($p->razon_social . ' · ' . ref('proveedor.rif', $p)) ?></option><?php endforeach; ?>
             </select>
             <button type="button" class="cpx-nuevo" data-abrir-modal="modal-proveedor"><svg class="i"><use href="#i-mas"/></svg>Proveedor nuevo</button>
           </div>
@@ -45,9 +46,9 @@ include __DIR__ . '/../admin/_abrir.php';
         <header><span class="fpx-ic"><svg class="i"><use href="#i-tarjeta"/></svg></span><div><h3 id="c-t-pago">Pago de la compra</h3><p>Cómo se le pagó al proveedor.</p></div></header>
         <div class="fpx-cuerpo">
           <div class="campo"><label for="c-metodo">Método de pago <span class="ob">*</span></label>
-            <select id="c-metodo" name="id_metodo_pago" required>
+            <select id="c-metodo" name="<?= campo('metodo.ref') ?>" required>
               <option value="">Elige el método</option>
-              <?php foreach ($metodos as $m): ?><option value="<?= (int) $m->id ?>"><?= $e($m->nombre) ?></option><?php endforeach; ?>
+              <?php foreach ($metodos as $m): ?><option value="<?= $e(clave('metodo', $m)) ?>"><?= $e($m->nombre) ?></option><?php endforeach; ?>
             </select>
           </div>
           <div class="campo"><label for="c-banco">Banco de salida</label>
@@ -99,8 +100,8 @@ include __DIR__ . '/../admin/_abrir.php';
   <li class="cpx-rg nuevo">
     <div class="cpx-rg-cab">
       <span class="sin-foto"><svg class="i"><use href="#i-caja"/></svg></span>
-      <select name="id_producto[]" required aria-label="Producto" data-buscar="Buscar producto"></select>
-      <select name="id_variante[]" class="cpx-sel-variante" style="display:none;" aria-label="Variante">
+      <select name="<?= campo('producto.ref') ?>[]" required aria-label="Producto" data-buscar="Buscar producto"></select>
+      <select name="<?= campo('variante.ref') ?>[]" class="cpx-sel-variante" style="display:none;" aria-label="Variante">
         <option value="0">Variante principal / Única</option>
       </select>
       <small class="cpx-hoy">Elige qué llegó en la factura</small>
@@ -115,8 +116,8 @@ include __DIR__ . '/../admin/_abrir.php';
         <select name="nuevo_categoria[]">
           <option value="">Elige una categoría</option>
           <?php foreach ($catPrincipales as $padre): ?>
-            <option value="<?= (int) $padre->id ?>"><?= $e($padre->nombre_categoria) ?></option>
-            <?php foreach ($catHijas[$padre->id] ?? [] as $sub): ?><option value="<?= (int) $sub->id ?>">↳ <?= $e($sub->nombre_categoria) ?></option><?php endforeach; ?>
+            <option value="<?= $e(clave('categoria', $padre)) ?>"><?= $e($padre->nombre_categoria) ?></option>
+            <?php foreach ($catHijas[clave('categoria', $padre)] ?? [] as $sub): ?><option value="<?= $e(clave('categoria', $sub)) ?>">↳ <?= $e($sub->nombre_categoria) ?></option><?php endforeach; ?>
           <?php endforeach; ?>
         </select>
       </div>
@@ -141,8 +142,8 @@ include __DIR__ . '/../admin/_abrir.php';
 <?php include __DIR__ . '/_modal_proveedor.php'; ?>
 <script type="application/json" id="datos-compra"><?= json_encode(array_map(function($p) {
     return [
-        'id'        => (int) $p->id,
-        'c'         => $p->codigo ?? 'P-' . str_pad($p->id, 4, '0', STR_PAD_LEFT),
+        'id'        => clave('producto', $p),
+        'c'         => $p->codigo ?? 'P-' . str_pad(clave('producto', $p), 4, '0', STR_PAD_LEFT),
         'n'         => $p->nombre_producto,
         't'         => (int) $p->stock,
         'costo'     => (float) ($p->costo_compra ?? 0),
@@ -150,7 +151,7 @@ include __DIR__ . '/../admin/_abrir.php';
         'img'       => !empty($p->imagen) ? 'public/uploads/' . $p->imagen : '',
         'variantes' => array_map(function($v) {
             return [
-                'id'     => (int) $v->id,
+                'id'     => clave('variante', $v),
                 'talla'  => $v->talla ?? '',
                 'color'  => $v->color ?? '',
                 'modelo' => $v->modelo ?? '',

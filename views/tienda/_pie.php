@@ -1,7 +1,7 @@
 <?php
 $seccionPie = $seccionPie ?? 'inicio';
 $conMenuMovil = $conMenuMovil ?? true;
-$clientePie = !empty($_SESSION['id_usuario']) && (int) ($_SESSION['rol'] ?? 0) === 3;
+$clientePie = usuario_sesion() !== '' && es_rol('cliente');
 $waPie = preg_replace('/\D/', '', (string) ($sistema->whatsapp ?? ''));
 ?>
   <footer class="pie" id="contacto">
@@ -17,4 +17,5 @@ $waPie = preg_replace('/\D/', '', (string) ($sistema->whatsapp ?? ''));
     <a href="index.php?action=<?= $clientePie ? 'mis_pedidos' : 'login_usuario' ?>"<?= $seccionPie === 'cuenta' ? ' aria-current="true"' : '' ?>><i class="ti ti-user"></i>Cuenta</a>
   </nav>
   <?php endif; ?>
+<?= claves_js() ?>
 <script src="public/js/tienda.js?v=<?= filemtime(__DIR__ . '/../../public/js/tienda.js') ?>"></script>

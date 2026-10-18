@@ -1,10 +1,11 @@
 <?php
+require_once __DIR__ . '/../admin/_claves.php';
 $menu = 'auditoria';
 $tituloPagina = 'Auditoría';
 $panelMaster = true;
 $scripts = ['auditoria'];
 $registros = $registros ?? [];
-$usuarios = $usuarios ?? [];
+$usuarios = sin_relleno($usuarios ?? [], 'usuario');
 $modulos = $modulos ?? ['Ventas', 'Pagos', 'Inventario', 'Compras', 'Usuarios', 'Configuración', 'Sesión'];
 include __DIR__ . '/../admin/_abrir.php';
 $f = [
@@ -39,7 +40,7 @@ $fecha = fn($v) => date('d/m', strtotime($v)) . ' · ' . str_replace(['am', 'pm'
       <select name="usuario" aria-label="Usuario" data-auto-enviar data-desplegable data-buscar="Buscar usuario">
         <option value="">Todos los usuarios</option>
         <?php foreach ($usuarios as $u): ?>
-        <option value="<?= (int) $u->id ?>"<?= (string) $u->id === (string) $f['usuario'] ? ' selected' : '' ?>><?= $e(trim($u->nombre . ' ' . ($u->apellido ?? ''))) ?></option>
+        <option value="<?= $e(clave('usuario', $u)) ?>"<?= clave('usuario', $u) === (string) $f['usuario'] ? ' selected' : '' ?>><?= $e(trim($u->nombre . ' ' . ($u->apellido ?? ''))) ?></option>
         <?php endforeach; ?>
       </select>
     </label>
@@ -62,17 +63,17 @@ $fecha = fn($v) => date('d/m', strtotime($v)) . ' · ' . str_replace(['am', 'pm'
         <thead><tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Módulo</th><th>Descripción</th><th class="c-media">IP</th></tr></thead>
         <tbody>
         <?php foreach ($registros as $r):
-            $tipo = trim((string) $r->accion) ?: $deducir($r->descripcion);
+            $tipo = trim((string) $r->accion) ?: $deducir(ref('auditoria.descripcion', $r));
             $ac = $acciones[$tipo] ?? ['log', $tipo ?: 'Registró'];
-            $ipLocal = in_array($r->ip ?? '', ['::1', '127.0.0.1'], true);
+            $ipLocal = in_array(ref('auditoria.ip', $r), ['::1', '127.0.0.1'], true);
             $quien = $r->usuario ?? 'Sistema'; ?>
           <tr>
-            <td data-label="Fecha" class="nums" style="white-space:nowrap"><time datetime="<?= $e(date('c', strtotime($r->fecha))) ?>"><?= $fecha($r->fecha) ?></time></td>
+            <td data-label="Fecha" class="nums" style="white-space:nowrap"><time datetime="<?= $e(date('c', strtotime(ref('auditoria.fecha', $r)))) ?>"><?= $fecha(ref('auditoria.fecha', $r)) ?></time></td>
             <td class="t-tit"><span class="au-quien"><span class="au-av" aria-hidden="true"><?= $e(mb_strtoupper(mb_substr($quien, 0, 1))) ?></span><b><?= $e($quien) ?></b></span></td>
             <td data-label="Acción"><span class="accion <?= $ac[0] ?>"><?= $ac[1] ?></span></td>
             <td data-label="Módulo"><span class="au-mod"><svg class="i" aria-hidden="true"><use href="#i-<?= $iconoModulo($r->modulo) ?>"/></svg><?= $e($r->modulo) ?></span></td>
-            <td data-label="Descripción"><div class="t-nombre"><span style="color:var(--texto)"><?= $e($r->descripcion) ?></span><?php if (!empty($r->ip)): ?><span class="si-estrecho cifra"><?= $ipLocal ? 'Desde este equipo' : 'IP ' . $e($r->ip) ?></span><?php endif; ?></div></td>
-            <td data-label="IP" class="c-media<?= $ipLocal ? ' muted' : ' cod' ?>"><?= $ipLocal ? 'Este equipo' : $e($r->ip ?? '') ?></td>
+            <td data-label="Descripción"><div class="t-nombre"><span style="color:var(--texto)"><?= $e(ref('auditoria.descripcion', $r)) ?></span><?php if (ref('auditoria.ip', $r) !== ''): ?><span class="si-estrecho cifra"><?= $ipLocal ? 'Desde este equipo' : 'IP ' . $e(ref('auditoria.ip', $r)) ?></span><?php endif; ?></div></td>
+            <td data-label="IP" class="c-media<?= $ipLocal ? ' muted' : ' cod' ?>"><?= $ipLocal ? 'Este equipo' : $e(ref('auditoria.ip', $r)) ?></td>
           </tr>
         <?php endforeach; ?>
         </tbody>

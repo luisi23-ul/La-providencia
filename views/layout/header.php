@@ -1,5 +1,6 @@
 <?php
 include __DIR__ . '/../_sistema.php';
+require_once __DIR__ . '/../admin/_claves.php';
 $e = fn($v) => htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8');
 
 require_once __DIR__ . '/../../models/BcvService.php';
@@ -25,7 +26,7 @@ $seccionTienda = [
     'inicio' => 'inicio', 'ver_catalogo' => 'catalogo', 'ver_producto' => 'catalogo',
     'ver_carrito' => 'pedido', 'login_usuario' => 'cuenta', 'registro' => 'cuenta', 'mis_pedidos' => 'cuenta',
 ][$accionActual] ?? 'inicio';
-$clienteSesion = !empty($_SESSION['id_usuario']) && (int) ($_SESSION['rol'] ?? 0) === 3;
+$clienteSesion = usuario_sesion() !== '' && es_rol('cliente');
 $enlaceCuenta = $clienteSesion ? 'index.php?action=mis_pedidos' : 'index.php?action=login_usuario';
 ?>
 <!DOCTYPE html>

@@ -1,5 +1,5 @@
 (function () {
-  var cuerpo = document.body, CLAVE = 'aura-pedido';
+  var cuerpo = document.body, CLAVE = 'aura-pedido' + (window.CLAVES && CLAVES.url.producto !== 'id' ? '-' + CLAVES.url.producto : '');
   var tasa = parseFloat(cuerpo.dataset.tasa) || 0, wa = cuerpo.dataset.wa || '', tienda = cuerpo.dataset.tienda || 'la tienda';
   var usd = function (n) { return '$' + Number(n).toFixed(2); };
   var bs = function (n) { return (n * tasa).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' Bs'; };
@@ -27,8 +27,8 @@
   document.addEventListener('click', function (ev) {
     var b = ev.target.closest('[data-agregar-rapido]');
     if (!b) return;
-    var id = +b.dataset.id, stock = parseInt(b.dataset.stock, 10) || 0, items = leer(), clave = id + '|';
-    var enCarrito = items.filter(function (i) { return i.id === id; }).reduce(function (s, i) { return s + i.cantidad; }, 0);
+    var id = String(b.dataset.id), stock = parseInt(b.dataset.stock, 10) || 0, items = leer(), clave = id + '|';
+    var enCarrito = items.filter(function (i) { return String(i.id) === id; }).reduce(function (s, i) { return s + i.cantidad; }, 0);
     if (stock && enCarrito >= stock) { avisar('<i class="ti ti-alert-circle" aria-hidden="true"></i>Solo quedan ' + stock + ' y ya están en tu pedido.'); return; }
     var it = items.find(function (i) { return i.clave === clave; });
     if (it) it.cantidad += 1;
@@ -93,7 +93,7 @@
       var enCarrito = items.filter(function (i) { return String(i.id) === ficha.dataset.id; }).reduce(function (s, i) { return s + i.cantidad; }, 0);
       if (stock && enCarrito + cant > stock) { error.querySelector('span').textContent = 'Solo quedan ' + stock + ' y ya tienes ' + enCarrito + ' en tu pedido.'; error.hidden = false; return; }
       if (it) it.cantidad += cant;
-      else items.push({ clave: clave, id: +ficha.dataset.id, nombre: ficha.dataset.nombre, precio: parseFloat(ficha.dataset.precio), imagen: ficha.dataset.imagen, variante: el.texto, cantidad: cant, stock: stock });
+      else items.push({ clave: clave, id: ficha.dataset.id, nombre: ficha.dataset.nombre, precio: parseFloat(ficha.dataset.precio), imagen: ficha.dataset.imagen, variante: el.texto, cantidad: cant, stock: stock });
       guardar(items);
       avisar('<i class="ti ti-circle-check" aria-hidden="true"></i>Agregado a tu pedido. <a href="index.php?action=ver_carrito">Ver pedido</a>');
     });
@@ -110,8 +110,8 @@
       if (!items.length) { vista('vacio'); return; }
       vista('lista');
       lista.innerHTML = items.map(function (i, k) {
-        return '<li class="carro-it"><a href="index.php?action=ver_producto&amp;id=' + i.id + '">' + (i.imagen ? '<img src="' + esc(i.imagen) + '" alt="" width="96" height="128">' : '<span class="sin-foto"><i class="ti ti-hanger"></i></span>') + '</a>' +
-          '<div class="carro-txt"><h2><a href="index.php?action=ver_producto&amp;id=' + i.id + '">' + esc(i.nombre) + '</a></h2><p>' + esc(i.variante || '') + '</p>' +
+        return '<li class="carro-it"><a href="index.php?action=ver_producto&amp;' + urlClave('producto', i.id) + '">' + (i.imagen ? '<img src="' + esc(i.imagen) + '" alt="" width="96" height="128">' : '<span class="sin-foto"><i class="ti ti-hanger"></i></span>') + '</a>' +
+          '<div class="carro-txt"><h2><a href="index.php?action=ver_producto&amp;' + urlClave('producto', i.id) + '">' + esc(i.nombre) + '</a></h2><p>' + esc(i.variante || '') + '</p>' +
           '<div class="cant"><button type="button" data-cambiar="-1" data-k="' + k + '" aria-label="Quitar una"><i class="ti ti-minus"></i></button><span>' + i.cantidad + '</span><button type="button" data-cambiar="1" data-k="' + k + '" aria-label="Agregar una"><i class="ti ti-plus"></i></button></div></div>' +
           '<div class="carro-precio"><b>' + usd(i.precio * i.cantidad) + '</b>' + (i.cantidad > 1 ? '<small>' + usd(i.precio) + ' c/u</small>' : '') + '</div>' +
           '<button type="button" class="ic carro-quitar" data-quitar="' + k + '" aria-label="Quitar ' + esc(i.nombre) + ' del pedido"><i class="ti ti-trash"></i></button></li>';
@@ -168,7 +168,7 @@
           try { datos = JSON.parse(t); } catch (e) { terminar(null); return; }
           if (datos.ok) { terminar(datos); return; }
           if (datos.error === 'sesion') { if (ventana) ventana.close(); location.href = 'index.php?action=login_usuario&volver=carrito'; return; }
-          if (datos.error === 'stock') { var it = items.find(function (i) { return i.id === +datos.id; }); fallo((it ? it.nombre : 'Una prenda') + ': solo quedan ' + (datos.disponible || 0) + '. Ajusta la cantidad y vuelve a intentar.'); return; }
+          if (datos.error === 'stock') { var it = items.find(function (i) { return String(i.id) === String(datos.id); }); fallo((it ? it.nombre : 'Una prenda') + ': solo quedan ' + (datos.disponible || 0) + '. Ajusta la cantidad y vuelve a intentar.'); return; }
           fallo('No pudimos registrar tu pedido. Inténtalo otra vez en un momento.');
         })
         .catch(function () { terminar(null); });

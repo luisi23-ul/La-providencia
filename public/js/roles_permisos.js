@@ -23,9 +23,15 @@
     contar();
   });
 
+  function verRol(r) {
+    matriz.setAttribute('data-rol', r);
+    matriz.querySelectorAll('[data-r]').forEach(function (c) { c.classList.toggle('ver', c.getAttribute('data-r') === r); });
+  }
+  verRol(matriz.getAttribute('data-rol'));
+
   document.querySelectorAll('[data-ver-rol]').forEach(function (b) {
     b.addEventListener('click', function () {
-      matriz.setAttribute('data-rol', b.getAttribute('data-ver-rol'));
+      verRol(b.getAttribute('data-ver-rol'));
       document.querySelectorAll('[data-ver-rol]').forEach(function (o) { o.setAttribute('aria-pressed', String(o === b)); });
     });
   });

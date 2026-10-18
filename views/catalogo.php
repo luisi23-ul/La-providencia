@@ -6,12 +6,13 @@ $listaProductos = $listaProductos ?? [];
 $categorias = $soloConProductos($categorias ?? []);
 $tallas = $tallas ?? [];
 $busqueda = trim((string) ($_GET['busqueda'] ?? ''));
-$catActual = (int) ($_GET['id_categoria'] ?? 0);
+$catActual = leer_url('categoria');
+$paramCat = nombre_clave('url.categoria');
 $tallaActual = (string) ($_GET['talla'] ?? '');
-$titulo = $catActual && isset($nombresCategoria[$catActual]) ? $nombresCategoria[$catActual] : 'Catálogo';
+$titulo = $catActual !== '' && isset($nombresCategoria[$catActual]) ? $nombresCategoria[$catActual] : 'Catálogo';
 
-$enlace = function ($cambios) use ($busqueda, $catActual, $tallaActual) {
-    $q = array_filter(array_merge(['action' => 'ver_catalogo', 'busqueda' => $busqueda, 'id_categoria' => $catActual ?: '', 'talla' => $tallaActual], $cambios), fn($v) => $v !== '' && $v !== null);
+$enlace = function ($cambios) use ($busqueda, $catActual, $tallaActual, $paramCat) {
+    $q = array_filter(array_merge(['action' => 'ver_catalogo', 'busqueda' => $busqueda, $paramCat => $catActual, 'talla' => $tallaActual], $cambios), fn($v) => $v !== '' && $v !== null);
     return 'index.php?' . htmlspecialchars(http_build_query($q), ENT_QUOTES);
 };
 $total = count($listaProductos);
@@ -22,14 +23,14 @@ $total = count($listaProductos);
         <h1 class="sec-tit" id="t-cat"><?= $e($titulo) ?></h1>
         <form class="buscador" id="buscar" action="index.php" method="get" role="search">
           <input type="hidden" name="action" value="ver_catalogo">
-          <?php if ($catActual): ?><input type="hidden" name="id_categoria" value="<?= $catActual ?>"><?php endif; ?>
+          <?php if ($catActual): ?><input type="hidden" name="<?= $paramCat ?>" value="<?= $e($catActual) ?>"><?php endif; ?>
           <i class="ti ti-search" aria-hidden="true"></i>
           <input type="search" name="busqueda" value="<?= $e($busqueda) ?>" placeholder="Busca un producto" aria-label="Buscar en el catálogo">
         </form>
       </div>
       <nav class="chips" aria-label="Categorías">
-        <a href="<?= $enlace(['id_categoria' => '']) ?>"<?= !$catActual ? ' aria-current="true"' : '' ?>>Todo</a>
-        <?php foreach ($categorias as $c): ?><a href="<?= $enlace(['id_categoria' => (int) $c->id]) ?>"<?= $catActual === (int) $c->id ? ' aria-current="true"' : '' ?>><?= $e($c->nombre_categoria) ?></a><?php endforeach; ?>
+        <a href="<?= $enlace([$paramCat => '']) ?>"<?= !$catActual ? ' aria-current="true"' : '' ?>>Todo</a>
+        <?php foreach ($categorias as $c): ?><a href="<?= $enlace([$paramCat => clave('categoria', $c)]) ?>"<?= $catActual === clave('categoria', $c) ? ' aria-current="true"' : '' ?>><?= $e($c->nombre_categoria) ?></a><?php endforeach; ?>
       </nav>
       <?php if ($tallas): ?>
       <nav class="chips" aria-label="Tallas">

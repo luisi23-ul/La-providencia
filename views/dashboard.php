@@ -82,7 +82,7 @@ $semanaTienda = array_sum(array_column($ventasSemana, 'tienda'));
       <header class="caja-cab"><h3 id="t-retiro">Listos para retirar<?php if ($porRetirar): ?> <span class="contador"><?= count($porRetirar) ?></span><?php endif; ?></h3><a href="index.php?action=retiro_pedidos">Ver retiros</a></header>
       <ul class="lista">
         <?php foreach ($porRetirar as $v): ?>
-          <li><div class="quien"><b><?= $e($v->nombre_cliente) ?>, #<?= str_pad($v->id, 4, '0', STR_PAD_LEFT) ?></b><span>Pagado <?= date('d/m, g:i a', strtotime($v->fecha)) ?></span></div><div class="monto"><b><?= $usd($v->total) ?></b><span><?= $bs($v->total) ?></span></div><a href="index.php?action=retiro_pedidos" class="btn btn-sec btn-peq">Entregar</a></li>
+          <li><div class="quien"><b><?= $e($v->nombre_cliente) ?>, <?= $e(numero_doc('venta', $v)) ?></b><span>Pagado <?= date('d/m, g:i a', strtotime($v->fecha)) ?></span></div><div class="monto"><b><?= $usd($v->total) ?></b><span><?= $bs($v->total) ?></span></div><a href="index.php?action=retiro_pedidos" class="btn btn-sec btn-peq">Entregar</a></li>
         <?php endforeach; ?>
         <?php if (!$porRetirar): ?><li class="vacio-filtro" style="display:block">No hay pedidos esperando retiro.</li><?php endif; ?>
       </ul>

@@ -120,7 +120,7 @@ if ($f['desde'] === $f['hasta']) {
 }
 
 $nombreTipo = '';
-foreach ($tipos as $t) if ((string)$t->id === (string)$f['metodo']) $nombreTipo = $t->nombre;
+foreach ($tipos as $t) if (clave('metodo', $t) === (string)$f['metodo']) $nombreTipo = $t->nombre;
 $hayFiltros = $f['metodo'] !== '' || $f['banco'] !== '' || $atajoActivo !== 'Hoy';
 
 $titular = function ($p) {
@@ -157,7 +157,7 @@ $titular = function ($p) {
     <nav class="f-grupo" aria-label="Tipo de pago">
       <a class="f-op" href="<?= $e($url(['metodo' => ''])) ?>" aria-current="<?= $f['metodo'] === '' ? 'true' : 'false' ?>">Todos</a>
       <?php foreach ($tipos as $t): ?>
-      <a class="f-op" href="<?= $e($url(['metodo' => $t->id])) ?>" aria-current="<?= (string)$f['metodo'] === (string)$t->id ? 'true' : 'false' ?>"><?= $e($t->nombre) ?></a>
+      <a class="f-op" href="<?= $e($url(['metodo' => clave('metodo', $t)])) ?>" aria-current="<?= (string)$f['metodo'] === clave('metodo', $t) ? 'true' : 'false' ?>"><?= $e($t->nombre) ?></a>
       <?php endforeach; ?>
     </nav>
     <label class="f-select<?= $f['banco'] !== '' ? ' activo' : '' ?>"><svg class="i"><use href="#i-banco"/></svg>
@@ -236,7 +236,7 @@ $titular = function ($p) {
               <td class="t-tit">
                 <div class="t-nombre">
                   <b><?= date('d/m/Y', $t) ?> · <?= date('g:i a', $t) ?></b>
-                  <span>Venta #<?= str_pad((string)$p->id_venta, 4, '0', STR_PAD_LEFT) ?> · <?= ($p->origen_venta ?? '') === 'tienda_fisica' ? 'Tienda física' : 'Online' ?></span>
+                  <span>Venta <?= $e(numero_ref('venta', ref('pago.venta', $p))) ?> · <?= ($p->origen_venta ?? '') === 'tienda_fisica' ? 'Tienda física' : 'Online' ?></span>
                 </div>
               </td>
               <td data-label="Cliente"><?= $e(trim($p->cliente ?? '') ?: 'Cliente') ?></td>

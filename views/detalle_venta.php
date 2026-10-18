@@ -9,8 +9,8 @@ $cancelada = $estado === 'cancelado';
 $enUsd = fn($p) => ($p->moneda ?? 'Bs') === 'USD' ? (float) $p->monto : (float) $p->monto / ((float) ($p->tasa_cambio ?? 0) ?: $tasa);
 $aprobado = 0; $porVerificar = 0;
 foreach ($pagos as $p) {
-    if ($p->estado_verificacion === 'aprobado') $aprobado += $enUsd($p);
-    elseif ($p->estado_verificacion === 'pendiente') $porVerificar += $enUsd($p);
+    if (ref('pago.estado', $p) === 'aprobado') $aprobado += $enUsd($p);
+    elseif (ref('pago.estado', $p) === 'pendiente') $porVerificar += $enUsd($p);
 }
 $saldo = max(0, (float) $venta->total - $aprobado);
 $conTasa = array_filter($pagos, fn($p) => (float) ($p->tasa_cambio ?? 0) > 0);
@@ -55,13 +55,13 @@ $iniciales = function ($nombre) {
 
 $recorrido = [['recibo', 'Venta registrada', $corta($venta->fecha) . (!empty($venta->vendedor) ? ' · ' . $venta->vendedor : ''), true]];
 foreach ($pagos as $p) {
-    if ($p->estado_verificacion === 'aprobado') $recorrido[] = ['check', $p->metodo . ' aprobado', trim($corta($p->fecha_verificacion ?? $p->fecha_pago) . (!empty($p->verificado_por_nombre) ? ' · ' . $p->verificado_por_nombre : ''), ' ·'), true];
-    elseif ($p->estado_verificacion === 'rechazado') $recorrido[] = ['x', $p->metodo . ' rechazado', trim($corta($p->fecha_verificacion ?? $p->fecha_pago) . (!empty($p->verificado_por_nombre) ? ' · ' . $p->verificado_por_nombre : ''), ' ·'), true];
+    if (ref('pago.estado', $p) === 'aprobado') $recorrido[] = ['check', $p->metodo . ' aprobado', trim($corta($p->fecha_verificacion ?? $p->fecha_pago) . (!empty($p->verificado_por_nombre) ? ' · ' . $p->verificado_por_nombre : ''), ' ·'), true];
+    elseif (ref('pago.estado', $p) === 'rechazado') $recorrido[] = ['x', $p->metodo . ' rechazado', trim($corta($p->fecha_verificacion ?? $p->fecha_pago) . (!empty($p->verificado_por_nombre) ? ' · ' . $p->verificado_por_nombre : ''), ' ·'), true];
     else $recorrido[] = ['alerta', $p->metodo . ' por verificar', $corta($p->fecha_pago), false];
 }
 if (in_array($estado, ['retirado', 'entregado', 'completado'], true)) {
     $quien = !empty($venta->retirado_por) ? ' · ' . $venta->retirado_por : '';
-    $recorrido[] = ['bolsa', $estado === 'entregado' ? 'Entregada' : 'Retirada', !empty($venta->fecha_entrega) ? $corta($venta->fecha_entrega) . $quien : 'Sin hora registrada' . $quien, true];
+    $recorrido[] = ['bolsa', $estado === 'entregado' ? 'Entregada' : 'Retirada', !es_vacio($venta->fecha_entrega ?? null) ? $corta($venta->fecha_entrega) . $quien : 'Sin hora registrada' . $quien, true];
 } elseif ($estado === 'pagado') {
     $recorrido[] = ['bolsa', 'Por retirar', 'El cliente aún no la retira', false];
 } elseif ($cancelada) {
@@ -70,7 +70,7 @@ if (in_array($estado, ['retirado', 'entregado', 'completado'], true)) {
 ?>
 <section class="contenido dv">
   <header class="cab">
-    <div class="cab-txt"><small>Venta, <?= mb_strtolower($origen) === 'tienda online' ? 'online' : 'tienda física' ?></small><div class="titulo-atras"><a href="index.php?action=ventas" class="atras" aria-label="Volver a Ventas"><svg class="i"><use href="#i-volver"/></svg></a><h2>#<?= str_pad($venta->id, 4, '0', STR_PAD_LEFT) ?></h2></div><p class="dv-fecha"><?= $e($fechaLarga) ?></p></div>
+    <div class="cab-txt"><small>Venta, <?= mb_strtolower($origen) === 'tienda online' ? 'online' : 'tienda física' ?></small><div class="titulo-atras"><a href="index.php?action=ventas" class="atras" aria-label="Volver a Ventas"><svg class="i"><use href="#i-volver"/></svg></a><h2><?= $e(numero_doc('venta', $venta)) ?></h2></div><p class="dv-fecha"><?= $e($fechaLarga) ?></p></div>
     <div class="cab-acc dv-chips">
       <?php if ($chipPago): ?><span class="dv-chip <?= $chipPago[0] ?>"><svg class="i"><use href="#i-<?= $chipPago[1] ?>"/></svg><?= $chipPago[2] ?></span><?php endif; ?>
       <?php if ($chipEstado): ?><span class="dv-chip <?= $chipEstado[0] ?>"><svg class="i"><use href="#i-<?= $chipEstado[1] ?>"/></svg><?= $chipEstado[2] ?></span><?php endif; ?>
@@ -82,8 +82,8 @@ if (in_array($estado, ['retirado', 'entregado', 'completado'], true)) {
       <h3>Cuenta</h3>
       <div class="rc-linea"><span><?= count($detalles) === 1 ? '1 producto' : count($detalles) . ' productos' ?><?= $unidades != count($detalles) ? ' (' . (int) $unidades . ' unidades)' : '' ?></span><b><?= $usd($venta->total) ?></b></div>
       <div class="rc-linea total"><span>Total</span><span><?= $usd($venta->total) ?> · <?= $bsVenta($venta->total) ?></span></div>
-      <?php foreach ($pagos as $p): $vf = $verif[$p->estado_verificacion] ?? ['pend', $p->estado_verificacion]; ?>
-      <div class="rc-linea <?= $vf[0] ?>"><span><?= $e($p->metodo) ?><span class="est <?= $vf[0] ?>"><?= $vf[1] ?></span></span><b><?= $p->estado_verificacion === 'aprobado' ? '− ' : '' ?><?= $usd($enUsd($p)) ?></b></div>
+      <?php foreach ($pagos as $p): $vf = $verif[ref('pago.estado', $p)] ?? ['pend', ref('pago.estado', $p)]; ?>
+      <div class="rc-linea <?= $vf[0] ?>"><span><?= $e($p->metodo) ?><span class="est <?= $vf[0] ?>"><?= $vf[1] ?></span></span><b><?= ref('pago.estado', $p) === 'aprobado' ? '− ' : '' ?><?= $usd($enUsd($p)) ?></b></div>
       <?php endforeach; ?>
       <?php if (!$pagos): ?><div class="rc-linea"><span>Todavía no hay pagos registrados</span></div><?php endif; ?>
     </div>
@@ -118,7 +118,7 @@ if (in_array($estado, ['retirado', 'entregado', 'completado'], true)) {
         <h3 id="dv-pagos-t">Pagos <span><?= count($pagos) ?></span><?php if (count($pagos) > 1): ?><small class="muted">Pago mixto</small><?php endif; ?></h3>
         <?php if (!$pagos): ?><p class="vacio-filtro">Todavía no hay pagos registrados.</p><?php endif; ?>
         <div class="dv-pagos">
-          <?php foreach ($pagos as $p): $vf = $verif[$p->estado_verificacion] ?? ['pend', $p->estado_verificacion]; $tit = $titular($p); ?>
+          <?php foreach ($pagos as $p): $vf = $verif[ref('pago.estado', $p)] ?? ['pend', ref('pago.estado', $p)]; $tit = $titular($p); ?>
           <article class="dv-pago <?= $vf[0] ?>">
             <span class="dv-pago-ic"><svg class="i"><use href="#i-<?= $iconoMetodo($p->metodo) ?>"/></svg></span>
             <b><?= $e($p->metodo) ?></b>

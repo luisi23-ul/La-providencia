@@ -30,13 +30,13 @@ $opciones = function ($a) {
 // Si stock_online es 0 o no está definido, toma el stock físico disponible
 $stock = (int) (($producto->stock_online ?? 0) > 0 ? $producto->stock_online : ($producto->stock ?? 0));
 $img = $foto($producto->imagen ?? '');
-$categoria = $producto->nombre_categoria ?? ($nombresCategoria[(int) ($producto->id_categoria ?? 0)] ?? '');
+$categoria = categoria_de($producto) ?: ($nombresCategoria[ref('producto.categoria', $producto)] ?? '');
 ?>
   <nav class="migas" aria-label="Ruta">
     <a href="index.php?action=inicio">Inicio</a>
     <i class="ti ti-chevron-right" aria-hidden="true"></i>
     <?php if ($categoria): ?>
-      <a href="index.php?action=ver_catalogo&amp;id_categoria=<?= (int) $producto->id_categoria ?>"><?= $e($categoria) ?></a>
+      <a href="index.php?action=ver_catalogo&amp;<?= url_valor('categoria', ref('producto.categoria', $producto)) ?>"><?= $e($categoria) ?></a>
       <i class="ti ti-chevron-right" aria-hidden="true"></i>
     <?php endif; ?>
     <span aria-current="page"><?= $e($producto->nombre_producto) ?></span>
@@ -53,7 +53,7 @@ $categoria = $producto->nombre_categoria ?? ($nombresCategoria[(int) ($producto-
       </figure>
     </div>
 
-    <form class="f-info" id="f-producto" data-id="<?= (int) $producto->id ?>" data-nombre="<?= $e($producto->nombre_producto) ?>" data-precio="<?= $e((float) $producto->precio) ?>" data-imagen="<?= $e($img) ?>" data-stock="<?= $stock ?>">
+    <form class="f-info" id="f-producto" data-id="<?= $e(clave('producto', $producto)) ?>" data-nombre="<?= $e($producto->nombre_producto) ?>" data-precio="<?= $e((float) $producto->precio) ?>" data-imagen="<?= $e($img) ?>" data-stock="<?= $stock ?>">
       <div class="prod-meta"><span><?= $e($categoria) ?></span></div>
       <h1><?= $e($producto->nombre_producto) ?></h1>
       <div class="f-precio"><b><?= $usd($producto->precio) ?></b><span><?= $bs($producto->precio) ?></span></div>

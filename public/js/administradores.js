@@ -1,7 +1,7 @@
 (function () {
   var form = document.getElementById('form-admin');
   if (!form) return;
-  var id = form.querySelector('[name="id"]'), clave = document.getElementById('ma-clave'), ob = document.getElementById('ma-clave-ob');
+  var id = form.querySelector('[name="' + campoClave('usuario') + '"]'), clave = document.getElementById('ma-clave'), ob = document.getElementById('ma-clave-ob');
 
   document.addEventListener('click', function (e) {
     var b = e.target.closest('[data-abrir-modal="modal-admin"]');
@@ -18,6 +18,6 @@
     var t = e.target.closest('[data-admin-estado]');
     if (!t) return;
     t.nextElementSibling.textContent = t.checked ? 'Activa' : 'Desactivada';
-    location.href = 'index.php?action=toggle_admin&id=' + encodeURIComponent(t.getAttribute('data-admin-estado')) + '&estado=' + (t.checked ? 1 : 0);
+    location.href = 'index.php?action=toggle_admin&' + urlClave('usuario', t.getAttribute('data-admin-estado')) + '&estado=' + (t.checked ? 1 : 0);
   });
 })();

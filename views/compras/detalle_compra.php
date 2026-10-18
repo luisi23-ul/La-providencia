@@ -3,7 +3,7 @@ $menu = 'compras';
 $tituloPagina = 'Detalle de compra';
 $detalles = $detalles ?? [];
 include __DIR__ . '/../admin/_abrir.php';
-$num = '#' . str_pad((string) $compra->id, 4, '0', STR_PAD_LEFT);
+$num = numero_doc('compra', $compra);
 $anulada = $compra->estado === 'anulado';
 $destino = 'Tienda';
 $unidades = array_sum(array_map(fn($d) => (int) $d->cantidad, $detalles));
@@ -24,10 +24,10 @@ $pct = fn($v) => rtrim(rtrim(number_format((float) $v, 1), '0'), '.') . ' %';
     <div class="cab-acc dv-chips">
       <span class="dv-chip<?= $anulada ? ' agot' : '' ?>"><svg class="i"><use href="#i-<?= $anulada ? 'x' : 'check' ?>"/></svg><?= $anulada ? 'Anulada' : 'Recibida' ?></span>
       <span class="dv-chip neutro"><svg class="i"><use href="#i-tienda"/></svg><?= $destino ?></span>
-      <a href="index.php?action=exportar_pdf&amp;tipo=compra&amp;id=<?= (int) $compra->id ?>" target="_blank" class="btn btn-sec"><svg class="i"><use href="#i-archivo"/></svg>PDF</a>
+      <a href="index.php?action=exportar_pdf&amp;tipo=compra&amp;<?= url_clave('compra', $compra) ?>" target="_blank" class="btn btn-sec"><svg class="i"><use href="#i-archivo"/></svg>PDF</a>
       <?php if (!$anulada): ?>
       <form method="POST" action="index.php?action=anular_compra" class="dc-anular">
-        <input type="hidden" name="id" value="<?= (int) $compra->id ?>">
+        <?= ocultos('compra', $compra) ?>
         <button type="submit" class="btn btn-peligro" data-confirmar="¿Anular la compra <?= $num ?>?" data-confirmar-texto="Se restarán <?= $unidades ?> unidades del stock de <?= $destino ?> y quedará registrado en Movimientos. La compra no se borra: queda en el historial como anulada." data-confirmar-boton="Anular compra"><svg class="i"><use href="#i-x"/></svg>Anular compra</button>
       </form>
       <?php endif; ?>
@@ -73,7 +73,7 @@ $pct = fn($v) => rtrim(rtrim(number_format((float) $v, 1), '0'), '.') . ' %';
 
       <section class="dv-caja" aria-labelledby="dc-prov-t">
         <header class="dc-cab"><span class="fpx-ic"><svg class="i"><use href="#i-camion"/></svg></span><div><h3 id="dc-prov-t">Proveedor</h3><p>A quién se le compró la mercancía.</p></div></header>
-        <div class="dv-cliente"><span class="dv-av" aria-hidden="true"><?= $e($iniciales($compra->razon_social)) ?></span><b><?= $e($compra->razon_social) ?></b><small>RIF <?= $e($compra->rif_cedula ?? '') ?></small></div>
+        <div class="dv-cliente"><span class="dv-av" aria-hidden="true"><?= $e($iniciales($compra->razon_social)) ?></span><b><?= $e($compra->razon_social) ?></b><small>RIF <?= $e(ref('proveedor.rif', $compra) ?? '') ?></small></div>
         <dl class="dc-dl dc-dl-fila">
           <div><dt><svg class="i" aria-hidden="true"><use href="#i-movil"/></svg>Teléfono</dt><dd><?= $e($compra->telefono ?: 'Sin teléfono') ?></dd></div>
           <div><dt><svg class="i" aria-hidden="true"><use href="#i-recibo"/></svg>N.º de factura</dt><dd><?= $e($compra->numero_factura ?: 'Sin número') ?></dd></div>

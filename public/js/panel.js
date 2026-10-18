@@ -149,6 +149,7 @@
           else campo.value = datos[k];
         });
       }
+      modal.querySelectorAll('[data-clave-fija]').forEach(function (el) { el.readOnly = !!datos; });
       modal.querySelectorAll('[data-si-edita]').forEach(function (el) { el.textContent = datos ? el.getAttribute('data-si-edita') : el.getAttribute('data-si-crea'); });
       if (Panel.refrescarSelects) Panel.refrescarSelects(modal);
       modal.showModal();

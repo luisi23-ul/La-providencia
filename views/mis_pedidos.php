@@ -34,10 +34,10 @@ $wa = preg_replace('/\D/', '', (string) ($sistema->whatsapp ?? ''));
         [$etq, $ico, $txt, $paso] = $estados[$est] ?? $estados['pendiente'];
         $items = $p->items ?? [];
         $cant = array_sum(array_map(fn($i) => (int) $i->cantidad, $items));
-        $msg = rawurlencode('Hola, te escribo por mi pedido #' . (int) $p->id . '.'); ?>
+        $msg = rawurlencode('Hola, te escribo por mi pedido ' . numero_doc('venta', $p) . '.'); ?>
       <li class="ped <?= $e($est) ?>">
         <div class="ped-arriba">
-          <div><h2>Pedido #<?= (int) $p->id ?></h2><span><?= $e($fecha($p->fecha ?? '')) ?><?= $cant ? ' · ' . $cant . ($cant === 1 ? ' prenda' : ' prendas') : '' ?></span></div>
+          <div><h2>Pedido <?= $e(numero_doc('venta', $p)) ?></h2><span><?= $e($fecha($p->fecha ?? '')) ?><?= $cant ? ' · ' . $cant . ($cant === 1 ? ' prenda' : ' prendas') : '' ?></span></div>
           <span class="ped-estado"><i class="ti <?= $ico ?>" aria-hidden="true"></i><?= $etq ?></span>
         </div>
         <?php if ($paso > 0 && $paso < 4): ?>

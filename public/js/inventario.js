@@ -55,7 +55,7 @@
   function fila(v) {
     var i = n++, li = document.createElement('li');
     li.className = 'fpx-var-fila';
-    li.innerHTML = '<input type="hidden" name="variantes[' + i + '][id]" value="' + (v && v.id ? v.id : 0) + '">' +
+    li.innerHTML = '<input type="hidden" name="variantes[' + i + '][' + campoClave('variante') + ']" value="' + esc(v && v.id ? v.id : '') + '">' +
       '<input type="hidden" name="variantes[' + i + '][precio]" value="' + esc(v && v.precio != null ? v.precio : '') + '">' +
       COLUMNAS.map(function (c) { return control(c[0], c[1], v ? v[c[0]] : '', i); }).join('') +
       '<div class="fpx-var-campo"><label for="fp-v-' + i + '-sku">SKU</label><input id="fp-v-' + i + '-sku" name="variantes[' + i + '][sku]" value="' + esc(v && v.sku ? v.sku : '') + '" placeholder="Opcional" autocomplete="off"></div>' +
@@ -80,7 +80,7 @@
       else {
         var previas = [].map.call(listaVar.querySelectorAll('.fpx-var-fila'), function (li) {
           var g = function (s) { var x = li.querySelector(s); return x ? x.value : ''; };
-          return { id: g('[name$="[id]"]'), talla: g('[name$="[talla]"]'), color: g('[name$="[color]"]'), modelo: g('[name$="[modelo]"]'), sku: g('[name$="[sku]"]'), precio: g('[name$="[precio]"]'), stock: g('.var-st') };
+          return { id: g('[name$="[' + campoClave('variante') + ']"]'), talla: g('[name$="[talla]"]'), color: g('[name$="[color]"]'), modelo: g('[name$="[modelo]"]'), sku: g('[name$="[sku]"]'), precio: g('[name$="[precio]"]'), stock: g('.var-st') };
         });
         listaVar.innerHTML = ''; n = 0;
         (previas.length ? previas : [null]).forEach(fila);

@@ -685,7 +685,7 @@ tfoot td { padding: 12px 14px; border-top: 1px solid var(--linea); font-weight: 
 @container marco (max-width: 760px) {
   .roles-movil { display: flex; }
   .matriz[data-rol] [data-r] { display: none; }
-  .matriz[data-rol="2"] [data-r="2"], .matriz[data-rol="4"] [data-r="4"], .matriz[data-rol="5"] [data-r="5"], .matriz[data-rol="1"] [data-r="1"] { display: table-cell; }
+  .matriz[data-rol] [data-r].ver { display: table-cell; }
   .queda { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 }
 @container marco (max-width: 1100px) {

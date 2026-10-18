@@ -44,15 +44,17 @@ $pastilla = function ($n, $min) {
         <?php foreach ($movimientos as $m):
             $tm = $tipos[$m->tipo_movimiento] ?? ['ajuste', $m->tipo_movimiento];
             $transf = $m->tipo_movimiento === 'transferencia';
-            $num = str_pad($m->id_referencia ?? 0, 4, '0', STR_PAD_LEFT);
-            $origen = in_array($m->tipo_movimiento, ['venta_tienda', 'venta_online']) && $m->id_referencia ? '<a href="index.php?action=detalle_venta&id=' . (int) $m->id_referencia . '" class="enlace">Venta #' . $num . '</a>'
-                : (in_array($m->tipo_movimiento, ['compra', 'anulacion_compra']) && $m->id_referencia ? '<a href="index.php?action=detalle_compra&id=' . (int) $m->id_referencia . '" class="enlace">Compra #' . $num . '</a>'
+            $refMov = ref('kardex.referencia', $m);
+            $num = numero_ref('venta', $refMov);
+            $refCompra = base_nueva() ? [$m->rif_proveedor ?? '', $refMov] : $refMov;
+            $origen = in_array($m->tipo_movimiento, ['venta_tienda', 'venta_online']) && $refMov !== '' ? '<a href="index.php?action=detalle_venta&amp;' . url_valor('venta', $refMov) . '" class="enlace">Venta ' . $e($num) . '</a>'
+                : (in_array($m->tipo_movimiento, ['compra', 'anulacion_compra']) && $refMov !== '' ? (base_nueva() && empty($m->rif_proveedor) ? 'Compra ' . $e($num) : '<a href="index.php?action=detalle_compra&amp;' . url_valor('compra', $refCompra) . '" class="enlace">Compra ' . $e($num) . '</a>')
                 : $e($m->observacion ?: 'Ajuste'));
             $min = (int) ($m->stock_minimo ?? 5);
             $stockTotal = (int) ($m->stock_resultante ?? 0);
         ?>
           <tr>
-            <td data-label="Fecha" style="white-space:nowrap"><?= date('d/m, g:i a', strtotime($m->fecha)) ?></td>
+            <td data-label="Fecha" style="white-space:nowrap"><?= date('d/m, g:i a', strtotime(ref('kardex.fecha', $m))) ?></td>
             <td class="t-tit"><div class="prod"><?php if (!empty($m->imagen)): ?><img class="foto chica" src="public/uploads/<?= $e($m->imagen) ?>" alt="" width="36" height="36" loading="lazy"><?php endif; ?><div><b><?= $e($m->nombre_producto) ?></b><span class="si-estrecho"><?= strip_tags($origen) ?>, <?= $e($m->usuario ?? '') ?></span></div></div></td>
             <td data-label="Movimiento"><span class="mov <?= $tm[0] ?>"><?= $tm[1] ?></span></td>
             <td class="num" data-label="Cantidad"><?= $transf ? '<span class="cifra">' . abs($m->cantidad) . '</span>' : '<span class="' . ($m->cantidad > 0 ? 'cant-mas' : 'cant-menos') . ' cifra">' . ($m->cantidad > 0 ? '+' : '−') . abs($m->cantidad) . '</span>' ?></td>

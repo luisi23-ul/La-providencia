@@ -37,7 +37,7 @@ $tabs = ['1' => ['Activos', $activos], '0' => ['Inactivos', count($proveedores) 
         <tbody>
         <?php foreach ($lista as $p): ?>
           <tr>
-            <td class="cod" data-label="RIF / Cédula"><?= $e($p->rif_cedula) ?></td>
+            <td class="cod" data-label="RIF / Cédula"><?= $e(ref('proveedor.rif', $p)) ?></td>
             <td class="t-tit" data-label="Razón social"><b><?= $e($p->razon_social) ?></b></td>
             <td data-label="Dirección"><?= $e($p->direccion ?: 'Sin dirección') ?></td>
             <td data-label="Teléfono"><?= $e($p->telefono ?: 'Sin teléfono') ?></td>
@@ -45,9 +45,9 @@ $tabs = ['1' => ['Activos', $activos], '0' => ['Inactivos', count($proveedores) 
             <td class="num c-media" data-label="Compras"><?= (int) ($p->total_compras ?? 0) ?></td>
             <td data-label="Estado"><span class="est <?= $p->estado ? 'ok' : 'agot' ?>"><?= $p->estado ? 'Activo' : 'Inactivo' ?></span></td>
             <td class="t-acc"><div class="acc">
-              <button type="button" class="ic-btn" data-abrir-modal="modal-proveedor" data-registro="<?= $e(json_encode(['id' => $p->id, 'rif_cedula' => $p->rif_cedula, 'razon_social' => $p->razon_social, 'telefono' => $p->telefono, 'correo' => $p->correo, 'direccion' => $p->direccion], JSON_UNESCAPED_UNICODE)) ?>" aria-label="Editar <?= $e($p->razon_social) ?>"><svg class="i"><use href="#i-editar"/></svg></button>
+              <button type="button" class="ic-btn" data-abrir-modal="modal-proveedor" data-registro="<?= $e(json_encode((base_nueva() ? [] : registro_clave('proveedor', $p)) + [campo('proveedor.rif') => ref('proveedor.rif', $p), 'razon_social' => $p->razon_social, 'telefono' => $p->telefono, 'correo' => $p->correo, 'direccion' => $p->direccion], JSON_UNESCAPED_UNICODE)) ?>" aria-label="Editar <?= $e($p->razon_social) ?>"><svg class="i"><use href="#i-editar"/></svg></button>
               <form method="POST" action="index.php?action=cambiar_estado_proveedor">
-                <input type="hidden" name="id" value="<?= (int) $p->id ?>"><input type="hidden" name="estado" value="<?= $p->estado ? 0 : 1 ?>">
+                <?= ocultos('proveedor', $p) ?><input type="hidden" name="estado" value="<?= $p->estado ? 0 : 1 ?>">
                 <button type="submit" class="ic-btn" aria-label="<?= $p->estado ? 'Desactivar' : 'Activar' ?> <?= $e($p->razon_social) ?>" <?= $p->estado ? 'data-confirmar="¿Desactivar a ' . $e($p->razon_social) . '?" data-confirmar-texto="Ya no saldrá al registrar compras. Puedes activarlo de nuevo cuando quieras." data-confirmar-boton="Desactivar" data-confirmar-tipo="aviso"' : '' ?>><svg class="i"><use href="#i-power"/></svg></button>
               </form>
             </div></td>
