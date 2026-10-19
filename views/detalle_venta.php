@@ -48,7 +48,9 @@ $iconoMetodo = function ($m) {
     if (str_contains($m, 'efectivo')) return 'efectivo';
     return 'tarjeta';
 };
-$titular = fn($p) => preg_match('/Titular:\s*([^|]*?)\s*\|\s*Tel:\s*(.*)$/u', $p->observacion ?? '', $m) ? trim($m[1]) . ($m[2] !== '' ? ' · ' . trim($m[2]) : '') : '';
+$titular = fn($p) => trim(($p->titular_nombre ?? '') . ' ' . ($p->titular_cedula ?? '')) !== ''
+    ? implode(' · ', array_filter([trim($p->titular_nombre ?? ''), trim($p->titular_cedula ?? ''), trim($p->titular_telefono ?? '')]))
+    : (preg_match('/Titular:\s*([^|]*?)\s*\|\s*Tel:\s*(.*)$/u', $p->observacion ?? '', $m) ? trim($m[1]) . ($m[2] !== '' ? ' · ' . trim($m[2]) : '') : '');
 $iniciales = function ($nombre) {
     $partes = preg_split('/\s+/', trim((string) $nombre));
     return mb_strtoupper(mb_substr($partes[0] ?? '', 0, 1) . mb_substr($partes[1] ?? '', 0, 1));
@@ -107,7 +109,7 @@ if (in_array($estado, ['retirado', 'entregado', 'completado'], true)) {
           <?php foreach ($detalles as $d): ?>
           <li class="dv-prod">
             <?php if (!empty($d->imagen)): ?><img src="public/uploads/<?= $e($d->imagen) ?>" alt="" width="56" height="56" loading="lazy"><?php else: ?><span class="dv-sin-foto"><svg class="i"><use href="#i-caja"/></svg></span><?php endif; ?>
-            <div><b><?= $e($d->producto_nombre) ?></b><small><?= (int) $d->cantidad ?> × <?= $usd($d->precio_unitario) ?><?php if (!empty($d->descuento) && $d->descuento > 0): ?> · descuento <?= (float) $d->descuento ?>%<?php endif; ?></small></div>
+            <div><b><?= $e($d->producto_nombre) ?></b><?php $varTxt = implode(' · ', array_filter([trim($d->talla ?? '') !== '' ? 'Talla ' . trim($d->talla) : '', trim($d->color ?? '')])); if ($varTxt !== ''): ?><small class="dv-var"><?= $e($varTxt) ?></small><?php endif; ?><small><?= (int) $d->cantidad ?> ×<?= $usd($d->precio_unitario) ?><?php if (!empty($d->descuento) && $d->descuento > 0): ?> · descuento <?= (float) $d->descuento ?>%<?php endif; ?></small></div>
             <span><?= $usd($d->subtotal) ?></span>
           </li>
           <?php endforeach; ?>
@@ -141,6 +143,11 @@ if (in_array($estado, ['retirado', 'entregado', 'completado'], true)) {
         <h3 id="dv-cli-t">Cliente</h3>
         <div class="dv-cliente"><span class="dv-av" aria-hidden="true"><?= $e($iniciales($venta->nombre)) ?></span><b><?= $e($venta->nombre) ?></b><?php if (!empty($venta->correo)): ?><small><?= $e($venta->correo) ?></small><?php endif; ?></div>
         <dl class="dv-datos">
+          <?php if (!empty($venta->cedula) && !es_vacio($venta->cedula)): ?>
+          <div><dt>Cédula</dt><dd><?= $e($venta->cedula) ?></dd></div>
+          <?php if (!empty($venta->telefono)): ?><div><dt>Teléfono</dt><dd><?= $e($venta->telefono) ?></dd></div><?php endif; ?>
+          <?php if (!empty($venta->direccion)): ?><div><dt>Dirección</dt><dd><?= $e($venta->direccion) ?></dd></div><?php endif; ?>
+          <?php endif; ?>
           <div><dt>Origen</dt><dd><?= $origen ?></dd></div>
           <?php if (!empty($venta->vendedor)): ?><div><dt>Atendió</dt><dd><?= $e($venta->vendedor) ?></dd></div><?php endif; ?>
         </dl>

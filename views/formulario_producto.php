@@ -28,6 +28,7 @@ $opcionCat = fn($c, $prefijo = '') => '<option value="' . htmlspecialchars(clave
       <div class="fpx-chips">
         <span class="dv-chip neutro"><svg class="i"><use href="#i-etiqueta"/></svg><?= $e($codigo) ?></span>
         <?php if ($nombreCategoria): ?><span class="dv-chip neutro"><?= $e($nombreCategoria) ?></span><?php endif; ?>
+        <?php if (!es_vacio($p->created_at ?? null)): ?><span class="dv-chip neutro"><svg class="i"><use href="#i-calendario"/></svg>Creado el <?= date('d/m/Y', strtotime($p->created_at)) ?></span><?php endif; ?>
         <span class="dv-chip<?= $visible ? '' : ' pend' ?>" id="fp-chip-vis"><?= $visible ? 'Visible en la tienda' : 'Oculto en la tienda' ?></span>
       </div>
       <?php endif; ?>
@@ -121,9 +122,9 @@ $opcionCat = fn($c, $prefijo = '') => '<option value="' . htmlspecialchars(clave
   </div>
 </section>
 <script type="application/json" id="datos-atributos"><?= json_encode([
-    'categorias' => array_map(fn($c) => ['id' => clave('categoria', $c), 'atributos' => array_map(fn($a) => ['nombre' => mb_strtolower(trim($a->nombre)), 'opciones' => array_values(array_filter(array_map('trim', explode(',', (string) ($a->opciones ?? '')))))], $c->atributos ?? [])], $categorias),
+    'categorias' => array_map(fn($c) => ['id' => clave('categoria', $c), 'atributos' => array_map(fn($a) => ['nombre' => mb_strtolower(trim($a->nombre)), 'opciones' => array_values(array_filter(array_map('trim', is_array($a->opciones ?? null) ? $a->opciones : explode(',', (string) ($a->opciones ?? '')))))], $c->atributos ?? [])], $categorias),
     // Limpiado: Ahora mapeamos únicamente el stock unificado de la variante
-    'variantes' => array_map(fn($v) => ['id' => clave('variante', $v), 'talla' => $v->talla ?? '', 'color' => $v->color ?? '', 'modelo' => $v->modelo ?? '', 'sku' => $v->sku ?? clave('variante', $v), 'precio' => $v->precio ?? '', 'stock' => (int) $v->stock], $variantesGuardadas),
+    'variantes' => array_map(fn($v) => ['id' => clave('variante', $v), 'talla' => $v->talla ?? '', 'color' => $v->color ?? '', 'modelo' => $v->modelo ?? '', 'precio' => $v->precio ?? '', 'stock' => (int) $v->stock], $variantesGuardadas),
     'editando' => (bool) $editando,
 ], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?></script>
 <?php include __DIR__ . '/admin/_cerrar.php'; ?>

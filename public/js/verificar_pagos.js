@@ -99,14 +99,13 @@
   }
   function totalEditar() {
     var t = 0;
-    meLista.querySelectorAll('li').forEach(function (li) {
-      var q = Math.max(0, parseInt(li.querySelector('input').value, 10) || 0), sub = q * +li.getAttribute('data-precio');
+    meLista.querySelectorAll('li[data-precio]').forEach(function (li) {
+      var inp = li.querySelector('input[type="number"]');
+      var q = inp ? Math.max(0, parseInt(inp.value, 10) || 0) : +li.getAttribute('data-cant'), sub = q * +li.getAttribute('data-precio');
       t += sub;
-      li.classList.toggle('fuera', q === 0);
-      li.querySelector('.me-sub').textContent = q ? usd(sub) : 'Se quita';
-      li.querySelector('[data-me-menos]').disabled = q === 0;
+      li.querySelector('.me-sub').textContent = usd(sub);
     });
-    document.getElementById('me-total').textContent = meLista.children.length ? usd(t) + ' · ' + fmtBs(t * Panel.tasa) + ' Bs' : '—';
+    document.getElementById('me-total').textContent = meLista.querySelector('li[data-precio]') ? usd(t) + ' · ' + fmtBs(t * Panel.tasa) + ' Bs' : '—';
   }
   function abrirEditar(p) {
     ponerClave(document.getElementById('me-form'), 'pago.ref', p.id);
@@ -118,33 +117,44 @@
     meLista.innerHTML = '<li class="me-cargando">Cargando productos…</li>';
     document.getElementById('me-total').textContent = '—';
     document.getElementById('modal-editar-pago').showModal();
-    fetch('index.php?action=detalle_venta&' + urlClave('venta', p.venta) + '&formato=json')
+    fetch('index.php?action=detalle_venta&' + urlClave('venta', p.venta) + '&ajax=1')
       .then(function (r) { return r.json(); })
       .then(function (res) {
         var d = res && res.detalles ? res.detalles : [];
         if (!d.length) { meLista.innerHTML = '<li class="me-cargando">Este pedido no tiene productos.</li>'; return; }
-        meLista.innerHTML = d.map(function (x) { var cod = x[campoClave('producto.ref')]; return filaProd(cod, x.producto_nombre || 'Producto ' + cod, +x.precio_unitario, +x.cantidad); }).join('');
+        meLista.innerHTML = d.map(function (x) {
+          var cod = x[campoClave('producto.ref')], extra = [x.talla ? 'Talla ' + x.talla : '', x.color || ''].filter(Boolean).join(' · ');
+          return filaFija(x.producto_nombre || 'Producto ' + cod, extra, +x.precio_unitario, +x.cantidad);
+        }).join('');
         totalEditar();
       })
       .catch(function () { meLista.innerHTML = '<li class="me-cargando">No se pudieron cargar los productos. Puedes guardar solo los datos del pago.</li>'; });
   }
   meLista.addEventListener('click', function (e) {
     var b = e.target.closest('[data-me-menos], [data-me-mas]'); if (!b) return;
-    var inp = b.parentNode.querySelector('input');
-    inp.value = Math.max(0, (parseInt(inp.value, 10) || 0) + (b.hasAttribute('data-me-mas') ? 1 : -1));
+    var li = b.closest('li'), inp = li.querySelector('input[type="number"]');
+    var q = (parseInt(inp.value, 10) || 0) + (b.hasAttribute('data-me-mas') ? 1 : -1);
+    if (q < 1) li.remove(); else inp.value = q;
     totalEditar();
   });
   meLista.addEventListener('input', totalEditar);
+  var nNuevo = 0;
+  function filaFija(nombre, extra, pr, cant) {
+    return '<li class="me-fija" data-precio="' + pr + '" data-cant="' + cant + '"><div class="me-nom"><b>' + esc(nombre) + '</b><span>' + (extra ? esc(extra) + ' · ' : '') + usd(pr) + ' c/u</span></div>' +
+      '<span class="me-cant">× ' + cant + '</span><span class="me-sub"></span></li>';
+  }
   function filaProd(id, nombre, pr, cant) {
-    return '<li data-precio="' + pr + '" data-id="' + esc(id) + '"><div class="me-nom"><b>' + esc(nombre) + '</b><span>' + usd(pr) + ' c/u</span></div>' +
-      '<span class="stepper me-step"><button type="button" data-me-menos aria-label="Uno menos">−</button><input type="number" name="productos[' + esc(id) + ']" value="' + cant + '" min="0" inputmode="numeric" aria-label="Cantidad de ' + esc(nombre) + '"><button type="button" data-me-mas aria-label="Uno más">+</button></span>' +
+    var k = nNuevo++;
+    return '<li class="me-nueva" data-precio="' + pr + '" data-id="' + esc(id) + '"><div class="me-nom"><b>' + esc(nombre) + '</b><span>Nuevo · ' + usd(pr) + ' c/u</span></div>' +
+      '<input type="hidden" name="productos_nuevos[' + k + '][codigo]" value="' + esc(id) + '">' +
+      '<span class="stepper me-step"><button type="button" data-me-menos aria-label="Uno menos">−</button><input type="number" name="productos_nuevos[' + k + '][cantidad]" value="' + cant + '" min="1" inputmode="numeric" aria-label="Cantidad de ' + esc(nombre) + '"><button type="button" data-me-mas aria-label="Uno más">+</button></span>' +
       '<span class="me-sub"></span></li>';
   }
   var meNuevo = document.getElementById('me-nuevo'), meAgregar = document.getElementById('me-agregar');
   if (meNuevo && meAgregar) meAgregar.addEventListener('click', function () {
     var op = meNuevo.options[meNuevo.selectedIndex];
     if (!op || !op.value) { Panel.avisar('Elige el producto que quieres agregar', 'aviso'); return; }
-    var ya = meLista.querySelector('li[data-id="' + CSS.escape(op.value) + '"] input');
+    var ya = meLista.querySelector('li.me-nueva[data-id="' + CSS.escape(op.value) + '"] input[type="number"]');
     if (ya) ya.value = (parseInt(ya.value, 10) || 0) + 1;
     else {
       var vacio = meLista.querySelector('.me-cargando'); if (vacio) vacio.remove();

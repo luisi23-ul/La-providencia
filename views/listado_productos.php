@@ -5,6 +5,7 @@ $tituloPagina = 'Productos';
 $listaProductos = $listaProductos ?? $productos ?? [];
 $categorias = sin_relleno($categorias ?? array_map(fn($id, $n) => (object) ['id' => $id, 'nombre_categoria' => $n], [1, 2, 3], ['Aluminio', 'Lencería', 'Plástico']), 'categoria');
 include __DIR__ . '/admin/_abrir.php';
+$creadoDe = fn($p) => !es_vacio($p->created_at ?? null) ? '<span class="creado">Creado el ' . date('d/m/Y', strtotime($p->created_at)) . '</span>' : '';
 $tallasDe = function ($p, $donde = 't') use ($e) {
     if (empty($p->resumen_variantes)) return '';
     $porTalla = []; $colores = []; $matriz = [];
@@ -155,7 +156,8 @@ $url = fn($stock) => 'index.php?' . http_build_query(array_filter(['action' => '
             $catId = (ref('producto.categoria', $p) ?: null);
             $cat = categoria_de($p) ?: ($nombreCat[$catId] ?? 'Sin categoría');
             $padreId = $padresCat[$catId] ?? null;
-            $padreNombre = $p->nombre_categoria_padre ?? ($padreId ? ($nombreCat[$padreId] ?? '') : '');
+            $padreNombre = $padreId ? ($nombreCat[$padreId] ?? '') : ($p->nombre_categoria_padre ?? '');
+            if ($cat === 'Sin categoría' || $padreNombre === $cat) $padreNombre = '';
 
             $costo = (float) ($p->costo_compra ?? 0);
             $margen = ($p->precio > 0 && $costo > 0) ? round((($p->precio - $costo) / $costo) * 100) : null;
@@ -168,6 +170,7 @@ $url = fn($stock) => 'index.php?' . http_build_query(array_filter(['action' => '
                 <div>
                   <b><?= $e($p->nombre_producto) ?></b>
                   <span><?= $e($p->descripcion ?? '') ?></span>
+                  <?= $creadoDe($p) ?>
 
                   <?= $tallasDe($p) ?>
 
@@ -213,13 +216,15 @@ $url = fn($stock) => 'index.php?' . http_build_query(array_filter(['action' => '
           $catId = (ref('producto.categoria', $p) ?: null);
           $cat = categoria_de($p) ?: ($nombreCat[$catId] ?? 'Sin categoría');
           $padreId = $padresCat[$catId] ?? null;
-          $padreNombre = $p->nombre_categoria_padre ?? ($padreId ? ($nombreCat[$padreId] ?? '') : '');
+          $padreNombre = $padreId ? ($nombreCat[$padreId] ?? '') : ($p->nombre_categoria_padre ?? '');
+            if ($cat === 'Sin categoría' || $padreNombre === $cat) $padreNombre = '';
           $s = $estadoDe($p); ?>
         <li>
           <?php if ($p->imagen): ?><img class="foto grande" src="public/uploads/<?= $e($p->imagen) ?>" alt="" width="56" height="56" loading="lazy"><?php else: ?><span></span><?php endif; ?>
           <div class="t-nom">
             <b><?= $e($p->nombre_producto) ?></b>
             <span><?= $e($codigo) ?>, <?= !empty($padreNombre) ? $e($padreNombre) . ' › ' : '' ?><?= $e($cat) ?></span>
+            <?= $creadoDe($p) ?>
             <?= $tallasDe($p, 'm') ?>
           </div>
           <div class="t-precio"><?= $usd($p->precio) ?></div>

@@ -103,7 +103,7 @@ $productosLista = $db->query("SELECT " . nombre_clave('producto') . ", nombre_pr
         <input type="text" id="me-ref" name="referencia" inputmode="numeric" autocomplete="off" placeholder="Ej.: 004512">
       </div>
       <section class="me-prods" aria-labelledby="me-prods-tit">
-        <header><h4 id="me-prods-tit">Productos del pedido</h4><span class="ayuda">Agrega otros o pon 0 para quitar</span></header>
+        <header><h4 id="me-prods-tit">Productos del pedido</h4><span class="ayuda">Puedes agregar productos</span></header>
         <ul id="me-lista-prods"></ul>
         <div class="me-agregar"><select id="me-nuevo" data-buscador aria-label="Producto para agregar"><option value="">Buscar un producto para agregar…</option><?php foreach ($productosLista as $pl): ?><option value="<?= $e(clave('producto', $pl)) ?>" data-nombre="<?= $e($pl->nombre_producto) ?>" data-precio="<?= (float) $pl->precio ?>"><?= $e($pl->nombre_producto) ?> · <?= $usd($pl->precio) ?></option><?php endforeach; ?></select><button type="button" class="btn btn-sec" id="me-agregar"><svg class="i"><use href="#i-mas"/></svg>Agregar</button></div>
         <p class="me-total"><span>Nuevo total</span><b id="me-total">—</b></p>
@@ -119,8 +119,10 @@ $productosLista = $db->query("SELECT " . nombre_clave('producto') . ", nombre_pr
 <form id="form-aprobar" method="POST" action="index.php?action=aprobar_pago" hidden><?= ocultos('pago') ?></form>
 
 <?php
-$titularDe = function ($obs) {
-    $d = ['nombre' => '', 'doc' => '', 'tel' => ''];
+$titularDe = function ($p) {
+    $d = ['nombre' => trim($p->titular_nombre ?? ''), 'doc' => trim($p->titular_cedula ?? ''), 'tel' => trim($p->titular_telefono ?? '')];
+    if (implode('', $d) !== '') return $d;
+    $obs = $p->observacion ?? '';
     if (preg_match('/Nombre:\s*([^|]*)/u', $obs ?? '', $m)) $d['nombre'] = trim($m[1]);
     if (preg_match('/Titular:\s*([^|]*)/u', $obs ?? '', $m)) $d['doc'] = trim($m[1]);
     if (preg_match('/Tel:\s*([^|]*)/u', $obs ?? '', $m)) $d['tel'] = trim($m[1]);
@@ -130,7 +132,7 @@ $titularDe = function ($obs) {
 
 <script type="application/json" id="datos-pagos"><?= json_encode(array_map(function ($p) use ($tasa, $titularDe) {
     $esEf = stripos($p->metodo_nombre ?? '', 'efectivo') !== false || empty($p->requiere_referencia);
-    $titular = $titularDe($p->observacion ?? '');
+    $titular = $titularDe($p);
     return [
         'id' => clave('pago', $p),
         'venta' => ref('pago.venta', $p),

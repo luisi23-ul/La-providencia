@@ -124,6 +124,12 @@ foreach ($tipos as $t) if (clave('metodo', $t) === (string)$f['metodo']) $nombre
 $hayFiltros = $f['metodo'] !== '' || $f['banco'] !== '' || $atajoActivo !== 'Hoy';
 
 $titular = function ($p) {
+    $nom = trim($p->titular_nombre ?? '');
+    $doc = trim($p->titular_cedula ?? '');
+    $tel = trim($p->titular_telefono ?? '');
+    if ($nom !== '' || $doc !== '') {
+        return [$nom !== '' ? $nom : $doc, implode(' · ', array_filter([$nom !== '' ? $doc : '', $tel]))];
+    }
     $obs = $p->observacion ?? '';
     if (preg_match('/Titular:\s*([^|]*?)(?:\s*\|\s*Tel:\s*(.*))?$/ui', $obs, $m)) {
         return [trim($m[1]), trim($m[2] ?? '')];
