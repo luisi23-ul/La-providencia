@@ -789,6 +789,9 @@ tfoot td { padding: 12px 14px; border-top: 1px solid var(--linea); font-weight: 
 .canal-stock.quieto b { font-weight: 600; }
 .cant-mas { color: var(--verde); font-weight: 700; }
 .cant-menos { color: var(--rojo); font-weight: 700; }
+.mov-es { display: inline-flex; align-items: center; gap: 5px; font-weight: 600; white-space: nowrap; }
+.mov-es svg.i { width: 15px; height: 15px; }
+.mov-es b { font-weight: 700; font-variant-numeric: tabular-nums; }
 .enlace { color: var(--marca); text-decoration: none; font-weight: 500; }
 
 .ajuste-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start; }
