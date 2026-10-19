@@ -30,8 +30,11 @@ class VentasController {
             $stmt->execute([$cedula, $numReg, $modulo, $accion, $detalleCambio, $ip]);
         } catch (Exception $e) {}
     }
-public function puntoVenta() {
-        // 1. Obtener productos activos (compatibilidad total con borrado lógico y claves)
+
+    // =========================================================================
+    // 1. PUNTO DE VENTA (POS)
+    // =========================================================================
+    public function puntoVenta() {
         $sqlProd = "SELECT p.codigo, 
                            p.codigo AS id, 
                            p.codigo AS codigo_producto,
@@ -54,7 +57,6 @@ public function puntoVenta() {
         $stmtProd = $this->db->query($sqlProd);
         $productos = $stmtProd->fetchAll(PDO::FETCH_OBJ);
 
-        // 2. Variantes por producto
         $stmtVars = $this->db->prepare("
             SELECT pv.codigo_variante, 
                    pv.codigo_variante AS id, 
@@ -75,58 +77,37 @@ public function puntoVenta() {
             $p->variantes = $stmtVars->fetchAll(PDO::FETCH_OBJ);
         }
 
-        // 3. Categorías reales para las pestañas de filtro
         $categorias = $this->db->query("
-            SELECT slug, 
-                   slug AS id, 
-                   nombre_categoria 
+            SELECT slug, slug AS id, nombre_categoria 
             FROM categorias 
             WHERE slug != 'raiz'
             ORDER BY nombre_categoria ASC
         ")->fetchAll(PDO::FETCH_OBJ);
 
-        // 4. Métodos de pago activos
         $metodos = $this->db->query("
-            SELECT codigo_metodo, 
-                   codigo_metodo AS id, 
-                   nombre, 
-                   moneda, 
-                   requiere_referencia, 
-                   en_tienda 
+            SELECT codigo_metodo, codigo_metodo AS id, nombre, moneda, requiere_referencia, en_tienda 
             FROM metodos_pago 
             WHERE activo = 1 AND en_tienda = 1 
             ORDER BY nombre ASC
         ")->fetchAll(PDO::FETCH_OBJ);
 
-        // 5. Clientes registrados
         $clientes = $this->db->query("
-            SELECT cedula, 
-                   cedula AS id, 
-                   nombre_razon_social, 
-                   telefono, 
-                   correo 
+            SELECT cedula, cedula AS id, nombre_razon_social, telefono, correo 
             FROM clientes 
             WHERE estado = 1 
             ORDER BY nombre_razon_social ASC
         ")->fetchAll(PDO::FETCH_OBJ);
 
-        // 6. Configuración general (tasa BCV)
         $stmtSis = $this->db->query("SELECT * FROM sistema LIMIT 1");
         $sistema = $stmtSis->fetch(PDO::FETCH_OBJ);
 
-        // 7. Extraer venta recién registrada (si viene de guardarVentaTienda)
         $ventaRegistrada = $_SESSION['venta_comprobante'] ?? null;
         unset($_SESSION['venta_comprobante']);
 
         require_once 'views/ventas/punto_venta.php';
     }
-   // =========================================================================
-    // 2. GUARDAR VENTA EN TIENDA (POS)
+
     // =========================================================================
-    // =========================================================================
-    // 2. GUARDAR VENTA EN TIENDA (POS)
-    // =========================================================================
-  // =========================================================================
     // 2. GUARDAR VENTA EN TIENDA (POS)
     // =========================================================================
     public function guardarVentaTienda() {
@@ -138,14 +119,12 @@ public function puntoVenta() {
         try {
             $this->db->beginTransaction();
 
-            // 1. Cliente y Cajero
             $cedulaCliente = trim((string)($_POST['cedula_cliente'] ?? $_POST['id_cliente'] ?? $_POST['id_usuario'] ?? 'SIN_USUARIO'));
             if (empty($cedulaCliente) || $cedulaCliente === '0') {
                 $cedulaCliente = 'SIN_USUARIO';
             }
             $cedulaCajero = $_SESSION['cedula'] ?? $_SESSION['id_usuario'] ?? 'SIN_USUARIO';
 
-            // Si es un cliente nuevo registrado desde el modal del POS
             if (!empty($_POST['nuevo_cliente']) && is_array($_POST['nuevo_cliente'])) {
                 $ncDoc = trim((string)($_POST['nuevo_cliente']['cedula'] ?? ''));
                 $ncNom = trim((string)($_POST['nuevo_cliente']['nombre'] ?? ''));
@@ -166,7 +145,6 @@ public function puntoVenta() {
                 }
             }
 
-            // 2. Arrays de Productos
             $prodCodigos = $_POST['codigo_producto'] ?? $_POST['id_producto'] ?? [];
             $varCodigos  = $_POST['codigo_variante'] ?? $_POST['id_variante'] ?? [];
             $cants       = $_POST['cantidad'] ?? [];
@@ -177,13 +155,11 @@ public function puntoVenta() {
                 throw new Exception("No hay productos en la orden de venta.");
             }
 
-            // 3. Tasa de cambio BCV
             $stmtSis = $this->db->query("SELECT tasa_bcv, tasa_manual, tasa_modo FROM sistema LIMIT 1");
             $sis = $stmtSis->fetch(PDO::FETCH_OBJ);
             $tasaCambio = ($sis && $sis->tasa_modo === 'manual') ? (float)$sis->tasa_manual : (float)($sis->tasa_bcv ?? 1.0000);
             if ($tasaCambio <= 0) $tasaCambio = 1.0000;
 
-            // 4. Totalizar productos
             $totalUsd = (float)($_POST['total'] ?? 0);
             if ($totalUsd <= 0) {
                 for ($k = 0; $k < count($prodCodigos); $k++) {
@@ -198,7 +174,6 @@ public function puntoVenta() {
             $vueltoMoneda = trim((string)($_POST['vuelto_moneda'] ?? 'Bs'));
             if (empty($vueltoMoneda)) $vueltoMoneda = 'Bs';
 
-            // 5. Determinar estado de la venta según métodos de pago (efectivo vs bancario)
             $metodosArray    = (array)($_POST['id_metodo_pago'] ?? $_POST['codigo_metodo'] ?? ['efectivo_usd']);
             $montosArray     = (array)($_POST['monto'] ?? [$totalUsd]);
             $bancosArray     = (array)($_POST['banco'] ?? ['']);
@@ -220,12 +195,10 @@ public function puntoVenta() {
 
             $estadoVenta = $requiereVerificacion ? 'por_verificar' : 'retirado';
 
-            // 6. Generar número de orden correlativo (ORD-0000XX)
             $stmtMax = $this->db->query("SELECT MAX(CAST(SUBSTRING(numero_orden, 5) AS UNSIGNED)) FROM ventas WHERE numero_orden LIKE 'ORD-%'");
             $maxNum = (int)$stmtMax->fetchColumn();
             $numeroOrden = 'ORD-' . str_pad($maxNum + 1, 6, '0', STR_PAD_LEFT);
 
-            // 7. Insertar en ventas
             $stmtV = $this->db->prepare("
                 INSERT INTO ventas (
                     numero_orden, cedula_cliente, cedula_usuario, cedula_vendedor,
@@ -255,7 +228,6 @@ public function puntoVenta() {
                 $estadoVenta
             ]);
 
-            // 8. Insertar detalle_ventas y descontar inventario
             $stmtDet = $this->db->prepare("
                 INSERT INTO detalle_ventas (
                     numero_orden, linea, codigo_producto, codigo_variante,
@@ -301,13 +273,11 @@ public function puntoVenta() {
                     $subt
                 ]);
 
-                // Descontar inventario
                 $stmtResta->execute([$cant, $codProd]);
                 if (!empty($codVar)) {
                     $stmtRestaVar->execute([$cant, $codVar, $codProd]);
                 }
 
-                // Registrar kardex
                 $stmtStk->execute([$codProd]);
                 $stockResultante = (int)$stmtStk->fetchColumn();
 
@@ -325,7 +295,6 @@ public function puntoVenta() {
                     $cedulaCajero
                 ]);
 
-                // Nombre para comprobante
                 $stmtNom = $this->db->prepare("SELECT nombre_producto FROM productos WHERE codigo = ?");
                 $stmtNom->execute([$codProd]);
                 $nomProd = $stmtNom->fetchColumn() ?: $codProd;
@@ -338,7 +307,6 @@ public function puntoVenta() {
                 ];
             }
 
-            // 9. Insertar Pagos
             $stmtP = $this->db->prepare("
                 INSERT INTO pagos (
                     numero_orden, numero_pago, codigo_metodo, cedula_cajero,
@@ -366,7 +334,6 @@ public function puntoVenta() {
 
                 if ($montoP <= 0 && count($metodosArray) > 1) continue;
 
-                // Definir estado individual del pago según el método
                 $stmtReq->execute([$metodoId]);
                 $esBancario = (int)$stmtReq->fetchColumn() === 1;
                 $estadoPago = $esBancario ? 'pendiente' : 'aprobado';
@@ -404,7 +371,6 @@ public function puntoVenta() {
             $this->db->commit();
             $this->log('Ventas', 'INSERT', "Venta en caja #{$numeroOrden} por $" . number_format($totalUsd, 2));
 
-            // 10. Datos de cliente para modal y sesión de ticket
             $stmtCliData = $this->db->prepare("SELECT nombre_razon_social, telefono FROM clientes WHERE cedula = ?");
             $stmtCliData->execute([$cedulaCliente]);
             $cliData = $stmtCliData->fetch(PDO::FETCH_OBJ);
@@ -433,6 +399,7 @@ public function puntoVenta() {
             exit();
         }
     }
+
     // =========================================================================
     // 3. HISTORIAL DE VENTAS
     // =========================================================================
@@ -456,36 +423,47 @@ public function puntoVenta() {
 
         require_once 'views/ventas/ventas.php';
     }
+
     // =========================================================================
     // 4. VERIFICACIÓN Y GESTIÓN DE PAGOS
     // =========================================================================
     public function verificarPagos() {
         $estado = $_GET['estado'] ?? 'pendiente';
-        $fecha  = $_GET['fecha'] ?? '';
+        $fecha  = trim((string)($_GET['fecha'] ?? ''));
 
         $where = [];
         $params = [];
 
-        // Filtro por estado (pendiente, aprobado, rechazado)
+        // 1. Filtrar por estado del pago
         if (!empty($estado) && $estado !== 'todos') {
             $where[] = "p.estado = ?";
             $params[] = $estado;
         }
 
-        // Filtro por fecha opcional (solo si el usuario la seleccionó expresamente)
+        // 2. Solo métodos bancarios que requieren verificación
+        $where[] = "(mp.requiere_referencia = 1 OR p.codigo_metodo IN ('pago_movil', 'transferencia'))";
+
+        // 3. Filtro por fecha (cubre fecha_pago y fecha de la venta)
         if (!empty($fecha)) {
-            $where[] = "DATE(p.fecha_pago) = ?";
+            $where[] = "(p.fecha_pago BETWEEN ? AND ? OR DATE(p.fecha_pago) = ? OR DATE(v.fecha) = ?)";
+            $params[] = $fecha . ' 00:00:00';
+            $params[] = $fecha . ' 23:59:59';
+            $params[] = $fecha;
             $params[] = $fecha;
         }
 
         $sqlWhere = !empty($where) ? "WHERE " . implode(" AND ", $where) : "";
 
         $sql = "SELECT p.*, 
+                       p.numero_pago AS id_pago,
+                       v.numero_orden AS id,
                        v.fecha AS fecha_venta, 
                        v.total AS total_venta,
                        v.origen_venta,
                        COALESCE(c.nombre_razon_social, u.nombre, 'Consumidor Final') AS cliente_nombre,
+                       COALESCE(c.nombre_razon_social, u.nombre, 'Consumidor Final') AS cliente,
                        mp.nombre AS metodo_nombre,
+                       mp.nombre AS metodo,
                        mp.requiere_referencia
                 FROM pagos p
                 INNER JOIN ventas v ON p.numero_orden = v.numero_orden
@@ -499,21 +477,27 @@ public function puntoVenta() {
         $stmt->execute($params);
         $pagos = $stmt->fetchAll(PDO::FETCH_OBJ);
 
-        // Conteo real para las insignias numéricas de las pestañas
-        $stmtC = $this->db->query("SELECT COUNT(*) FROM pagos WHERE estado = 'pendiente'");
+        // Conteo para las insignias numéricas de las pestañas
+        $stmtC = $this->db->query("
+            SELECT COUNT(*) 
+            FROM pagos p
+            LEFT JOIN metodos_pago mp ON p.codigo_metodo = mp.codigo_metodo
+            WHERE p.estado = 'pendiente' 
+              AND (mp.requiere_referencia = 1 OR p.codigo_metodo IN ('pago_movil', 'transferencia'))
+        ");
         $conteo = ['pendiente' => (int)$stmtC->fetchColumn()];
 
-        $tasa = 880.12;
+        $tasa = 881.07;
         $stmtSis = $this->db->query("SELECT tasa_bcv FROM sistema LIMIT 1");
         if ($sis = $stmtSis->fetch(PDO::FETCH_OBJ)) {
-            $tasa = (float)($sis->tasa_bcv ?: 880.12);
+            $tasa = (float)($sis->tasa_bcv ?: 881.07);
         }
 
         require_once 'views/ventas/verificar_pagos.php';
     }
 
     public function aprobarPago() {
-        $numeroOrden = trim($_POST['numero_orden'] ?? $_GET['id'] ?? '');
+        $numeroOrden = trim((string)($_POST['numero_orden'] ?? $_POST['id'] ?? $_GET['id'] ?? ''));
         $numeroPago  = (int)($_POST['numero_pago'] ?? 1);
         $cedulaAdmin = $_SESSION['cedula'] ?? $_SESSION['id_usuario'] ?? 'SIN_USUARIO';
 
@@ -521,16 +505,31 @@ public function puntoVenta() {
             $this->db->prepare("UPDATE pagos SET estado = 'aprobado' WHERE numero_orden = ? AND numero_pago = ?")
                      ->execute([$numeroOrden, $numeroPago]);
 
-            $this->db->prepare("UPDATE ventas SET estado = 'pagado' WHERE numero_orden = ?")
-                     ->execute([$numeroOrden]);
+            $stmtV = $this->db->prepare("SELECT origen_venta FROM ventas WHERE numero_orden = ?");
+            $stmtV->execute([$numeroOrden]);
+            $origen = $stmtV->fetchColumn() ?: 'tienda_fisica';
 
-            // Auditoría del pago
-            $this->db->prepare("
-                INSERT INTO pagos_auditoria (numero_orden, numero_pago, fecha_verificacion, verificado_por, estado_resultante, observacion)
-                VALUES (?, ?, NOW(), ?, 'aprobado', 'Pago verificado exitosamente')
-            ")->execute([$numeroOrden, $numeroPago, $cedulaAdmin]);
+            if ($origen === 'tienda_fisica') {
+                $nuevoEstado = 'retirado';
+                $this->db->prepare("
+                    UPDATE ventas 
+                    SET estado = ?, fecha_entrega = NOW(), retirado_por = COALESCE(NULLIF(retirado_por, ''), 'Caja Tienda') 
+                    WHERE numero_orden = ?
+                ")->execute([$nuevoEstado, $numeroOrden]);
+            } else {
+                $nuevoEstado = 'por_retirar';
+                $this->db->prepare("UPDATE ventas SET estado = ? WHERE numero_orden = ?")
+                         ->execute([$nuevoEstado, $numeroOrden]);
+            }
 
-            $this->log('Ventas', 'VERIFICACION', "Aprobó pago de orden #{$numeroOrden}");
+            try {
+                $this->db->prepare("
+                    INSERT INTO pagos_auditoria (numero_orden, numero_pago, fecha_verificacion, verificado_por, estado_resultante, observacion)
+                    VALUES (?, ?, NOW(), ?, 'aprobado', 'Pago verificado exitosamente')
+                ")->execute([$numeroOrden, $numeroPago, $cedulaAdmin]);
+            } catch (Exception $e) {}
+
+            $this->log('Ventas', 'VERIFICACION', "Aprobó pago de orden #{$numeroOrden} - Venta pasa a {$nuevoEstado}");
         }
 
         header("Location: index.php?action=verificar_pagos");
@@ -538,21 +537,24 @@ public function puntoVenta() {
     }
 
     public function rechazarPago() {
-        $numeroOrden = trim($_POST['numero_orden'] ?? $_GET['id'] ?? '');
+        $numeroOrden = trim((string)($_POST['numero_orden'] ?? $_POST['id'] ?? $_GET['id'] ?? ''));
         $numeroPago  = (int)($_POST['numero_pago'] ?? 1);
+        $motivo      = trim((string)($_POST['observacion'] ?? 'Pago rechazado por inconsistencia'));
         $cedulaAdmin = $_SESSION['cedula'] ?? $_SESSION['id_usuario'] ?? 'SIN_USUARIO';
 
         if (!empty($numeroOrden)) {
-            $this->db->prepare("UPDATE pagos SET estado = 'rechazado' WHERE numero_orden = ? AND numero_pago = ?")
-                     ->execute([$numeroOrden, $numeroPago]);
+            $this->db->prepare("UPDATE pagos SET estado = 'rechazado', observacion = ? WHERE numero_orden = ? AND numero_pago = ?")
+                     ->execute([$motivo, $numeroOrden, $numeroPago]);
 
-            $this->db->prepare("UPDATE ventas SET estado = 'anulado' WHERE numero_orden = ?")
+            $this->db->prepare("UPDATE ventas SET estado = 'cancelado' WHERE numero_orden = ?")
                      ->execute([$numeroOrden]);
 
-            $this->db->prepare("
-                INSERT INTO pagos_auditoria (numero_orden, numero_pago, fecha_verificacion, verificado_por, estado_resultante, observacion)
-                VALUES (?, ?, NOW(), ?, 'rechazado', 'Pago rechazado por inconsistencia')
-            ")->execute([$numeroOrden, $numeroPago, $cedulaAdmin]);
+            try {
+                $this->db->prepare("
+                    INSERT INTO pagos_auditoria (numero_orden, numero_pago, fecha_verificacion, verificado_por, estado_resultante, observacion)
+                    VALUES (?, ?, NOW(), ?, 'rechazado', ?)
+                ")->execute([$numeroOrden, $numeroPago, $cedulaAdmin, $motivo]);
+            } catch (Exception $e) {}
 
             $this->log('Ventas', 'VERIFICACION', "Rechazó pago de orden #{$numeroOrden}");
         }
@@ -561,87 +563,202 @@ public function puntoVenta() {
         exit();
     }
 
-    // =========================================================================
-    // 5. MÉTODOS DE SOPORTE Y TIENDA ONLINE
-    // =========================================================================
-    // =========================================================================
-    // 6. PAGOS POR BANCO (CONCILIACIÓN Y REPORTES)
+    public function editarPagoVerificacion() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header("Location: index.php?action=verificar_pagos");
+            exit();
+        }
+
+        $numeroOrden = trim((string)($_POST['numero_orden'] ?? $_POST['id_venta'] ?? ''));
+        $numeroPago  = (int)($_POST['numero_pago'] ?? $_POST['id_pago'] ?? 1);
+        $metodoId    = trim((string)($_POST['id_metodo_pago'] ?? $_POST['codigo_metodo'] ?? ''));
+        $banco       = trim((string)($_POST['banco'] ?? ''));
+        $referencia  = trim((string)($_POST['referencia'] ?? ''));
+
+        if (empty($numeroOrden)) {
+            header("Location: index.php?action=verificar_pagos");
+            exit();
+        }
+
+        try {
+            $this->db->beginTransaction();
+
+            $updates = ["banco = ?", "referencia = ?"];
+            $paramsPago = [$banco, $referencia];
+
+            if (!empty($metodoId)) {
+                $updates[] = "codigo_metodo = ?";
+                $paramsPago[] = $metodoId;
+            }
+
+            $paramsPago[] = $numeroOrden;
+            $paramsPago[] = $numeroPago;
+
+            $sqlPago = "UPDATE pagos SET " . implode(", ", $updates) . " WHERE numero_orden = ? AND numero_pago = ?";
+            $this->db->prepare($sqlPago)->execute($paramsPago);
+
+            if (!empty($_POST['productos_nuevos']) && is_array($_POST['productos_nuevos'])) {
+                $stmtMaxLinea = $this->db->prepare("SELECT COALESCE(MAX(linea), 0) FROM detalle_ventas WHERE numero_orden = ?");
+                $stmtMaxLinea->execute([$numeroOrden]);
+                $linea = (int)$stmtMaxLinea->fetchColumn();
+
+                $montoAdicional = 0.0;
+                $stmtInsDet = $this->db->prepare("
+                    INSERT INTO detalle_ventas (numero_orden, linea, codigo_producto, codigo_variante, cantidad, costo_unitario, precio_unitario, descuento, subtotal)
+                    VALUES (?, ?, ?, '', ?, ?, ?, 0.00, ?)
+                ");
+                $stmtProdInfo = $this->db->prepare("SELECT precio, costo_compra FROM productos WHERE codigo = ?");
+                $stmtDescStock = $this->db->prepare("UPDATE productos SET stock = GREATEST(0, stock - ?) WHERE codigo = ?");
+
+                foreach ($_POST['productos_nuevos'] as $prod) {
+                    $codProd = trim((string)($prod['codigo'] ?? $prod['id'] ?? ''));
+                    $cant    = (int)($prod['cantidad'] ?? 1);
+                    if (empty($codProd) || $cant <= 0) continue;
+
+                    $stmtProdInfo->execute([$codProd]);
+                    $pInfo = $stmtProdInfo->fetch(PDO::FETCH_OBJ);
+                    if (!$pInfo) continue;
+
+                    $precio = (float)($pInfo->precio ?? 0.0);
+                    $costo  = (float)($pInfo->costo_compra ?? 0.0);
+                    $subt   = round($cant * $precio, 2);
+                    $montoAdicional += $subt;
+                    $linea++;
+
+                    $stmtInsDet->execute([$numeroOrden, $linea, $codProd, $cant, $costo, $precio, $subt]);
+                    $stmtDescStock->execute([$cant, $codProd]);
+                }
+
+                if ($montoAdicional > 0) {
+                    $this->db->prepare("UPDATE ventas SET subtotal = subtotal + ?, total = total + ? WHERE numero_orden = ?")
+                             ->execute([$montoAdicional, $montoAdicional, $numeroOrden]);
+                    $this->db->prepare("UPDATE pagos SET monto = monto + ? WHERE numero_orden = ? AND numero_pago = ?")
+                             ->execute([$montoAdicional, $numeroOrden, $numeroPago]);
+                }
+            }
+
+            $this->db->commit();
+            $this->log('Ventas', 'UPDATE', "Se editó el pago de la orden #{$numeroOrden}");
+
+            $_SESSION['alerta'] = [
+                'tipo'   => 'success',
+                'titulo' => 'Pago actualizado',
+                'texto'  => "Los datos del pago de la orden #{$numeroOrden} se guardaron exitosamente."
+            ];
+
+        } catch (Exception $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            $_SESSION['alerta'] = [
+                'tipo'   => 'error',
+                'titulo' => 'Error al actualizar',
+                'texto'  => $e->getMessage()
+            ];
+        }
+
+        header("Location: index.php?action=verificar_pagos");
+        exit();
+    }
+
+   // =========================================================================
+    // 5. PAGOS POR BANCO (CONCILIACIÓN Y REPORTES)
     // =========================================================================
     public function pagosBanco() {
-        $desde = $_GET['desde'] ?? '';
-        $hasta = $_GET['hasta'] ?? '';
-        $bancoFiltro = trim($_GET['banco'] ?? '');
+        // La vista define por defecto hoy si no vienen en GET
+        $hoy = date('Y-m-d');
+        $desde = trim((string)($_GET['desde'] ?? ''));
+        $hasta = trim((string)($_GET['hasta'] ?? ''));
+        $bancoFiltro = trim((string)($_GET['banco'] ?? ''));
+        $metodoFiltro = trim((string)($_GET['metodo'] ?? ''));
 
-        // Obtener la lista de bancos que tienen movimientos
+        // 1. Bancos reales que tienen movimientos
         $stmtBancos = $this->db->query("
             SELECT DISTINCT banco 
             FROM pagos 
-            WHERE banco IS NOT NULL AND banco != '' AND banco != 'Caja Física'
+            WHERE banco IS NOT NULL AND banco != '' AND banco != 'Caja Física' AND banco != 'Sin banco'
             ORDER BY banco ASC
         ");
         $bancos = $stmtBancos->fetchAll(PDO::FETCH_COLUMN);
 
-        $where = ["p.estado = 'aprobado'", "(mp.requiere_referencia = 1 OR p.codigo_metodo IN ('pago_movil', 'transferencia'))"];
+        // 2. Métodos de pago para los botones de filtro de la vista
+        $metodos = $this->db->query("
+            SELECT codigo_metodo, nombre, requiere_referencia 
+            FROM metodos_pago 
+            WHERE activo = 1 
+            ORDER BY nombre ASC
+        ")->fetchAll(PDO::FETCH_OBJ);
+
+        // 3. Condiciones SQL
+        // Incluimos estado aprobado y pendiente/verificado si no hay aprobados de prueba
+        $where = [
+            "p.estado IN ('aprobado', 'verificado')",
+            "(mp.requiere_referencia = 1 OR p.codigo_metodo IN ('pago_movil', 'transferencia') OR (p.banco IS NOT NULL AND p.banco != '' AND p.banco != 'Caja Física'))"
+        ];
         $params = [];
 
-        // Filtro por fecha usando fecha_pago o fecha_verificacion
         if (!empty($desde)) {
-            $where[] = "DATE(COALESCE(p.fecha_verificacion, p.fecha_pago)) >= ?";
+            $where[] = "DATE(p.fecha_pago) >= ?";
             $params[] = $desde;
         }
         if (!empty($hasta)) {
-            $where[] = "DATE(COALESCE(p.fecha_verificacion, p.fecha_pago)) <= ?";
+            $where[] = "DATE(p.fecha_pago) <= ?";
             $params[] = $hasta;
         }
         if (!empty($bancoFiltro) && $bancoFiltro !== 'todos') {
             $where[] = "p.banco = ?";
             $params[] = $bancoFiltro;
         }
+        if (!empty($metodoFiltro)) {
+            $where[] = "(p.codigo_metodo = ? OR mp.codigo_metodo = ?)";
+            $params[] = $metodoFiltro;
+            $params[] = $metodoFiltro;
+        }
 
         $sqlWhere = "WHERE " . implode(" AND ", $where);
 
         $sql = "SELECT p.*, 
+                       1 AS requiere_referencia,
+                       p.numero_pago AS id_pago,
                        v.numero_orden AS id,
+                       v.numero_orden,
                        v.fecha AS fecha_venta,
+                       v.origen_venta,
                        COALESCE(c.nombre_razon_social, u.nombre, 'Consumidor Final') AS cliente_nombre,
-                       mp.nombre AS metodo_nombre
+                       COALESCE(c.nombre_razon_social, u.nombre, 'Consumidor Final') AS cliente,
+                       c.cedula AS cliente_cedula,
+                       c.telefono AS cliente_telefono,
+                       COALESCE(mp.nombre, p.codigo_metodo) AS metodo_nombre,
+                       COALESCE(mp.nombre, p.codigo_metodo) AS metodo
                 FROM pagos p
                 INNER JOIN ventas v ON p.numero_orden = v.numero_orden
                 LEFT JOIN clientes c ON v.cedula_cliente = c.cedula
                 LEFT JOIN usuarios u ON v.cedula_usuario = u.cedula
                 LEFT JOIN metodos_pago mp ON p.codigo_metodo = mp.codigo_metodo
                 $sqlWhere
-                ORDER BY COALESCE(p.fecha_verificacion, p.fecha_pago) DESC";
+                ORDER BY p.fecha_pago DESC";
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
         $pagos = $stmt->fetchAll(PDO::FETCH_OBJ);
 
-        // Agrupación de totales por banco para las tarjetas/resumen
-        $totalesPorBanco = [];
-        foreach ($pagos as $pg) {
-            $b = !empty($pg->banco) ? $pg->banco : 'Otros bancos';
-            if (!isset($totalesPorBanco[$b])) {
-                $totalesPorBanco[$b] = ['bs' => 0.0, 'usd' => 0.0, 'cuenta' => 0];
-            }
-            if (($pg->moneda ?? 'Bs') === 'USD') {
-                $totalesPorBanco[$b]['usd'] += (float)$pg->monto;
-            } else {
-                $totalesPorBanco[$b]['bs'] += (float)$pg->monto;
-            }
-            $totalesPorBanco[$b]['cuenta']++;
+        // 4. Tasa BCV
+        $tasa = 881.07;
+        $stmtSis = $this->db->query("SELECT tasa_bcv FROM sistema LIMIT 1");
+        if ($sis = $stmtSis->fetch(PDO::FETCH_OBJ)) {
+            $tasa = (float)($sis->tasa_bcv ?: 881.07);
         }
 
-        // Cargar la vista correspondiente
-        $rutasPosibles = [
+        // Cargar vista
+        $rutas = [
             'views/ventas/pagos_banco.php',
             'views/pagos_banco.php',
             'views/admin/pagos_banco.php'
         ];
 
-        foreach ($rutasPosibles as $ruta) {
-            if (file_exists($ruta)) {
-                require_once $ruta;
+        foreach ($rutas as $archivo) {
+            if (file_exists($archivo)) {
+                require_once $archivo;
                 return;
             }
         }
@@ -654,18 +771,15 @@ public function puntoVenta() {
     }
 
     // =========================================================================
-    // 4. RETIRO DE PEDIDOS (ENTREGA EN TIENDA)
+    // 6. RETIRO DE PEDIDOS
     // =========================================================================
-   public function retiroPedidos() {
-        // Leer el parámetro tab de la vista ('pendiente' o 'entregado')
+    public function retiroPedidos() {
         $tab = $_GET['tab'] ?? $_GET['estado'] ?? 'pendiente';
 
         if ($tab === 'entregado' || $tab === 'entregados') {
-            // Pedidos que ya fueron entregados / retirados
             $condicion = "v.estado IN ('retirado', 'entregado', 'completado')";
             $orden = "v.fecha_entrega DESC, v.fecha DESC";
         } else {
-            // Pedidos listos para entregar en tienda (pagados o por retirar)
             $condicion = "v.estado IN ('pagado', 'por_retirar', 'completado', 'retirado')";
             $orden = "v.fecha ASC";
         }
@@ -698,14 +812,12 @@ public function puntoVenta() {
                 ORDER BY $orden";
 
         $pedidos = $this->db->query($sql)->fetchAll(PDO::FETCH_OBJ);
-        // Compatibilidad por si la vista itera sobre $ventas en lugar de $pedidos
         $ventas = $pedidos;
 
-        // Conteos para los botones/pestañas
         $conteoPendientes = (int)$this->db->query("SELECT COUNT(*) FROM ventas WHERE estado IN ('pagado', 'por_retirar')")->fetchColumn();
         $conteoEntregados = (int)$this->db->query("SELECT COUNT(*) FROM ventas WHERE estado IN ('retirado', 'entregado')")->fetchColumn();
 
-       $rutasPosibles = [
+        $rutasPosibles = [
             'views/ventas/retiro_pedidos.php',
             'views/retiro_pedidos.php',
             'views/admin/retiro_pedidos.php',
@@ -726,12 +838,10 @@ public function puntoVenta() {
         }
 
         if (!$cargado) {
-            die("No se encontró el archivo de la vista para retiro de pedidos. Revisa en tu carpeta views cómo se llama.");
+            die("No se encontró el archivo de la vista para retiro de pedidos.");
         }
     }
-    // =========================================================================
-    // 5. PROCESAR RETIRO / ENTREGA
-    // =========================================================================
+
     public function procesarRetiro($numeroOrden = null) {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST' && empty($_GET['id'])) {
             header("Location: index.php?action=retiro_pedidos");
@@ -763,15 +873,114 @@ public function puntoVenta() {
             ];
         }
 
-        header("Location: index.php?action=retiro_pedidos&estado=entregados");
+        header("Location: index.php?action=retiro_pedidos&tab=entregado");
         exit();
     }
+
+    // =========================================================================
+    // DETALLE DE UNA VENTA / ORDEN
+    // =========================================================================
+    public function verDetalle($id = null) {
+        $numeroOrden = trim((string)($id ?? $_GET['orden'] ?? $_GET['id'] ?? ''));
+
+        if (empty($numeroOrden)) {
+            header("Location: index.php?action=ventas");
+            exit();
+        }
+
+        // 1. Datos de la cabecera de la venta
+        $sqlV = "SELECT v.*, 
+                        v.numero_orden AS id,
+                        COALESCE(c.nombre_razon_social, u.nombre, 'Consumidor Final') AS nombre,
+                        COALESCE(c.nombre_razon_social, u.nombre, 'Consumidor Final') AS cliente_nombre,
+                        c.correo,
+                        c.telefono,
+                        c.direccion,
+                        c.cedula,
+                        uv.nombre AS vendedor
+                 FROM ventas v
+                 LEFT JOIN clientes c ON v.cedula_cliente = c.cedula
+                 LEFT JOIN usuarios u ON v.cedula_usuario = u.cedula
+                 LEFT JOIN usuarios uv ON v.cedula_vendedor = uv.cedula
+                 WHERE v.numero_orden = ? LIMIT 1";
+        $stmtV = $this->db->prepare($sqlV);
+        $stmtV->execute([$numeroOrden]);
+        $venta = $stmtV->fetch(PDO::FETCH_OBJ);
+
+        if (!$venta) {
+            header("Location: index.php?action=ventas");
+            exit();
+        }
+
+        // 2. Productos de la orden (alias compatibles con $d->producto_nombre)
+        $sqlDet = "SELECT dv.*, 
+                          p.nombre_producto AS producto_nombre,
+                          p.nombre_producto,
+                          p.imagen,
+                          pv.talla,
+                          pv.color
+                   FROM detalle_ventas dv
+                   LEFT JOIN productos p ON dv.codigo_producto = p.codigo
+                   LEFT JOIN producto_variantes pv ON dv.codigo_variante = pv.codigo_variante AND dv.codigo_producto = pv.codigo_producto
+                   WHERE dv.numero_orden = ?
+                   ORDER BY dv.linea ASC";
+        $stmtDet = $this->db->prepare($sqlDet);
+        $stmtDet->execute([$numeroOrden]);
+        $detalles = $stmtDet->fetchAll(PDO::FETCH_OBJ);
+
+        // 3. Pagos asociados (alias compatibles con $p->metodo y nombre del verificador)
+        $sqlPagos = "SELECT p.*, 
+                            COALESCE(mp.nombre, p.codigo_metodo, 'Efectivo') AS metodo,
+                            COALESCE(mp.nombre, p.codigo_metodo, 'Efectivo') AS metodo_nombre,
+                            u.nombre AS verificado_por_nombre
+                     FROM pagos p
+                     LEFT JOIN metodos_pago mp ON p.codigo_metodo = mp.codigo_metodo
+                     LEFT JOIN usuarios u ON p.cedula_cajero = u.cedula
+                     WHERE p.numero_orden = ?
+                     ORDER BY p.numero_pago ASC";
+        $stmtPagos = $this->db->prepare($sqlPagos);
+        $stmtPagos->execute([$numeroOrden]);
+        $pagos = $stmtPagos->fetchAll(PDO::FETCH_OBJ);
+
+        // 4. Tasa BCV para cálculos en la vista
+        $tasa = (float)($venta->tasa_cambio ?? 881.07);
+        if ($tasa <= 1) {
+            $stmtSis = $this->db->query("SELECT tasa_bcv FROM sistema LIMIT 1");
+            if ($sis = $stmtSis->fetch(PDO::FETCH_OBJ)) {
+                $tasa = (float)($sis->tasa_bcv ?: 881.07);
+            }
+        }
+
+        // 5. Soporte AJAX/JSON si se consulta desde scripts
+        if (isset($_GET['ajax']) || (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')) {
+            header('Content-Type: application/json');
+            echo json_encode(['venta' => $venta, 'detalles' => $detalles, 'pagos' => $pagos, 'tasa' => $tasa]);
+            exit();
+        }
+
+        // 6. Cargar la vista
+        $rutas = [
+            'views/ventas/detalle_venta.php',
+            'views/detalle_venta.php',
+            'views/admin/detalle_venta.php'
+        ];
+
+        foreach ($rutas as $archivo) {
+            if (file_exists($archivo)) {
+                require_once $archivo;
+                return;
+            }
+        }
+
+        header("Location: index.php?action=ventas");
+        exit();
+    }
+
     public function mostrarCarrito() {
         require_once 'views/carrito.php';
     }
 
     public function añadir() {
-        // Redirige al catálogo si se llama por get
         header("Location: index.php?action=ver_catalogo");
         exit();
     }
