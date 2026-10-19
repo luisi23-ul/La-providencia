@@ -3,10 +3,11 @@ $menu = 'retiro_pedidos';
 $tituloPagina = 'Retiro de pedidos';
 $ventas = $ventas ?? [];
 include __DIR__ . '/admin/_abrir.php';
-$tab = ($_GET['tab'] ?? 'pendiente') === 'entregado' ? 'entregado' : 'pendiente';
+$tab = in_array($_GET['tab'] ?? $_GET['estado'] ?? '', ['entregado', 'entregados'], true) ? 'entregado' : 'pendiente';
 $porRetirar = array_filter($ventas, fn($v) => in_array($v->estado, ['pagado', 'por_retirar']));
 $entregados = array_filter($ventas, fn($v) => in_array($v->estado, ['retirado', 'entregado']));
 $lista = $tab === 'pendiente' ? $porRetirar : $entregados;
+$numPorRetirar = (int) ($conteoPendientes ?? count($porRetirar));
 ?>
 <section class="contenido">
   <header class="cab">
@@ -18,7 +19,7 @@ $lista = $tab === 'pendiente' ? $porRetirar : $entregados;
   </header>
   <div class="filtros">
   <nav class="f-grupo" aria-label="Estado del retiro">
-    <a href="index.php?action=retiro_pedidos" class="f-op" aria-current="<?= $tab === 'pendiente' ? 'page' : 'false' ?>">Por retirar<?php if ($porRetirar): ?><span class="f-cuenta"><?= count($porRetirar) ?></span><?php endif; ?></a>
+    <a href="index.php?action=retiro_pedidos" class="f-op" aria-current="<?= $tab === 'pendiente' ? 'page' : 'false' ?>">Por retirar<?php if ($numPorRetirar): ?><span class="f-cuenta"><?= $numPorRetirar ?></span><?php endif; ?></a>
     <a href="index.php?action=retiro_pedidos&tab=entregado" class="f-op" aria-current="<?= $tab === 'entregado' ? 'page' : 'false' ?>">Entregados</a>
   </nav>
   </div>
@@ -50,8 +51,7 @@ $lista = $tab === 'pendiente' ? $porRetirar : $entregados;
 </section>
 
 <dialog class="modal chico" id="modal-entrega" aria-labelledby="me-titulo">
-  <form method="GET" action="index.php">
-    <input type="hidden" name="action" value="procesar_retiro">
+  <form method="POST" action="index.php?action=procesar_retiro">
     <?= ocultos('venta') ?>
     <header class="modal-cab"><span class="modal-ic"><svg class="i"><use href="#i-bolsa"/></svg></span><div><h3 id="me-titulo">Entregar pedido</h3><p>Confirma quién se lo lleva.</p></div><button type="button" class="ic-btn" data-cerrar aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button></header>
     <div class="modal-cuerpo" style="display:flex;flex-direction:column;gap:12px">

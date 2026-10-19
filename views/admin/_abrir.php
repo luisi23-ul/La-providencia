@@ -59,6 +59,11 @@ if (empty($aviso) && !empty($_SESSION['aviso_error'])) {
     $avisoTipo = 'error';
     unset($_SESSION['aviso_error']);
 }
+if (empty($aviso) && !empty($_SESSION['alerta']) && is_array($_SESSION['alerta'])) {
+    $aviso = (string) ($_SESSION['alerta']['texto'] ?? $_SESSION['alerta']['titulo'] ?? '');
+    $avisoTipo = ($_SESSION['alerta']['tipo'] ?? '') === 'error' ? 'error' : 'ok';
+    unset($_SESSION['alerta']);
+}
 include __DIR__ . '/../_sistema.php';
 ?>
 <!DOCTYPE html>

@@ -8,6 +8,7 @@ $estados = [
     'retirado' => ['Retirado', 'ti-package', 'Gracias por tu compra.', 4],
     'completado' => ['Completado', 'ti-package', 'Gracias por tu compra.', 4],
     'cancelado' => ['Cancelado', 'ti-circle-x', 'Este pedido se canceló. Si tienes dudas, escríbenos.', 0],
+    'anulado' => ['Anulado', 'ti-circle-x', 'Este pedido se anuló porque el pago no se pudo confirmar. Si tienes dudas, escríbenos.', 0],
 ];
 $pasos = ['Enviado', 'Confirmado', 'Listo para retirar', 'Retirado'];
 $meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];

@@ -119,8 +119,6 @@ $productosLista = $db->query("SELECT " . nombre_clave('producto') . ", nombre_pr
 <form id="form-aprobar" method="POST" action="index.php?action=aprobar_pago" hidden><?= ocultos('pago') ?></form>
 
 <?php
-$alerta = $_SESSION['alerta'] ?? null;
-unset($_SESSION['alerta']);
 $titularDe = function ($obs) {
     $d = ['nombre' => '', 'doc' => '', 'tel' => ''];
     if (preg_match('/Nombre:\s*([^|]*)/u', $obs ?? '', $m)) $d['nombre'] = trim($m[1]);
@@ -129,14 +127,6 @@ $titularDe = function ($obs) {
     return $d;
 };
 ?>
-<?php if ($alerta): ?>
-<script type="application/json" id="alerta-pago"><?= json_encode([
-    'tipo' => ['success' => 'ok', 'error' => 'error', 'warning' => 'aviso', 'info' => 'info'][$alerta['tipo'] ?? 'info'] ?? 'info',
-    'titulo' => $alerta['titulo'] ?? '',
-    'texto' => $alerta['texto'] ?? '',
-    'deshacer' => !empty($alerta['deshacer_id']) ? 'index.php?action=deshacer_pago&' . html_entity_decode(url_valor('pago', $alerta['deshacer_id'])) : '',
-], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?></script>
-<?php endif; ?>
 
 <script type="application/json" id="datos-pagos"><?= json_encode(array_map(function ($p) use ($tasa, $titularDe) {
     $esEf = stripos($p->metodo_nombre ?? '', 'efectivo') !== false || empty($p->requiere_referencia);

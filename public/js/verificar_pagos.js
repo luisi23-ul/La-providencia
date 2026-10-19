@@ -1,8 +1,6 @@
 (function () {
   var pagos = Panel.datos('datos-pagos') || [], usd = Panel.usd, esc = Panel.esc, fmtBs = Panel.fmtBs;
   var det = document.getElementById('det-pago'), verif = document.getElementById('verif');
-  var alerta = Panel.datos('alerta-pago');
-  if (alerta) Panel.avisar({ tipo: alerta.tipo, titulo: alerta.titulo, texto: alerta.texto, accion: alerta.deshacer ? 'Deshacer' : '', href: alerta.deshacer, segundos: alerta.deshacer ? 9 : 5 });
   if (!det) return;
   if (!pagos.length) { det.innerHTML = '<p class="vacio-filtro">Elige un pago de la lista.</p>'; return; }
 
@@ -79,7 +77,15 @@
       return;
     }
     var p = pagos[+det.getAttribute('data-actual')];
-    if (e.target.closest('#btn-aprobar')) { ponerClave(document.getElementById('form-aprobar'), 'pago', p.id); document.getElementById('form-aprobar').submit(); return; }
+    if (e.target.closest('#btn-aprobar')) {
+      var monto = p.moneda === 'USD' ? usd(p.monto) : fmtBs(p.monto) + ' Bs';
+      Panel.confirmar({ tipo: 'aviso', icono: 'check', titulo: '¿Aprobar este pago?', texto: 'Confirma que ya lo viste en el banco. Después de aprobarlo no se puede deshacer.', detalle: { icono: 'recibo', titulo: venta(p) + ' · ' + monto, texto: (p.cliente || '') + (p.metodo ? ' · ' + p.metodo : '') + (p.ref ? ' · Ref. ' + p.ref : '') }, aceptar: 'Aprobar pago' }).then(function (si) {
+        if (!si) return;
+        ponerClave(document.getElementById('form-aprobar'), 'pago', p.id);
+        document.getElementById('form-aprobar').submit();
+      });
+      return;
+    }
     if (e.target.closest('#btn-rechazar')) { ponerClave(document.querySelector('#modal-rechazo form'), 'pago', p.id); document.getElementById('mr-obs').value = ''; document.getElementById('modal-rechazo').showModal(); return; }
     if (e.target.closest('#btn-editar-pago')) abrirEditar(p);
   });

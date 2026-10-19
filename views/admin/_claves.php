@@ -23,7 +23,7 @@ const CLAVES_NOMBRES = [
     'campo.usuario' => 'cedula', 'campo.rol.ref' => 'codigo_rol', 'campo.rol' => 'roles',
     'campo.venta' => 'numero_orden', 'campo.venta.ref' => 'numero_orden',
     'campo.pago' => ['numero_orden', 'numero_pago'], 'campo.pago.ref' => ['numero_orden', 'numero_pago'],
-    'campo.compra' => ['rif_proveedor', 'numero_factura'], 'campo.atributo' => 'codigo_atributo',
+    'campo.compra' => ['rif', 'factura'], 'campo.atributo' => 'codigo_atributo',
 
     'rol.master' => 'master', 'rol.admin' => 'administrador', 'rol.cliente' => 'cliente', 'rol.vendedor' => 'vendedor', 'rol.cajero' => 'cajero',
     'sesion.usuario' => 'cedula', 'sesion.rol' => 'rol',

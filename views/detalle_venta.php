@@ -5,7 +5,7 @@ $detalles = $detalles ?? $productos ?? [];
 $pagos = $pagos ?? [];
 include __DIR__ . '/admin/_abrir.php';
 $estado = $venta->estado ?? '';
-$cancelada = $estado === 'cancelado';
+$cancelada = in_array($estado, ['cancelado', 'anulado'], true);
 $enUsd = fn($p) => ($p->moneda ?? 'Bs') === 'USD' ? (float) $p->monto : (float) $p->monto / ((float) ($p->tasa_cambio ?? 0) ?: $tasa);
 $aprobado = 0; $porVerificar = 0;
 foreach ($pagos as $p) {
@@ -38,6 +38,7 @@ $chipEstado = [
     'entregado' => ['', 'bolsa', 'Entregada'],
     'completado' => ['', 'check', 'Completada'],
     'cancelado' => ['agot', 'x', 'Cancelada'],
+    'anulado' => ['agot', 'x', 'Anulada'],
 ][$estado] ?? null;
 
 $iconoMetodo = function ($m) {

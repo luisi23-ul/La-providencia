@@ -21,11 +21,12 @@ $estados = [
     'retirado'    => ['ok',   'Retirado'],
     'entregado'   => ['ok',   'Retirado'],
     'completado'  => ['ok',   'Completado'],
-    'cancelado'   => ['agot', 'Cancelado']
+    'cancelado'   => ['agot', 'Cancelado'],
+    'anulado'     => ['agot', 'Anulada']
 ];
 
 // Cálculo de métricas sobre las ventas filtradas
-$validas   = array_filter($ventas, fn($v) => ($v->estado ?? '') !== 'cancelado');
+$validas   = array_filter($ventas, fn($v) => !in_array($v->estado ?? '', ['cancelado', 'anulado'], true));
 $total     = array_sum(array_map(fn($v) => (float)($v->total ?? 0), $validas));
 $tienda    = array_sum(array_map(fn($v) => (float)($v->total ?? 0), array_filter($validas, fn($v) => ($v->origen_venta ?? '') === 'tienda_fisica')));
 $porCobrar = array_sum(array_map(fn($v) => (float)($v->total ?? 0), array_filter($ventas, fn($v) => in_array($v->estado ?? '', ['pendiente', 'por_verificar']))));
