@@ -145,6 +145,7 @@ $url = fn($stock) => 'index.php?' . http_build_query(array_filter(['action' => '
             <th class="c-media">Categoría</th>
             <th class="num">Precio</th>
             <th class="num">Stock</th>
+            <th class="c-media">Creado</th>
             <th class="num">Acciones</th>
           </tr>
         </thead>
@@ -169,8 +170,7 @@ $url = fn($stock) => 'index.php?' . http_build_query(array_filter(['action' => '
                 <?php if ($p->imagen): ?><img class="foto" src="public/uploads/<?= $e($p->imagen) ?>" alt="" width="44" height="44" loading="lazy"><?php endif; ?>
                 <div>
                   <b><?= $e($p->nombre_producto) ?></b>
-                  <span><?= $e($p->descripcion ?? '') ?></span>
-                  <?= $creadoDe($p) ?>
+                  <?php if (trim($p->descripcion ?? '') !== ''): ?><span class="desc"><?= $e($p->descripcion) ?></span><?php endif; ?>
 
                   <?= $tallasDe($p) ?>
 
@@ -197,6 +197,7 @@ $url = fn($stock) => 'index.php?' . http_build_query(array_filter(['action' => '
                 <?php elseif ($s === 'agot'): ?><span class="est agot">Agotado</span><?php endif; ?>
               </div>
             </td>
+            <td class="fecha c-media"><?= !es_vacio($p->created_at ?? null) ? date('d/m/Y', strtotime($p->created_at)) : '—' ?></td>
             <td>
               <div class="acc">
                 <a href="index.php?action=editar&<?= url_clave('producto', $p) ?>" class="ic-btn" aria-label="Editar <?= $e($p->nombre_producto) ?>"><svg class="i"><use href="#i-editar"/></svg></a>
