@@ -225,9 +225,20 @@ class AdminControllers {
         include 'views/formulario_producto.php';
     }
 
-    public function mostrarListado() {
-        $listaProductos = $this->productoModelo->obtenerTodos();
-        $stmtCat = $this->db->query("SELECT id, nombre_categoria FROM categorias ORDER BY nombre_categoria ASC");
+  public function mostrarListado() {
+        $busqueda  = trim((string)($_GET['q'] ?? $_GET['busqueda'] ?? ''));
+        $categoria = trim((string)($_GET['categoria'] ?? $_GET['slug_categoria'] ?? ''));
+
+        // Obtener la lista filtrada o completa según los parámetros
+        $listaProductos = $this->productoModelo->obtenerFiltrados($busqueda, $categoria);
+
+        // Listar categorías para el selector desplegable
+        $stmtCat = $this->db->query("
+            SELECT slug, slug AS id, nombre_categoria 
+            FROM categorias 
+            WHERE slug != 'raiz' 
+            ORDER BY nombre_categoria ASC
+        ");
         $categorias = $stmtCat->fetchAll(PDO::FETCH_OBJ);
         
         $aviso = $_SESSION['aviso'] ?? null;
@@ -250,15 +261,30 @@ class AdminControllers {
     // PRODUCTOS: CREAR, EDITAR Y BORRAR
     // -------------------------------------------------------------------------
 
-    private function obtenerCategoriasConAtributos() {
-        $stmtCat = $this->db->query("SELECT id, nombre_categoria, id_padre FROM categorias ORDER BY nombre_categoria ASC");
+   private function obtenerCategoriasConAtributos() {
+        $stmtCat = $this->db->query("
+            SELECT slug, 
+                   slug AS id, 
+                   nombre_categoria 
+            FROM categorias 
+            WHERE slug != 'raiz'
+            ORDER BY nombre_categoria ASC
+        ");
         $cats = $stmtCat->fetchAll(PDO::FETCH_OBJ);
 
-        $stmtAtr = $this->db->prepare("SELECT id, nombre FROM categoria_atributos WHERE id_categoria = ?");
-        foreach ($cats as $cat) {
-            $stmtAtr->execute([$cat->id]);
-            $cat->atributos = $stmtAtr->fetchAll(PDO::FETCH_OBJ);
+        // Si existe la tabla de atributos por categoría
+        try {
+            $stmtAtr = $this->db->prepare("SELECT id, nombre FROM categoria_atributos WHERE id_categoria = ?");
+            foreach ($cats as $cat) {
+                $stmtAtr->execute([$cat->slug]);
+                $cat->atributos = $stmtAtr->fetchAll(PDO::FETCH_OBJ);
+            }
+        } catch (Exception $e) {
+            foreach ($cats as $cat) {
+                $cat->atributos = [];
+            }
         }
+
         return $cats;
     }
 
@@ -266,15 +292,17 @@ class AdminControllers {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $db = $this->productoModelo->getDb();
             try {
-                $nombre = trim($_POST['nombre_producto'] ?? $_POST['nombre'] ?? '');
-                $codigo = trim($_POST['codigo'] ?? '');
-                $desc   = trim($_POST['descripcion'] ?? $_POST['desc'] ?? '');
+                $nombre = trim((string)($_POST['nombre_producto'] ?? $_POST['nombre'] ?? ''));
+                $codigo = trim((string)($_POST['codigo'] ?? ''));
+                $desc   = trim((string)($_POST['descripcion'] ?? $_POST['desc'] ?? ''));
                 $precio = (float)($_POST['precio'] ?? 0);
                 $costo  = (float)($_POST['costo_compra'] ?? 0);
                 $stock  = (int)($_POST['stock'] ?? 0);
-                $stockOnline = (int)($_POST['stock_online'] ?? 0);
                 $stockMinimo = (int)($_POST['stock_minimo'] ?? 5);
-                $catId  = !empty($_POST['id_categoria']) ? (int)$_POST['id_categoria'] : (!empty($_POST['categoria']) ? (int)$_POST['categoria'] : null);
+                
+                // Categoría por slug
+                $slugCat = !empty($_POST['slug_categoria']) ? trim((string)$_POST['slug_categoria']) : (!empty($_POST['categoria']) ? trim((string)$_POST['categoria']) : (!empty($_POST['id_categoria']) ? trim((string)$_POST['id_categoria']) : 'general'));
+                
                 $estado = isset($_POST['estado']) ? (int)$_POST['estado'] : 1;
                 $atributos = $_POST['atributo'] ?? [];
                 $variantes = $_POST['variantes'] ?? [];
@@ -299,17 +327,16 @@ class AdminControllers {
                     'precio'          => $precio,
                     'costo_compra'    => $costo,
                     'stock'           => $stock,
-                    'stock_online'    => $stockOnline,
                     'stock_minimo'    => $stockMinimo,
-                    'id_categoria'    => $catId,
+                    'slug_categoria'  => $slugCat,
                     'estado'          => $estado,
                     'imagen'          => $nombreImagen
                 ];
 
                 $db->beginTransaction();
 
-                $nuevoId = $this->productoModelo->guardarCompleto($datos, $atributos, $variantes);
-                $this->log('Inventario', 'INSERT', "Creó producto: {$nombre} (ID: {$nuevoId})");
+                $nuevoCodigo = $this->productoModelo->guardarCompleto($datos, $atributos, $variantes);
+                $this->log('Inventario', 'INSERT', "Creó producto: {$nombre} (Código: {$nuevoCodigo})");
 
                 $db->commit();
 
@@ -327,41 +354,46 @@ class AdminControllers {
             }
         }
     }
-
     public function editar() {
-        $id = (int)($_GET['id'] ?? 0);
-        $p = $this->productoModelo->obtenerPorId($id);
+    $codigo = trim((string)($_GET['id'] ?? $_GET['codigo'] ?? ''));
+    $p = $this->productoModelo->obtenerPorId($codigo);
 
-        if (!$p) {
-            $_SESSION['aviso'] = 'El producto solicitado no existe.';
-            header("Location: index.php?action=listado_productos");
-            exit();
-        }
-
-        $p->atributos = $this->productoModelo->obtenerAtributosProducto($id);
-        $p->variantes = $this->productoModelo->obtenerVariantesProducto($id);
-        $categorias = $this->obtenerCategoriasConAtributos();
-        
-        $aviso = $_SESSION['aviso'] ?? null;
-        unset($_SESSION['aviso']);
-
-        require_once 'views/editar_producto.php';
+    if (!$p) {
+        $_SESSION['aviso'] = 'El producto solicitado no existe.';
+        header("Location: index.php?action=listado_productos");
+        exit();
     }
 
-   public function actualizar() {
+    $p->variantes = $this->productoModelo->obtenerVariantesProducto($codigo);
+    $categorias = $this->productoModelo->obtenerCategorias();
+
+    $aviso = $_SESSION['aviso'] ?? null;
+    unset($_SESSION['aviso']);
+
+    require_once 'views/editar_producto.php';
+}
+
+  public function actualizar() {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $db = $this->productoModelo->getDb();
-            $id = (int)($_POST['id'] ?? 0);
+            // Tomar el código alfanumérico (ej: A-000236)
+            $codigoOriginal = trim((string)($_POST['codigo_original'] ?? $_POST['id'] ?? $_POST['codigo'] ?? ''));
+
             try {
-                $pActual = $this->productoModelo->obtenerPorId($id);
+                if (empty($codigoOriginal)) {
+                    throw new Exception("Identificador de producto no recibido.");
+                }
+
+                $pActual = $this->productoModelo->obtenerPorId($codigoOriginal);
 
                 if (!$pActual) {
                     throw new Exception("El producto a actualizar no existe.");
                 }
 
-                $codigo = trim($_POST['codigo'] ?? $pActual->codigo);
+                $codigo = trim((string)($_POST['codigo'] ?? $pActual->codigo));
 
-                if (!empty($codigo) && $this->productoModelo->existeCodigo($codigo, $id)) {
+                // Si se cambió el código, verificar que no colisione con otro
+                if (!empty($codigo) && $codigo !== $codigoOriginal && $this->productoModelo->existeCodigo($codigo, $codigoOriginal)) {
                     throw new Exception("El código '{$codigo}' ya está asignado a otro producto.");
                 }
 
@@ -370,17 +402,18 @@ class AdminControllers {
                     $nombreImagen = $this->procesarImagenUpload($_FILES['imagen'], $pActual->imagen);
                 }
 
-                $nombre = trim($_POST['nombre_producto'] ?? $_POST['nombre'] ?? $pActual->nombre_producto);
-                $desc   = trim($_POST['descripcion'] ?? $_POST['desc'] ?? $pActual->descripcion);
+                $nombre = trim((string)($_POST['nombre_producto'] ?? $_POST['nombre'] ?? $pActual->nombre_producto));
+                $desc   = trim((string)($_POST['descripcion'] ?? $_POST['desc'] ?? $pActual->descripcion));
                 $precio = isset($_POST['precio']) && $_POST['precio'] !== '' ? (float)$_POST['precio'] : (float)$pActual->precio;
-                $costo  = isset($_POST['costo_compra']) && $_POST['costo_compra'] !== '' ? (float)$_POST['costo_compra'] : (float)$pActual->costo_compra;
+                $costo  = isset($_POST['costo_compra']) && $_POST['costo_compra'] !== '' ? (float)$_POST['costo_compra'] : (float)($pActual->costo_compra ?? 0);
                 
                 $stockMinimo = isset($_POST['stock_minimo']) && $_POST['stock_minimo'] !== '' 
                                 ? (int)$_POST['stock_minimo'] 
-                                : (int)$pActual->stock_minimo;
+                                : (int)($pActual->stock_minimo ?? 5);
 
-                $catId  = !empty($_POST['id_categoria']) ? (int)$_POST['id_categoria'] : (!empty($_POST['categoria']) ? (int)$_POST['categoria'] : $pActual->id_categoria);
-                $estado = isset($_POST['estado']) ? (int)$_POST['estado'] : 0;
+                $slugCat = !empty($_POST['slug_categoria']) ? trim((string)$_POST['slug_categoria']) : (!empty($_POST['categoria']) ? trim((string)$_POST['categoria']) : (!empty($_POST['id_categoria']) ? trim((string)$_POST['id_categoria']) : $pActual->slug_categoria));
+                
+                $estado = isset($_POST['estado']) ? (int)$_POST['estado'] : 1;
                 $atributos = $_POST['atributo'] ?? [];
                 $variantes = $_POST['variantes'] ?? [];
 
@@ -391,17 +424,16 @@ class AdminControllers {
                     'precio'          => $precio,
                     'costo_compra'    => $costo,
                     'stock_minimo'    => $stockMinimo,
-                    'id_categoria'    => $catId,
+                    'slug_categoria'  => $slugCat,
                     'estado'          => $estado,
                     'imagen'          => $nombreImagen
                 ];
 
                 $db->beginTransaction();
 
-                $this->productoModelo->actualizarCompleto($id, $datos, $atributos, $variantes);
-                if (method_exists($this, 'log')) {
-                    $this->log('Inventario', 'UPDATE', "Actualizó producto y variantes: {$nombre} (ID: {$id})");
-                }
+                $this->productoModelo->actualizarCompleto($codigoOriginal, $datos, $atributos, $variantes);
+
+                $this->log('Inventario', 'UPDATE', "Actualizó producto: {$nombre} (Código: {$codigoOriginal})");
 
                 $db->commit();
 
@@ -414,7 +446,7 @@ class AdminControllers {
                     $db->rollBack();
                 }
                 $_SESSION['aviso_error'] = $e->getMessage();
-                header("Location: index.php?action=editar&id=" . $id);
+                header("Location: index.php?action=editar&codigo=" . urlencode($codigoOriginal));
                 exit();
             }
         }
@@ -422,15 +454,15 @@ class AdminControllers {
 
 
     public function eliminar() {
-        $id = $_GET['id'] ?? null;
-        if ($id) {
-            $this->productoModelo->borrarProducto($id);
-            $this->log('Inventario', 'DELETE', "Eliminó producto (borrado lógico) ID: {$id}");
-            $_SESSION['aviso'] = 'Producto eliminado correctamente.';
-        }
-        header("Location: index.php?action=listado_productos");
-        exit();
+    $codigo = trim((string)($_GET['id'] ?? $_GET['codigo'] ?? ''));
+    if (!empty($codigo)) {
+        $this->productoModelo->borrarProducto($codigo);
+        $this->log('Inventario', 'DELETE', "Eliminó producto (borrado lógico) Código: {$codigo}");
+        $_SESSION['aviso'] = 'Producto eliminado correctamente.';
     }
+    header("Location: index.php?action=listado_productos");
+    exit();
+}
 
     // -------------------------------------------------------------------------
     // CATEGORÍAS Y ATRIBUTOS
@@ -593,23 +625,46 @@ class AdminControllers {
     // AJUSTES DE STOCK Y KARDEX
     // -------------------------------------------------------------------------
 
+    // -------------------------------------------------------------------------
+    // AJUSTES DE STOCK Y KARDEX
+    // -------------------------------------------------------------------------
+
     public function ajustesInventario() {
-        $stmtP = $this->db->query("SELECT id, codigo, nombre_producto, stock, stock_minimo 
-                                   FROM productos WHERE deleted_at IS NULL ORDER BY nombre_producto ASC");
+        $stmtP = $this->db->query("
+            SELECT codigo, codigo AS id, nombre_producto, stock, stock_minimo 
+            FROM productos 
+            WHERE (deleted_at IS NULL OR deleted_at = '2000-01-01 00:00:00' OR deleted_at = '0000-00-00 00:00:00')
+            ORDER BY nombre_producto ASC
+        ");
         $productos = $stmtP->fetchAll(PDO::FETCH_OBJ);
 
         $stmtAjustes = $this->db->query("
-            SELECT p.nombre_producto, k.tipo_movimiento, k.observacion, k.fecha,
-                   COALESCE(u.nombre, 'Admin') AS usuario, k.cantidad
+            SELECT p.nombre_producto, 
+                   k.tipo_movimiento, 
+                   k.observacion, 
+                   COALESCE(k.fecha_hora, NOW()) AS fecha,
+                   COALESCE(u.nombre, 'Admin') AS usuario, 
+                   k.cantidad
             FROM kardex_inventario k
-            INNER JOIN productos p ON k.id_producto = p.id
-            LEFT JOIN usuarios u ON k.id_usuario = u.id
-            WHERE k.tipo_movimiento IN ('ajuste', 'merma', 'transferencia')
-            ORDER BY k.fecha DESC LIMIT 5
+            INNER JOIN productos p ON k.codigo_producto = p.codigo
+            LEFT JOIN usuarios u ON k.cedula_usuario = u.cedula
+            WHERE k.tipo_movimiento IN ('ajuste', 'merma', 'transferencia', 'ajuste_inventario')
+            ORDER BY k.fecha_hora DESC LIMIT 5
         ");
-        $ultimosAjustes = $stmtAjustes->fetchAll(PDO::FETCH_OBJ);
+        $ultimosAjustes = $stmtAjustes ? $stmtAjustes->fetchAll(PDO::FETCH_OBJ) : [];
 
-        require_once 'views/inventario/ajustes.php';
+        $rutas = [
+            'views/inventario/ajustes.php',
+            'views/ajustes_inventario.php',
+            'views/ajustes.php'
+        ];
+
+        foreach ($rutas as $vista) {
+            if (file_exists($vista)) {
+                require_once $vista;
+                return;
+            }
+        }
     }
 
     public function guardarAjuste() {
@@ -618,13 +673,13 @@ class AdminControllers {
             exit();
         }
 
-        $idProducto = (int)($_POST['id_producto'] ?? 0);
-        $tipo       = $_POST['tipo_movimiento'] ?? '';
-        $cantidad   = (int)($_POST['cantidad'] ?? 0);
-        $observacion= trim($_POST['observacion'] ?? '');
-        $idUsuario  = $_SESSION['id_usuario'] ?? 1;
+        $codigoProducto = trim((string)($_POST['id_producto'] ?? $_POST['codigo'] ?? $_POST['codigo_producto'] ?? ''));
+        $tipo           = trim((string)($_POST['tipo_movimiento'] ?? 'ajuste'));
+        $cantidad       = (int)($_POST['cantidad'] ?? 0);
+        $observacion    = trim((string)($_POST['observacion'] ?? 'Ajuste manual de inventario'));
+        $cedulaUsuario  = $_SESSION['cedula'] ?? $_SESSION['id_usuario'] ?? 'SIN_USUARIO';
 
-        if ($idProducto <= 0 || $cantidad <= 0) {
+        if (empty($codigoProducto) || $cantidad <= 0) {
             header("Location: index.php?action=ajustes_inventario");
             exit();
         }
@@ -632,30 +687,35 @@ class AdminControllers {
         try {
             $this->db->beginTransaction();
 
-            $stmtP = $this->db->prepare("SELECT stock FROM productos WHERE id = ?");
-            $stmtP->execute([$idProducto]);
+            $stmtP = $this->db->prepare("SELECT stock FROM productos WHERE codigo = ?");
+            $stmtP->execute([$codigoProducto]);
             $stockActual = (int)$stmtP->fetchColumn();
 
-            // Calcular nuevo stock según el tipo de movimiento
+            // Determinar si descuenta (merma) o suma (ajuste de entrada)
             if ($tipo === 'merma') {
                 $nuevoStock = max(0, $stockActual - $cantidad);
                 $cantKardex = -$cantidad;
-            } else { // ajuste positivo o ajuste general
+            } else {
                 $nuevoStock = $stockActual + $cantidad;
                 $cantKardex = $cantidad;
             }
 
-            // Actualizar stock único del producto
-            $stmtUpd = $this->db->prepare("UPDATE productos SET stock = ? WHERE id = ?");
-            $stmtUpd->execute([$nuevoStock, $idProducto]);
+            // Actualizar stock del producto
+            $stmtUpd = $this->db->prepare("UPDATE productos SET stock = ? WHERE codigo = ?");
+            $stmtUpd->execute([$nuevoStock, $codigoProducto]);
 
-            // Registrar en kardex con la columna unificada stock_resultante
+            // Obtener siguiente movimiento para este producto
+            $stmtSec = $this->db->prepare("SELECT COALESCE(MAX(numero_movimiento), 0) + 1 FROM kardex_inventario WHERE codigo_producto = ?");
+            $stmtSec->execute([$codigoProducto]);
+            $numMov = (int)$stmtSec->fetchColumn();
+
+            // Insertar en kardex_inventario
             $stmtK = $this->db->prepare("
                 INSERT INTO kardex_inventario 
-                (id_producto, tipo_movimiento, canal, cantidad, stock_resultante, observacion, id_usuario)
-                VALUES (?, ?, 'general', ?, ?, ?, ?)
+                (codigo_producto, numero_movimiento, tipo_movimiento, codigo_variante, cantidad, stock_resultante, referencia, observacion, cedula_usuario, fecha_hora)
+                VALUES (?, ?, ?, '', ?, ?, 'AJUSTE', ?, ?, NOW())
             ");
-            $stmtK->execute([$idProducto, $tipo, $cantKardex, $nuevoStock, $observacion, $idUsuario]);
+            $stmtK->execute([$codigoProducto, $numMov, $tipo, $cantKardex, $nuevoStock, $observacion, $cedulaUsuario]);
 
             $this->db->commit();
             header("Location: index.php?action=ajustes_inventario&msg=ok");
@@ -668,7 +728,6 @@ class AdminControllers {
             die("Error al guardar ajuste: " . $e->getMessage());
         }
     }
-
     public function kardex() {
         $tipo  = $_GET['tipo'] ?? '';
         $desde = $_GET['desde'] ?? '';
@@ -677,30 +736,60 @@ class AdminControllers {
 
         $where = ["1=1"];
         $params = [];
-        if (!empty($tipo))  { $where[] = "k.tipo_movimiento = ?"; $params[] = $tipo; }
-        if (!empty($desde)) { $where[] = "DATE(k.fecha) >= ?";    $params[] = $desde; }
-        if (!empty($hasta)) { $where[] = "DATE(k.fecha) <= ?";    $params[] = $hasta; }
+
+        if (!empty($tipo)) {
+            $where[] = "k.tipo_movimiento = ?";
+            $params[] = $tipo;
+        }
+        if (!empty($desde)) {
+            $where[] = "DATE(k.fecha_hora) >= ?";
+            $params[] = $desde;
+        }
+        if (!empty($hasta)) {
+            $where[] = "DATE(k.fecha_hora) <= ?";
+            $params[] = $hasta;
+        }
         if (!empty($q)) {
-            $where[] = "(p.nombre_producto LIKE ? OR p.codigo LIKE ?)";
+            $where[] = "(p.nombre_producto LIKE ? OR p.codigo LIKE ? OR k.referencia LIKE ?)";
             $params[] = "%$q%"; 
+            $params[] = "%$q%";
             $params[] = "%$q%";
         }
 
-        $sql = "SELECT k.fecha, p.nombre_producto, p.imagen, p.stock_minimo,
-                       k.tipo_movimiento, k.canal, k.cantidad, 
+        $sql = "SELECT k.fecha_hora,
+                       k.fecha_hora AS fecha,
+                       p.nombre_producto, 
+                       p.imagen, 
+                       p.stock_minimo,
+                       k.tipo_movimiento, 
+                       k.cantidad, 
                        k.stock_resultante,
-                       k.id_referencia, k.observacion, COALESCE(u.nombre, 'Sistema') AS usuario
+                       k.referencia AS id_referencia, 
+                       k.referencia,
+                       k.observacion, 
+                       COALESCE(u.nombre, 'Sistema') AS usuario
                 FROM kardex_inventario k
-                INNER JOIN productos p ON k.id_producto = p.id
-                LEFT JOIN usuarios u ON k.id_usuario = u.id
+                INNER JOIN productos p ON k.codigo_producto = p.codigo
+                LEFT JOIN usuarios u ON k.cedula_usuario = u.cedula
                 WHERE " . implode(' AND ', $where) . "
-                ORDER BY k.fecha DESC";
+                ORDER BY k.fecha_hora DESC";
                 
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
         $movimientos = $stmt->fetchAll(PDO::FETCH_OBJ);
 
-        require_once 'views/inventario/kardex.php';
+        $rutas = [
+            'views/inventario/kardex.php',
+            'views/kardex.php',
+            'views/admin/kardex.php'
+        ];
+
+        foreach ($rutas as $vista) {
+            if (file_exists($vista)) {
+                require_once $vista;
+                return;
+            }
+        }
     }
     // -------------------------------------------------------------------------
     // GRÁFICOS ANTIGUOS
