@@ -75,33 +75,36 @@ class AdminControllers {
     // VISTAS PRINCIPALES Y CATÁLOGO
     // -------------------------------------------------------------------------
 
-    public function mostrarDashboard() {
+   public function mostrarDashboard() {
         date_default_timezone_set('America/Caracas');
         $hoy  = date('Y-m-d');
         $ayer = date('Y-m-d', strtotime('-1 day'));
 
-        $tasa = 526.87;
+        // 1. Tasa BCV desde sistema
+        $tasa = 881.07;
         try {
-            $stmtTasa = $this->db->query("SELECT tasa_bcv FROM configuracion ORDER BY id DESC LIMIT 1");
+            $stmtTasa = $this->db->query("SELECT tasa_bcv, tasa_manual, tasa_modo FROM sistema LIMIT 1");
             $resTasa = $stmtTasa->fetch(PDO::FETCH_OBJ);
-            if ($resTasa && (float)$resTasa->tasa_bcv > 0) {
-                $tasa = (float)$resTasa->tasa_bcv;
+            if ($resTasa) {
+                $tasa = ($resTasa->tasa_modo === 'manual' && (float)$resTasa->tasa_manual > 0) 
+                        ? (float)$resTasa->tasa_manual 
+                        : (float)($resTasa->tasa_bcv ?: 881.07);
             }
         } catch (Exception $e) {}
 
+        // 2. Ventas de Hoy y de Ayer
         $ventasHoyMonto = 0.0;
         $ventasHoyCantidad = 0;
         $ventasAyerMonto = 0.0;
 
         try {
-            $sqlHoy = "SELECT COALESCE(SUM(total), 0) AS monto, COUNT(id) AS cantidad 
+            $sqlHoy = "SELECT COALESCE(SUM(total), 0) AS monto, COUNT(numero_orden) AS cantidad 
                        FROM ventas 
-                       WHERE (DATE(fecha) = ? OR DATE(fecha) = CURDATE())
-                         AND (estado IN ('retirado', 'pagado', 'completada', 'aprobada') OR estado IS NULL)";
+                       WHERE DATE(fecha) = ? 
+                         AND estado NOT IN ('cancelado', 'anulado')";
             $stmtHoy = $this->db->prepare($sqlHoy);
             $stmtHoy->execute([$hoy]);
-            $resHoy = $stmtHoy->fetch(PDO::FETCH_ASSOC);
-            if ($resHoy) {
+            if ($resHoy = $stmtHoy->fetch(PDO::FETCH_ASSOC)) {
                 $ventasHoyMonto = (float)$resHoy['monto'];
                 $ventasHoyCantidad = (int)$resHoy['cantidad'];
             }
@@ -109,58 +112,69 @@ class AdminControllers {
             $sqlAyer = "SELECT COALESCE(SUM(total), 0) AS monto 
                         FROM ventas 
                         WHERE DATE(fecha) = ? 
-                          AND (estado IN ('retirado', 'pagado', 'completada', 'aprobada') OR estado IS NULL)";
+                          AND estado NOT IN ('cancelado', 'anulado')";
             $stmtAyer = $this->db->prepare($sqlAyer);
             $stmtAyer->execute([$ayer]);
             $ventasAyerMonto = (float)($stmtAyer->fetchColumn() ?: 0.0);
         } catch (Exception $e) {}
 
+        // 3. Pagos por verificar (tabla real: pagos)
         $pagosPendientes = [];
         $pagosPendientesMonto = 0.0;
         try {
-            $sqlPagosPend = "SELECT pr.*, 
-                                    COALESCE(mp.nombre, 'Pago Móvil') AS metodo,
-                                    COALESCE(u.nombre, 'Cliente Mostrador') AS cliente
-                             FROM pagos_registro pr
-                             LEFT JOIN metodos_pago mp ON pr.id_metodo_pago = mp.id
-                             LEFT JOIN ventas v ON pr.id_venta = v.id
-                             LEFT JOIN usuarios u ON v.id_usuario = u.id
-                             WHERE pr.estado_verificacion = 'pendiente'
-                             ORDER BY pr.fecha_pago DESC";
+            $sqlPagosPend = "SELECT p.*, 
+                                    p.numero_pago AS id,
+                                    COALESCE(mp.nombre, p.codigo_metodo) AS metodo,
+                                    COALESCE(c.nombre_razon_social, u.nombre, 'Cliente') AS cliente
+                             FROM pagos p
+                             INNER JOIN ventas v ON p.numero_orden = v.numero_orden
+                             LEFT JOIN clientes c ON v.cedula_cliente = c.cedula
+                             LEFT JOIN usuarios u ON v.cedula_usuario = u.cedula
+                             LEFT JOIN metodos_pago mp ON p.codigo_metodo = mp.codigo_metodo
+                             WHERE p.estado = 'pendiente'
+                             ORDER BY p.fecha_pago DESC";
             $stmtPP = $this->db->query($sqlPagosPend);
-            $todosPagosPend = $stmtPP->fetchAll(PDO::FETCH_OBJ);
+            $todosPagosPend = $stmtPP ? $stmtPP->fetchAll(PDO::FETCH_OBJ) : [];
             foreach ($todosPagosPend as $p) {
                 $pagosPendientesMonto += (float)($p->monto ?? 0);
             }
             $pagosPendientes = array_slice($todosPagosPend, 0, 5);
         } catch (Exception $e) {}
 
+        // 4. Pedidos por retirar
         $porRetirar = [];
         $totalPorRetirar = 0;
         try {
             $sqlRetirar = "SELECT v.*, 
-                                  COALESCE(u.nombre, 'Cliente') AS nombre_cliente
+                                  v.numero_orden AS id,
+                                  COALESCE(c.nombre_razon_social, u.nombre, 'Consumidor Final') AS nombre_cliente
                            FROM ventas v
-                           LEFT JOIN usuarios u ON v.id_usuario = u.id
-                           WHERE v.estado IN ('pagado', 'por_retirar', 'pendiente_retiro')
+                           LEFT JOIN clientes c ON v.cedula_cliente = c.cedula
+                           LEFT JOIN usuarios u ON v.cedula_usuario = u.cedula
+                           WHERE v.estado IN ('pagado', 'aprobado', 'verificado', 'completado', 'por_retirar')
+                             AND (v.fecha_entrega IS NULL OR v.fecha_entrega = '2000-01-01 00:00:00')
                            ORDER BY v.fecha DESC";
             $stmtRet = $this->db->query($sqlRetirar);
-            $todosRetirar = $stmtRet->fetchAll(PDO::FETCH_OBJ);
+            $todosRetirar = $stmtRet ? $stmtRet->fetchAll(PDO::FETCH_OBJ) : [];
             $totalPorRetirar = count($todosRetirar);
             $porRetirar = array_slice($todosRetirar, 0, 5);
         } catch (Exception $e) {}
 
+        // 5. Stock bajo y agotados
         $stockBajo = [];
         $totalStockBajo = 0;
         $totalAgotados = 0;
         try {
-            $sqlStock = "SELECT p.*, COALESCE(c.nombre_categoria, 'General') AS categoria
+            $sqlStock = "SELECT p.*, 
+                                p.codigo AS id,
+                                COALESCE(c.nombre_categoria, 'General') AS categoria
                          FROM productos p
-                         LEFT JOIN categorias c ON p.id_categoria = c.id
-                         WHERE p.stock <= 5
+                         LEFT JOIN categorias c ON p.slug_categoria = c.slug
+                         WHERE p.stock <= p.stock_minimo 
+                           AND (p.deleted_at IS NULL OR p.deleted_at = '2000-01-01 00:00:00')
                          ORDER BY p.stock ASC";
             $stmtStk = $this->db->query($sqlStock);
-            $todosStock = $stmtStk->fetchAll(PDO::FETCH_OBJ);
+            $todosStock = $stmtStk ? $stmtStk->fetchAll(PDO::FETCH_OBJ) : [];
             $totalStockBajo = count($todosStock);
             foreach ($todosStock as $prod) {
                 if ((int)$prod->stock <= 0) $totalAgotados++;
@@ -168,11 +182,12 @@ class AdminControllers {
             $stockBajo = array_slice($todosStock, 0, 5);
         } catch (Exception $e) {}
 
+        // 6. Matriz de KPIs para la cabecera
         $kpis = [
             'ventas_hoy'             => $ventasHoyMonto,
             'ventas_hoy_n'           => $ventasHoyCantidad,
             'ventas_ayer'            => $ventasAyerMonto,
-            'pagos_pendientes'       => count($pagosPendientes),
+            'pagos_pendientes'       => count($todosPagosPend ?? []),
             'pagos_pendientes_monto' => $pagosPendientesMonto,
             'por_retirar'            => $totalPorRetirar,
             'stock_bajo'             => $totalStockBajo,
@@ -180,6 +195,7 @@ class AdminControllers {
         ];
         $k = $kpis;
 
+        // 7. Gráfica de los últimos 7 días
         $ventasSemana = [];
         try {
             for ($i = 6; $i >= 0; $i--) {
@@ -198,7 +214,7 @@ class AdminControllers {
                             COALESCE(SUM(CASE WHEN origen_venta NOT IN ('tienda', 'tienda_fisica') THEN total ELSE 0 END), 0) AS online
                           FROM ventas
                           WHERE DATE(fecha) >= ? AND DATE(fecha) <= ?
-                            AND (estado IN ('retirado', 'pagado', 'completada', 'aprobada') OR estado IS NULL)
+                            AND estado NOT IN ('cancelado', 'anulado')
                           GROUP BY DATE(fecha)
                           ORDER BY dia ASC";
             $stmtSem = $this->db->prepare($sqlSemana);
@@ -218,7 +234,6 @@ class AdminControllers {
 
         include "views/dashboard.php";
     }
-
     public function mostrarPanel() {
         $categorias = $this->obtenerCategoriasConAtributos();
         $p = null;
@@ -469,23 +484,33 @@ class AdminControllers {
     // -------------------------------------------------------------------------
 
     public function categorias() {
-        $sql = "SELECT c.id, c.id_padre, c.nombre_categoria,
-                       p.nombre_categoria AS nombre_padre,
-                       COUNT(pr.id) AS total_productos,
+        $sql = "SELECT c.slug, 
+                       c.slug AS id, 
+                       c.nombre_categoria,
+                       '' AS nombre_padre,
+                       COUNT(pr.codigo) AS total_productos,
                        COALESCE(SUM(pr.stock), 0) AS total_unidades
                 FROM categorias c
-                LEFT JOIN categorias p ON c.id_padre = p.id
-                LEFT JOIN productos pr ON pr.id_categoria = c.id AND pr.deleted_at IS NULL
-                GROUP BY c.id, c.id_padre, c.nombre_categoria, p.nombre_categoria
-                ORDER BY COALESCE(c.id_padre, c.id), c.id_padre IS NOT NULL, c.nombre_categoria ASC";
+                LEFT JOIN productos pr ON pr.slug_categoria = c.slug 
+                     AND (pr.deleted_at IS NULL OR pr.deleted_at = '2000-01-01 00:00:00' OR pr.deleted_at = '0000-00-00 00:00:00')
+                WHERE c.slug != 'raiz'
+                GROUP BY c.slug, c.nombre_categoria
+                ORDER BY c.nombre_categoria ASC";
 
         $stmt = $this->db->query($sql);
         $categorias = $stmt->fetchAll(PDO::FETCH_OBJ);
 
-        $stmtAtr = $this->db->prepare("SELECT id, nombre FROM categoria_atributos WHERE id_categoria = ?");
-        foreach ($categorias as $cat) {
-            $stmtAtr->execute([$cat->id]);
-            $cat->atributos = $stmtAtr->fetchAll(PDO::FETCH_OBJ);
+        // Atributos de cada categoría si existen en la tabla auxiliar
+        try {
+            $stmtAtr = $this->db->prepare("SELECT id, nombre FROM categoria_atributos WHERE id_categoria = ?");
+            foreach ($categorias as $cat) {
+                $stmtAtr->execute([$cat->slug]);
+                $cat->atributos = $stmtAtr->fetchAll(PDO::FETCH_OBJ);
+            }
+        } catch (Exception $e) {
+            foreach ($categorias as $cat) {
+                $cat->atributos = [];
+            }
         }
 
         if (file_exists('views/categorias.php')) {
@@ -495,13 +520,10 @@ class AdminControllers {
         }
     }
 
-    public function guardarCategoria() {
+   public function guardarCategoria() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $id = !empty($_POST['id']) ? (int)$_POST['id'] : null;
-            $nombre = trim($_POST['nombre_categoria'] ?? '');
-            $rawPadre = $_POST['id_padre'] ?? '';
-            $nuevaPadre = trim($_POST['nueva_categoria_padre'] ?? '');
-            $idPadre = null;
+            $slugOriginal = trim((string)($_POST['slug'] ?? $_POST['id'] ?? ''));
+            $nombre = trim((string)($_POST['nombre_categoria'] ?? $_POST['nombre'] ?? ''));
 
             if (empty($nombre)) {
                 $_SESSION['aviso_error'] = "El nombre de la categoría es obligatorio.";
@@ -509,86 +531,29 @@ class AdminControllers {
                 exit();
             }
 
+            // Generar slug limpio si es nueva
+            $slug = !empty($slugOriginal) ? $slugOriginal : preg_replace('/[^a-z0-9]+/i', '-', strtolower(trim($nombre)));
+
             try {
                 $this->db->beginTransaction();
 
-                if ($rawPadre === 'nueva_padre' && !empty($nuevaPadre)) {
-                    $stmtNP = $this->db->prepare("INSERT INTO categorias (nombre_categoria, id_padre) VALUES (?, NULL)");
-                    $stmtNP->execute([$nuevaPadre]);
-                    $idPadre = (int)$this->db->lastInsertId();
-                    $this->log('Inventario', 'INSERT', "Creó categoría principal padre: {$nuevaPadre}");
-                } elseif (!empty($rawPadre) && is_numeric($rawPadre)) {
-                    $idPadre = (int)$rawPadre;
-                }
-
-                if ($id) {
-                    if ($idPadre === $id) $idPadre = null;
-                    $stmt = $this->db->prepare("UPDATE categorias SET nombre_categoria = ?, id_padre = ? WHERE id = ?");
-                    $stmt->execute([$nombre, $idPadre, $id]);
-                    $this->log('Inventario', 'UPDATE', "Editó categoría: {$nombre}");
+                if (!empty($slugOriginal)) {
+                    // Editar categoría existente
+                    $stmt = $this->db->prepare("UPDATE categorias SET nombre_categoria = ? WHERE slug = ?");
+                    $stmt->execute([$nombre, $slugOriginal]);
+                    $this->log('Inventario', 'UPDATE', "Editó categoría: {$nombre} ({$slugOriginal})");
                 } else {
-                    $stmt = $this->db->prepare("INSERT INTO categorias (nombre_categoria, id_padre) VALUES (?, ?)");
-                    $stmt->execute([$nombre, $idPadre]);
-                    $id = (int)$this->db->lastInsertId();
-                    $this->log('Inventario', 'INSERT', "Creó categoría: {$nombre}");
-                }
-
-                $atrIds = $_POST['atributo_id'] ?? [];
-                $atrNombres = $_POST['atributo_nombre'] ?? [];
-                $atrOpciones = $_POST['atributo_opciones'] ?? [];
-
-                $atributosProcesados = [];
-
-                for ($i = 0; $i < count($atrNombres); $i++) {
-                    $nomAtr = trim($atrNombres[$i]);
-                    $claveUnica = mb_strtolower($nomAtr, 'UTF-8');
-
-                    if ($nomAtr === '' || isset($atributosProcesados[$claveUnica])) {
-                        continue;
+                    // Crear categoría nueva
+                    // Verificar si el slug ya existe para evitar duplicado
+                    $stmtCheck = $this->db->prepare("SELECT COUNT(*) FROM categorias WHERE slug = ?");
+                    $stmtCheck->execute([$slug]);
+                    if ((int)$stmtCheck->fetchColumn() > 0) {
+                        $slug .= '-' . time();
                     }
 
-                    $opcRaw = explode(',', $atrOpciones[$i] ?? '');
-                    $opcLimpias = [];
-                    foreach ($opcRaw as $opc) {
-                        $opcT = trim($opc);
-                        if ($opcT !== '' && !in_array($opcT, $opcLimpias, true)) {
-                            $opcLimpias[] = $opcT;
-                        }
-                    }
-                    $opcAtr = implode(', ', $opcLimpias);
-                    $atrId = !empty($atrIds[$i]) ? (int)$atrIds[$i] : 0;
-
-                    $atributosProcesados[$claveUnica] = [
-                        'id' => $atrId,
-                        'nombre' => $nomAtr,
-                        'opciones' => $opcAtr
-                    ];
-                }
-
-                $idsMantener = [];
-                foreach ($atributosProcesados as $item) {
-                    if ($item['id'] > 0) {
-                        $idsMantener[] = $item['id'];
-                    }
-                }
-
-                if (!empty($idsMantener)) {
-                    $placeholders = implode(',', array_fill(0, count($idsMantener), '?'));
-                    $stmtDel = $this->db->prepare("DELETE FROM categoria_atributos WHERE id_categoria = ? AND id NOT IN ($placeholders)");
-                    $stmtDel->execute(array_merge([$id], $idsMantener));
-                } else {
-                    $this->db->prepare("DELETE FROM categoria_atributos WHERE id_categoria = ?")->execute([$id]);
-                }
-
-                $stmtUpd = $this->db->prepare("UPDATE categoria_atributos SET nombre = ? WHERE id = ? AND id_categoria = ?");
-                $stmtIns = $this->db->prepare("INSERT INTO categoria_atributos (id_categoria, nombre) VALUES (?, ?)");
-
-                foreach ($atributosProcesados as $item) {
-                    if ($item['id'] > 0) {
-                        $stmtUpd->execute([$item['nombre'], $item['id'], $id]);
-                    } else {
-                        $stmtIns->execute([$id, $item['nombre']]);
-                    }
+                    $stmt = $this->db->prepare("INSERT INTO categorias (slug, nombre_categoria) VALUES (?, ?)");
+                    $stmt->execute([$slug, $nombre]);
+                    $this->log('Inventario', 'INSERT', "Creó categoría: {$nombre} ({$slug})");
                 }
 
                 $this->db->commit();
@@ -608,19 +573,32 @@ class AdminControllers {
 
     public function eliminarCategoria() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $id = (int)($_POST['id'] ?? 0);
-            $stmtCheck = $this->db->prepare("SELECT COUNT(*) FROM productos WHERE id_categoria = ? AND deleted_at IS NULL");
-            $stmtCheck->execute([$id]);
+            $slug = trim((string)($_POST['slug'] ?? $_POST['id'] ?? ''));
 
-            if ((int)$stmtCheck->fetchColumn() === 0) {
-                $this->db->prepare("DELETE FROM categorias WHERE id = ?")->execute([$id]);
-                $this->log('Inventario', 'DELETE', "Eliminó categoría ID: {$id}");
+            if (!empty($slug)) {
+                // Verificar si tiene productos asignados
+                $stmtCheck = $this->db->prepare("
+                    SELECT COUNT(*) 
+                    FROM productos 
+                    WHERE slug_categoria = ? 
+                      AND (deleted_at IS NULL OR deleted_at = '2000-01-01 00:00:00' OR deleted_at = '0000-00-00 00:00:00')
+                ");
+                $stmtCheck->execute([$slug]);
+                $totalAsociados = (int)$stmtCheck->fetchColumn();
+
+                if ($totalAsociados > 0) {
+                    $_SESSION['aviso_error'] = "No se puede eliminar la categoría porque tiene {$totalAsociados} producto(s) asociado(s).";
+                } else {
+                    $this->db->prepare("DELETE FROM categorias WHERE slug = ?")->execute([$slug]);
+                    $this->log('Inventario', 'DELETE', "Eliminó categoría: {$slug}");
+                    $_SESSION['aviso'] = "Categoría eliminada correctamente.";
+                }
             }
+
             header("Location: index.php?action=categorias");
             exit();
         }
     }
-
 // -------------------------------------------------------------------------
     // AJUSTES DE STOCK Y KARDEX
     // -------------------------------------------------------------------------
@@ -819,16 +797,16 @@ public function mostrarEstadisticas() {
         $agrupar = ($_GET['agrupar'] ?? 'dia') === 'mes' ? 'mes' : 'dia';
         $tab     = $_GET['tab'] ?? 'ventas';
 
-        // 1. Resumen General (KPIs) usando DATE() para coincidencia exacta con el día
+        // 1. Resumen General (KPIs)
         $sqlResumen = "
             SELECT 
                 COALESCE(SUM(v.total), 0) AS vendido,
-                COUNT(v.id) AS ventas,
-                COALESCE(SUM(CASE WHEN v.origen_venta = 'tienda_fisica' THEN v.total ELSE 0 END), 0) AS tienda,
+                COUNT(v.numero_orden) AS ventas,
+                COALESCE(SUM(CASE WHEN v.origen_venta IN ('tienda', 'tienda_fisica') THEN v.total ELSE 0 END), 0) AS tienda,
                 COALESCE(SUM(
                     (SELECT COALESCE(SUM((dv.precio_unitario - dv.costo_unitario) * dv.cantidad), 0)
                      FROM detalle_ventas dv 
-                     WHERE dv.id_venta = v.id)
+                     WHERE dv.numero_orden = v.numero_orden)
                 ), 0) AS ganancia
             FROM ventas v
             WHERE v.estado != 'cancelado' 
@@ -871,8 +849,8 @@ public function mostrarEstadisticas() {
         $sqlDias = "
             SELECT 
                 DATE_FORMAT(v.fecha, '{$formato}') AS fecha,
-                COALESCE(SUM(CASE WHEN v.origen_venta = 'tienda_fisica' THEN v.total ELSE 0 END), 0) AS tienda,
-                COALESCE(SUM(CASE WHEN v.origen_venta = 'online' THEN v.total ELSE 0 END), 0) AS online
+                COALESCE(SUM(CASE WHEN v.origen_venta IN ('tienda', 'tienda_fisica') THEN v.total ELSE 0 END), 0) AS tienda,
+                COALESCE(SUM(CASE WHEN v.origen_venta NOT IN ('tienda', 'tienda_fisica') THEN v.total ELSE 0 END), 0) AS online
             FROM ventas v
             WHERE v.estado != 'cancelado' 
               AND DATE(v.fecha) BETWEEN ? AND ?
@@ -893,16 +871,16 @@ public function mostrarEstadisticas() {
         // 3. Categorías
         $sqlCat = "
             SELECT 
-                c.nombre_categoria AS nombre,
+                COALESCE(c.nombre_categoria, 'Sin categoría') AS nombre,
                 COALESCE(SUM(dv.subtotal), 0) AS vendido,
                 COALESCE(SUM((dv.precio_unitario - dv.costo_unitario) * dv.cantidad), 0) AS ganancia
             FROM detalle_ventas dv
-            INNER JOIN ventas v ON dv.id_venta = v.id
-            INNER JOIN productos p ON dv.id_producto = p.id
-            INNER JOIN categorias c ON p.id_categoria = c.id
+            INNER JOIN ventas v ON dv.numero_orden = v.numero_orden
+            INNER JOIN productos p ON dv.codigo_producto = p.codigo
+            LEFT JOIN categorias c ON p.slug_categoria = c.slug
             WHERE v.estado != 'cancelado' 
               AND DATE(v.fecha) BETWEEN ? AND ?
-            GROUP BY c.id, c.nombre_categoria
+            GROUP BY c.slug, c.nombre_categoria
             ORDER BY ganancia DESC
         ";
         $stmtC = $this->db->prepare($sqlCat);
@@ -918,12 +896,12 @@ public function mostrarEstadisticas() {
                 SUM(dv.subtotal) AS monto,
                 SUM((dv.precio_unitario - dv.costo_unitario) * dv.cantidad) AS ganancia
             FROM detalle_ventas dv
-            INNER JOIN ventas v ON dv.id_venta = v.id
-            INNER JOIN productos p ON dv.id_producto = p.id
-            LEFT JOIN categorias c ON p.id_categoria = c.id
+            INNER JOIN ventas v ON dv.numero_orden = v.numero_orden
+            INNER JOIN productos p ON dv.codigo_producto = p.codigo
+            LEFT JOIN categorias c ON p.slug_categoria = c.slug
             WHERE v.estado != 'cancelado' 
               AND DATE(v.fecha) BETWEEN ? AND ?
-            GROUP BY p.id, p.nombre_producto, c.nombre_categoria
+            GROUP BY p.codigo, p.nombre_producto, c.nombre_categoria
             ORDER BY monto DESC
             LIMIT 10
         ";
@@ -939,11 +917,11 @@ public function mostrarEstadisticas() {
                 p.stock,
                 DATEDIFF(NOW(), MAX(v.fecha)) AS dias
             FROM productos p
-            LEFT JOIN categorias c ON p.id_categoria = c.id
-            LEFT JOIN detalle_ventas dv ON dv.id_producto = p.id
-            LEFT JOIN ventas v ON dv.id_venta = v.id AND v.estado != 'cancelado'
-            WHERE p.estado = 1 AND p.deleted_at IS NULL
-            GROUP BY p.id, p.nombre_producto, c.nombre_categoria, p.stock
+            LEFT JOIN categorias c ON p.slug_categoria = c.slug
+            LEFT JOIN detalle_ventas dv ON dv.codigo_producto = p.codigo
+            LEFT JOIN ventas v ON dv.numero_orden = v.numero_orden AND v.estado != 'cancelado'
+            WHERE p.estado = 1 AND (p.deleted_at IS NULL OR p.deleted_at = '2000-01-01 00:00:00')
+            GROUP BY p.codigo, p.nombre_producto, c.nombre_categoria, p.stock
             HAVING dias >= 30 OR dias IS NULL
             ORDER BY dias DESC, p.stock DESC
             LIMIT 10
@@ -953,14 +931,14 @@ public function mostrarEstadisticas() {
         // 6. Tab Dinero: Métodos
         $sqlMet = "
             SELECT 
-                COALESCE(mp.nombre, pr.moneda) AS nombre,
-                SUM(pr.monto / CASE WHEN pr.moneda = 'VES' AND pr.tasa_cambio > 0 THEN pr.tasa_cambio ELSE 1 END) AS monto
-            FROM pagos_registro pr
-            INNER JOIN ventas v ON pr.id_venta = v.id
-            LEFT JOIN metodos_pago mp ON pr.id_metodo_pago = mp.id
-            WHERE pr.estado_verificacion = 'aprobado'
+                COALESCE(mp.nombre, pr.codigo_metodo) AS nombre,
+                SUM(pr.monto / CASE WHEN UPPER(pr.moneda) = 'VES' AND pr.tasa_cambio > 0 THEN pr.tasa_cambio ELSE 1 END) AS monto
+            FROM pagos pr
+            INNER JOIN ventas v ON pr.numero_orden = v.numero_orden
+            LEFT JOIN metodos_pago mp ON pr.codigo_metodo = mp.codigo_metodo
+            WHERE pr.estado IN ('aprobado', 'verificado')
               AND DATE(pr.fecha_pago) BETWEEN ? AND ?
-            GROUP BY mp.nombre, pr.moneda
+            GROUP BY mp.nombre, pr.codigo_metodo
             ORDER BY monto DESC
         ";
         $stmtMet = $this->db->prepare($sqlMet);
@@ -970,22 +948,15 @@ public function mostrarEstadisticas() {
         // 7. Tab Dinero: Proveedores
         $proveedores = [];
         try {
-            $colFecha = 'fecha';
-            $checkCols = $this->db->query("SHOW COLUMNS FROM compras LIKE 'fecha'")->fetch();
-            if (!$checkCols) {
-                $checkColsCompra = $this->db->query("SHOW COLUMNS FROM compras LIKE 'fecha_compra'")->fetch();
-                $colFecha = $checkColsCompra ? 'fecha_compra' : 'created_at';
-            }
-
             $sqlProv = "
                 SELECT 
                     COALESCE(prv.razon_social, 'Proveedor') AS razon_social,
-                    COUNT(c.id) AS compras,
+                    COUNT(c.numero_orden) AS compras,
                     COALESCE(SUM(c.total), 0) AS total
                 FROM compras c
-                LEFT JOIN proveedores prv ON c.id_proveedor = prv.id
-                WHERE DATE(c.{$colFecha}) BETWEEN ? AND ?
-                GROUP BY prv.id, prv.razon_social
+                LEFT JOIN proveedores prv ON c.rif_proveedor = prv.rif
+                WHERE DATE(c.fecha) BETWEEN ? AND ?
+                GROUP BY prv.rif, prv.razon_social
                 ORDER BY total DESC
                 LIMIT 10
             ";
@@ -1012,48 +983,45 @@ public function mostrarEstadisticas() {
             require_once 'views/admin/seccion_graficos.php';
         }
     }
-    public function verReporte() {
+   public function verReporte() {
         require_once 'models/MetodoPagoModel.php';
         $metodoModel = new MetodoPagoModel($this->db);
 
-        $idMetodo = (int)($_GET['metodo'] ?? 4);
+        // Recibir el identificador alfanumérico (ej: efectivo_usd, pago_movil)
+        $idMetodo = trim((string)($_GET['metodo'] ?? 'pago_movil'));
         $metodo = $metodoModel->obtenerPorId($idMetodo);
 
-        if (!$metodo) {
-            $_SESSION['aviso'] = 'El método de pago no existe.';
-            header("Location: index.php?action=metodos_pago");
-            exit();
-        }
+        $metodoId     = $metodo->codigo_metodo ?? $idMetodo;
+        $metodoNombre = $metodo->nombre ?? 'Método de pago';
 
-        $metodoId     = (int)$metodo->id;
-        $metodoNombre = $metodo->nombre ?? 'Pago Móvil';
+        // Fechas enviadas por los filtros de la vista
+        $desde = trim((string)($_GET['desde'] ?? ''));
+        $hasta = trim((string)($_GET['hasta'] ?? ''));
+        $bancoSel  = trim((string)($_GET['banco'] ?? ''));
+        $estadoSel = trim((string)($_GET['estado'] ?? ''));
 
-        $desde = $_GET['desde'] ?? date('Y-m-01');
-        $hasta = $_GET['hasta'] ?? date('Y-m-d');
-        $bancoSel  = trim($_GET['banco'] ?? '');
-        $estadoSel = trim($_GET['estado'] ?? '');
+        // Obtener pagos reales
+        $pagos = $metodoModel->obtenerReportePagos($metodoId, $desde, $hasta, $bancoSel, $estadoSel);
+        $ventas = $pagos;
 
-        $listaBruta = $metodoModel->obtenerReportePagos($metodoId, '', '', $bancoSel, $estadoSel);
+        // Calcular resumen de totales para las tarjetas superiores
+        $resumen = $metodoModel->obtenerResumenTotales($metodoId, $desde, $hasta, $bancoSel, $estadoSel);
+        $totales = $resumen;
 
-        $ventas = [];
-        $tasa = 1;
+        // Bancos para el filtro desplegable
+        $bancos = $metodoModel->obtenerBancosDisponibles();
 
-        foreach ($listaBruta as $p) {
-            $tasa = (float)($p->tasa_cambio ?? 1);
-            $ventas[] = (object)[
-                'id'             => (int)$p->id_venta,
-                'fecha'          => $p->fecha_pago,
-                'nombre_cliente' => !empty(trim($p->cliente_nombre)) ? $p->cliente_nombre : 'Consumidor final',
-                'total'          => (float)($p->monto ?? 0),
-                'total_bs'       => (float)($p->monto_bs ?? 0),
-                'banco'          => $p->banco ?? '',
-                'referencia'     => $p->referencia ?? ''
-            ];
-        }
+        // Tasa BCV
+        $tasa = 881.07;
+        try {
+            $stmtSis = $this->db->query("SELECT tasa_bcv FROM sistema LIMIT 1");
+            if ($sis = $stmtSis->fetch(PDO::FETCH_OBJ)) {
+                $tasa = (float)($sis->tasa_bcv ?: 881.07);
+            }
+        } catch (Exception $e) {}
 
         require_once 'views/ventas/cobrado_metodo.php';
     }
-
     public function confirmarPago() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             require_once 'models/MetodoPagoModel.php';
@@ -1088,35 +1056,36 @@ public function mostrarEstadisticas() {
         require_once 'models/MetodoPagoModel.php';
         $metodoModel = new MetodoPagoModel($this->db);
 
-        $id = (int)($_POST['id'] ?? 0);
-        $nombre = trim($_POST['nombre'] ?? '');
+        $codigo = trim((string)($_POST['codigo_metodo'] ?? $_POST['id'] ?? ''));
+        $nombre = trim((string)($_POST['nombre'] ?? ''));
 
         if ($nombre === '') {
             $_SESSION['aviso'] = 'Escribe el nombre del método.';
-        } elseif ($metodoModel->existeNombre($nombre, $id)) {
+        } elseif ($metodoModel->existeNombre($nombre, $codigo)) {
             $_SESSION['aviso'] = 'Ya existe un método llamado ' . $nombre . '.';
         } else {
             $metodoModel->guardar([
-                'id' => $id,
-                'nombre' => $nombre,
-                'moneda' => ($_POST['moneda'] ?? 'Bs') === 'USD' ? 'USD' : 'Bs',
+                'codigo_metodo'       => $codigo,
+                'id'                  => $codigo,
+                'nombre'              => $nombre,
+                'moneda'              => ($_POST['moneda'] ?? 'Bs') === 'USD' ? 'USD' : 'Bs',
                 'requiere_referencia' => isset($_POST['requiere_referencia']) ? 1 : 0,
-                'en_tienda' => isset($_POST['en_tienda']) ? 1 : 0,
-                'en_online' => isset($_POST['en_online']) ? 1 : 0,
-                'datos' => trim($_POST['datos'] ?? '')
+                'en_tienda'           => isset($_POST['en_tienda']) ? 1 : 0,
+                'en_online'           => isset($_POST['en_online']) ? 1 : 0
             ]);
-            $_SESSION['aviso'] = $id ? 'Método actualizado.' : 'Método creado.';
+            $_SESSION['aviso'] = !empty($codigo) ? 'Método actualizado.' : 'Método creado.';
         }
         header("Location: index.php?action=metodos_pago");
         exit();
     }
 
     public function cambiarEstadoMetodo() {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['id'])) {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && (!empty($_POST['codigo_metodo']) || !empty($_POST['id']))) {
             require_once 'models/MetodoPagoModel.php';
+            $codigo = trim((string)($_POST['codigo_metodo'] ?? $_POST['id']));
             $activo = (int)($_POST['activo'] ?? 0) === 1 ? 1 : 0;
-            (new MetodoPagoModel($this->db))->cambiarEstado((int)$_POST['id'], $activo);
-            $_SESSION['aviso'] = $activo ? 'Método activado.' : 'Método apagado.';
+            (new MetodoPagoModel($this->db))->cambiarEstado($codigo, $activo);
+            $_SESSION['aviso'] = $activo ? 'Método activado.' : 'Método desactivado.';
         }
         header("Location: index.php?action=metodos_pago");
         exit();

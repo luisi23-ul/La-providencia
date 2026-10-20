@@ -6,14 +6,18 @@ class MetodoPagoModel {
         $this->db = $db;
     }
 
-    public function obtenerPorId($id) {
-        $stmt = $this->db->prepare("SELECT * FROM metodos_pago WHERE id = ?");
-        $stmt->execute([(int)$id]);
+    public function obtenerPorId($codigo) {
+        $stmt = $this->db->prepare("SELECT *, codigo_metodo AS id FROM metodos_pago WHERE codigo_metodo = ? LIMIT 1");
+        $stmt->execute([(string)$codigo]);
         $res = $stmt->fetch(PDO::FETCH_OBJ);
         if (!$res) {
             return (object)[
-                'id' => (int)$id,
-                'nombre' => 'Pago Móvil'
+                'codigo_metodo' => (string)$codigo,
+                'id'            => (string)$codigo,
+                'nombre'        => 'Pago Móvil',
+                'moneda'        => 'Bs',
+                'requiere_referencia' => 1,
+                'activo'        => 1
             ];
         }
         return $res;
@@ -21,55 +25,59 @@ class MetodoPagoModel {
 
     public function obtenerBancosDisponibles() {
         try {
-            $stmt = $this->db->query("SELECT DISTINCT banco FROM pagos_registro WHERE banco IS NOT NULL AND TRIM(banco) != '' ORDER BY banco ASC");
+            $stmt = $this->db->query("
+                SELECT DISTINCT banco 
+                FROM pagos 
+                WHERE banco IS NOT NULL AND TRIM(banco) != '' AND banco != 'Caja Física' AND banco != 'Sin banco'
+                ORDER BY banco ASC
+            ");
             return $stmt->fetchAll(PDO::FETCH_COLUMN);
         } catch (Exception $e) {
             return [];
         }
     }
 
-    public function obtenerReportePagos($idMetodo, $desde = '', $hasta = '', $banco = '', $estado = '') {
-        $where = ["pr.id_metodo_pago = ?"];
-        $params = [(int)$idMetodo];
+   public function obtenerReportePagos($codigoMetodo, $desde = '', $hasta = '', $banco = '', $estado = '') {
+        $where = ["p.codigo_metodo = ?"];
+        $params = [(string)$codigoMetodo];
 
         if (!empty($desde)) {
-            $where[] = "DATE(pr.fecha_pago) >= ?";
+            $where[] = "DATE(p.fecha_pago) >= ?";
             $params[] = $desde;
         }
         if (!empty($hasta)) {
-            $where[] = "DATE(pr.fecha_pago) <= ?";
+            $where[] = "DATE(p.fecha_pago) <= ?";
             $params[] = $hasta;
         }
-        if (!empty($banco)) {
-            $where[] = "pr.banco = ?";
+        if (!empty($banco) && $banco !== 'todos') {
+            $where[] = "p.banco = ?";
             $params[] = $banco;
         }
         if (!empty($estado)) {
-            $where[] = "pr.estado_verificacion = ?";
+            $where[] = "p.estado = ?";
             $params[] = $estado;
         }
 
         $sql = "SELECT 
-                    pr.id,
-                    pr.id_venta,
-                    pr.fecha_pago,
-                    COALESCE(NULLIF(TRIM(pr.banco), ''), 'Sin banco asignado') AS banco,
-                    COALESCE(pr.referencia, 'S/R') AS referencia,
-                    pr.moneda,
-                    pr.monto AS monto_bs_raw,
-                    v.total AS monto_usd_raw,
-                    COALESCE(NULLIF(pr.tasa_cambio, 0), 1) AS tasa_cambio,
-                    pr.estado_verificacion,
-                    CONCAT(COALESCE(u.nombre, 'Cliente Mostrador'), ' ', COALESCE(u.apellido, '')) AS cliente_nombre,
-                    COALESCE(cajero.nombre, 'Caja Mostrador') AS cajero_nombre,
-                    COALESCE(verificador.nombre, 'Admin') AS verificador_nombre
-                FROM pagos_registro pr
-                INNER JOIN ventas v ON pr.id_venta = v.id
-                LEFT JOIN usuarios u ON v.id_usuario = u.id
-                LEFT JOIN usuarios cajero ON v.vendedor_id = cajero.id
-                LEFT JOIN usuarios verificador ON pr.verificado_por = verificador.id
+                    p.numero_pago AS id,
+                    p.numero_pago,
+                    p.numero_orden AS id_venta,
+                    p.numero_orden,
+                    p.fecha_pago,
+                    p.banco,
+                    p.referencia,
+                    p.moneda,
+                    p.monto,
+                    p.tasa_cambio,
+                    p.estado AS estado_verificacion,
+                    COALESCE(c.nombre_razon_social, u.nombre, 'Consumidor Final') AS cliente_nombre,
+                    COALESCE(c.nombre_razon_social, u.nombre, 'Consumidor Final') AS nombre_cliente
+                FROM pagos p
+                INNER JOIN ventas v ON p.numero_orden = v.numero_orden
+                LEFT JOIN clientes c ON v.cedula_cliente = c.cedula
+                LEFT JOIN usuarios u ON v.cedula_usuario = u.cedula
                 WHERE " . implode(' AND ', $where) . "
-                ORDER BY pr.fecha_pago DESC, pr.id DESC";
+                ORDER BY p.fecha_pago DESC";
 
         try {
             $stmt = $this->db->prepare($sql);
@@ -77,12 +85,24 @@ class MetodoPagoModel {
             $pagos = $stmt->fetchAll(PDO::FETCH_OBJ);
 
             foreach ($pagos as $p) {
-                $tasa = (float)$p->tasa_cambio > 0 ? (float)$p->tasa_cambio : 1;
-                $p->monto = (float)($p->monto_usd_raw ?? 0);
-                if ($p->monto <= 0 && (float)$p->monto_bs_raw > 0) {
-                    $p->monto = (float)$p->monto_bs_raw / $tasa;
+                $tasa = (float)($p->tasa_cambio ?? 1.0);
+                if ($tasa <= 0) $tasa = 1.0;
+
+                $montoRaw = (float)($p->monto ?? 0);
+                $esUsd = strtoupper(trim($p->moneda ?? '')) === 'USD';
+
+                if ($esUsd) {
+                    $p->monto_usd = $montoRaw;
+                    $p->monto_bs  = $montoRaw * $tasa;
+                } else {
+                    $p->monto_bs  = $montoRaw;
+                    $p->monto_usd = $tasa > 0 ? ($montoRaw / $tasa) : $montoRaw;
                 }
-                $p->monto_bs = (float)$p->monto_bs_raw > 0 ? (float)$p->monto_bs_raw : ($p->monto * $tasa);
+
+                // Alias para cubrir cualquier variable que use la vista
+                $p->total    = $p->monto_usd;
+                $p->total_bs = $p->monto_bs;
+                $p->fecha    = $p->fecha_pago;
             }
 
             return $pagos;
@@ -91,8 +111,8 @@ class MetodoPagoModel {
         }
     }
 
-    public function obtenerResumenTotales($idMetodo, $desde = '', $hasta = '', $banco = '', $estado = '') {
-        $pagos = $this->obtenerReportePagos($idMetodo, $desde, $hasta, $banco, $estado);
+    public function obtenerResumenTotales($codigoMetodo, $desde = '', $hasta = '', $banco = '', $estado = '') {
+        $pagos = $this->obtenerReportePagos($codigoMetodo, $desde, $hasta, $banco, $estado);
 
         $totalUsd = 0;
         $totalBs = 0;
@@ -115,28 +135,54 @@ class MetodoPagoModel {
     }
 
     public function listar() {
-        return $this->db->query("SELECT * FROM metodos_pago ORDER BY id ASC")->fetchAll(PDO::FETCH_OBJ);
+        return $this->db->query("
+            SELECT *, 
+                   codigo_metodo AS id 
+            FROM metodos_pago 
+            ORDER BY nombre ASC
+        ")->fetchAll(PDO::FETCH_OBJ);
     }
 
-    public function existeNombre($nombre, $id = 0) {
-        $stmt = $this->db->prepare("SELECT COUNT(*) FROM metodos_pago WHERE LOWER(nombre) = LOWER(?) AND id != ?");
-        $stmt->execute([$nombre, (int)$id]);
+    public function existeNombre($nombre, $codigoIgnorar = '') {
+        $stmt = $this->db->prepare("SELECT COUNT(*) FROM metodos_pago WHERE LOWER(nombre) = LOWER(?) AND codigo_metodo != ?");
+        $stmt->execute([$nombre, (string)$codigoIgnorar]);
         return $stmt->fetchColumn() > 0;
     }
 
     public function guardar($datos) {
-        $valores = [$datos['nombre'], $datos['moneda'], $datos['requiere_referencia'], $datos['en_tienda'], $datos['en_online'], $datos['datos']];
-        if (empty($datos['id'])) {
-            $stmt = $this->db->prepare("INSERT INTO metodos_pago (nombre, moneda, requiere_referencia, en_tienda, en_online, datos, activo) VALUES (?, ?, ?, ?, ?, ?, 1)");
-            return $stmt->execute($valores);
+        $codigo = trim((string)($datos['codigo_metodo'] ?? $datos['id'] ?? ''));
+        $nombre = trim((string)($datos['nombre'] ?? ''));
+        $moneda = ($datos['moneda'] ?? 'Bs') === 'USD' ? 'USD' : 'Bs';
+        $reqRef = !empty($datos['requiere_referencia']) ? 1 : 0;
+        $enTienda = !empty($datos['en_tienda']) ? 1 : 0;
+        $enOnline = !empty($datos['en_online']) ? 1 : 0;
+
+        if (empty($codigo)) {
+            // Generar identificador basado en el nombre (ej. pago_movil)
+            $codigo = preg_replace('/[^a-z0-9_]+/i', '_', strtolower($nombre));
         }
-        $valores[] = (int)$datos['id'];
-        $stmt = $this->db->prepare("UPDATE metodos_pago SET nombre = ?, moneda = ?, requiere_referencia = ?, en_tienda = ?, en_online = ?, datos = ? WHERE id = ?");
-        return $stmt->execute($valores);
+
+        $stmtCheck = $this->db->prepare("SELECT COUNT(*) FROM metodos_pago WHERE codigo_metodo = ?");
+        $stmtCheck->execute([$codigo]);
+
+        if ((int)$stmtCheck->fetchColumn() > 0) {
+            $stmt = $this->db->prepare("
+                UPDATE metodos_pago 
+                SET nombre = ?, moneda = ?, requiere_referencia = ?, en_tienda = ?, en_online = ? 
+                WHERE codigo_metodo = ?
+            ");
+            return $stmt->execute([$nombre, $moneda, $reqRef, $enTienda, $enOnline, $codigo]);
+        } else {
+            $stmt = $this->db->prepare("
+                INSERT INTO metodos_pago (codigo_metodo, nombre, moneda, requiere_referencia, en_tienda, en_online, activo) 
+                VALUES (?, ?, ?, ?, ?, ?, 1)
+            ");
+            return $stmt->execute([$codigo, $nombre, $moneda, $reqRef, $enTienda, $enOnline]);
+        }
     }
 
-    public function cambiarEstado($id, $activo) {
-        $stmt = $this->db->prepare("UPDATE metodos_pago SET activo = ? WHERE id = ?");
-        return $stmt->execute([(int)$activo, (int)$id]);
+    public function cambiarEstado($codigo, $activo) {
+        $stmt = $this->db->prepare("UPDATE metodos_pago SET activo = ? WHERE codigo_metodo = ?");
+        return $stmt->execute([(int)$activo, (string)$codigo]);
     }
 }
