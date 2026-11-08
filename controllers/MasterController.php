@@ -297,16 +297,19 @@ class MasterController {
                 }
             }
 
-            $this->modeloConfig->actualizar($datos);
-
-            $modoTexto = ($datos['tasa_modo'] === 'manual') ? "manual ({$datos['tasa_manual']} Bs)" : "automática (BCV)";
-            $this->registrarAuditoria("Actualizó la configuración del sistema (Tasa: {$modoTexto})", "Configuración", "UPDATE");
-
-            if (session_status() === PHP_SESSION_NONE) session_start();
+            if ($this->modeloConfig->actualizar($datos)) {
             $_SESSION['aviso'] = ['Configuración guardada correctamente.', 'ok'];
+            
+            // Registrar auditoría solo cuando realmente se actualizó en la BD
+            if (isset($this->modeloAuditoria)) {
+                $this->modeloAuditoria->registrar('CONFIGURACION', 'Actualización de configuración general del sistema');
+            }
+        } else {
+            $_SESSION['aviso'] = ['No se pudieron guardar los cambios. Inténtalo de nuevo.', 'error'];
+        }
 
-            header("Location: index.php?action=configuracion_sistema");
-            exit();
+        header('Location: index.php?action=configuracion_sistema');
+        exit;
         }
     }
 
