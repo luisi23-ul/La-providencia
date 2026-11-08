@@ -217,7 +217,7 @@ class ReporteController {
                 'titulo' => 'DIRECTORIO DE CLIENTES - LA PROVIDENCIA',
                 'datos'  => $datos
             ];
-       } elseif ($tipo === 'proveedores') {
+        } elseif ($tipo === 'proveedores') {
             $estado = trim((string)($_GET['estado'] ?? ''));
             $q      = trim((string)($_GET['q'] ?? ''));
 
@@ -281,7 +281,7 @@ class ReporteController {
                 'titulo' => 'DIRECTORIO DE PROVEEDORES - LA PROVIDENCIA',
                 'datos'  => $datos
             ];
-       } elseif ($tipo === 'compras') {
+        } elseif ($tipo === 'compras') {
             $desde  = trim((string)($_GET['desde'] ?? ''));
             $hasta  = trim((string)($_GET['hasta'] ?? ''));
             $estado = trim((string)($_GET['estado'] ?? ''));
@@ -307,7 +307,7 @@ class ReporteController {
             $stmtProv = $this->db->prepare("SELECT razon_social FROM proveedores WHERE rif = ? OR rif_cedula = ? OR id_proveedor = ? LIMIT 1");
             $stmtUser = $this->db->prepare("SELECT nombre FROM usuarios WHERE cedula = ? LIMIT 1");
 
-           $datos = [];
+            $datos = [];
             foreach ($filas as $f) {
                 // 1. Resolver fecha dinámicamente
                 $fechaVal = $f->fecha_compra ?? $f->fecha ?? $f->created_at ?? $f->fecha_registro ?? date('Y-m-d');
@@ -367,7 +367,6 @@ class ReporteController {
                 $item->estado         = ucfirst($f->estado ?? 'Recibida');
 
                 $datos[] = $item;
-            
             }
 
             // Ordenar de más reciente a más antiguo
@@ -383,6 +382,90 @@ class ReporteController {
             return [
                 'titulo' => $titulo,
                 'datos'  => $datos
+            ];
+        } elseif ($tipo === 'cliente') {
+            $cedula = trim($_GET['cedula'] ?? '');
+            $desde  = trim($_GET['desde'] ?? '');
+            $hasta  = trim($_GET['hasta'] ?? '');
+            $estado = trim($_GET['estado'] ?? '');
+
+            // 1. Buscar cliente por cédula o cédula_usuario
+            $st = $this->db->prepare("SELECT cedula, nombre_razon_social, telefono, correo, direccion
+                                      FROM clientes 
+                                      WHERE cedula = ? OR cedula_usuario = ? 
+                                      ORDER BY (cedula = ?) DESC 
+                                      LIMIT 1");
+            $st->execute([$cedula, $cedula, $cedula]);
+            $cliente = $st->fetch(PDO::FETCH_OBJ);
+
+            if ($cliente) {
+                $cedula = $cliente->cedula;
+            } else {
+                $cliente = (object)[
+                    'cedula'              => $cedula ?: 'SIN_USUARIO',
+                    'nombre_razon_social' => ($cedula === 'SIN_USUARIO' || empty($cedula)) ? 'Consumidor Final' : 'Cliente (' . $cedula . ')',
+                    'telefono'            => 'S/T',
+                    'correo'              => 'S/C',
+                    'direccion'           => 'S/D'
+                ];
+            }
+
+            // 2. Consultar compras del cliente
+            $sql = "SELECT v.numero_orden, v.fecha, v.origen_venta, v.estado, v.total,
+                           COALESCE(SUM(CASE WHEN p.estado = 'aprobado'
+                               THEN IF(p.moneda = 'USD', p.monto, p.monto / NULLIF(p.tasa_cambio, 0)) END), 0) AS pagado,
+                           COALESCE(SUM(CASE WHEN p.estado IN ('pendiente', 'por_verificar')
+                               THEN IF(p.moneda = 'USD', p.monto, p.monto / NULLIF(p.tasa_cambio, 0)) END), 0) AS por_verificar
+                    FROM ventas v
+                    LEFT JOIN pagos p ON p.numero_orden = v.numero_orden
+                    WHERE v.cedula_cliente = ? AND v.deleted_at = '2000-01-01 00:00:00'";
+            
+            $args = [$cedula];
+
+            if ($desde !== '') { 
+                $sql .= " AND v.fecha >= ?"; 
+                $args[] = $desde . ' 00:00:00'; 
+            }
+            if ($hasta !== '') { 
+                $sql .= " AND v.fecha <= ?"; 
+                $args[] = $hasta . ' 23:59:59'; 
+            }
+
+            $sql .= " GROUP BY v.numero_orden";
+
+            if ($estado === 'pagadas') {
+                $sql .= " HAVING pagado >= (v.total - 0.005)";
+            }
+            if ($estado === 'pendientes') {
+                $sql .= " HAVING pagado < (v.total - 0.005) AND v.estado NOT IN ('cancelado', 'anulado')";
+            }
+
+            $sql .= " ORDER BY v.fecha DESC";
+
+            $st = $this->db->prepare($sql);
+            $st->execute($args);
+            $compras = $st->fetchAll(PDO::FETCH_OBJ);
+
+            // 3. Consultar productos por orden con variantes completas
+            $sd = $this->db->prepare("SELECT dv.cantidad, dv.precio_unitario, dv.subtotal,
+                                             p.nombre_producto AS producto_nombre, 
+                                             pv.talla, pv.color, pv.modelo
+                                      FROM detalle_ventas dv
+                                      LEFT JOIN productos p ON p.codigo = dv.codigo_producto
+                                      LEFT JOIN producto_variantes pv ON pv.codigo_variante = dv.codigo_variante
+                                                                     AND pv.codigo_producto = dv.codigo_producto
+                                      WHERE dv.numero_orden = ? 
+                                      ORDER BY dv.linea");
+
+            foreach ($compras as $c) { 
+                $sd->execute([$c->numero_orden]); 
+                $c->productos = $sd->fetchAll(PDO::FETCH_OBJ); 
+            }
+
+            return [
+                'titulo'  => 'Historial de compras del cliente',
+                'cliente' => $cliente,
+                'datos'   => $compras
             ];
         }
 

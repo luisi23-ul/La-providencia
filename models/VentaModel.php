@@ -161,12 +161,19 @@ class VentaModel {
         return $stmt->fetch(PDO::FETCH_OBJ);
     }
 
-    public function obtenerDetalles($numero_orden) {
-        $sql = "SELECT dv.*, p.nombre_producto AS producto_nombre, p.nombre_producto 
-                FROM detalle_ventas dv 
-                INNER JOIN productos p ON dv.codigo_producto = p.codigo 
+   public function obtenerDetalles($numero_orden) {
+        $sql = "SELECT dv.*, 
+                       p.nombre_producto, 
+                       pv.talla, 
+                       pv.color, 
+                       pv.modelo
+                FROM detalle_ventas dv
+                LEFT JOIN productos p ON dv.codigo_producto = p.codigo
+                LEFT JOIN producto_variantes pv ON dv.codigo_variante = pv.codigo_variante 
+                                               AND dv.codigo_producto = pv.codigo_producto
                 WHERE dv.numero_orden = ?
                 ORDER BY dv.linea ASC";
+        
         $stmt = $this->db->prepare($sql);
         $stmt->execute([$numero_orden]);
         return $stmt->fetchAll(PDO::FETCH_OBJ);

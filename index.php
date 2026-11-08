@@ -303,6 +303,7 @@ switch ($action) {
     case 'ajustes_inventario':  $adminC->ajustesInventario(); break;
     case 'guardar_ajuste':      $adminC->guardarAjuste(); break;
     case 'kardex':              $adminC->kardex(); break;
+    
 
     // Gráficos y Estadísticas
     case 'seccion_graficos':    $adminC->mostrarEstadisticas(); break;
@@ -342,6 +343,8 @@ switch ($action) {
     case 'cambiar_estado_metodo': $adminC->cambiarEstadoMetodo(); break;
     case 'lista_clientes':       $usuarioC->listarClientes(); break;
     case 'cambiarEstadoCliente': $usuarioC->cambiarEstadoCliente(); break;
+    case 'cliente_detalle':       $usuarioC->detalleCliente();
+        break;
 
     // Reportes de Exportación
     case 'exportar_excel':
