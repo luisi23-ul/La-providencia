@@ -122,17 +122,23 @@ class AdminControllers {
         $pagosPendientes = [];
         $pagosPendientesMonto = 0.0;
         try {
-            $sqlPagosPend = "SELECT p.*, 
-                                    p.numero_pago AS id,
+           $sqlPagosPend = "SELECT p.*,
+                                    COALESCE(c.nombre_razon_social, u.nombre, 'Consumidor Final') AS cliente,
                                     COALESCE(mp.nombre, p.codigo_metodo) AS metodo,
-                                    COALESCE(c.nombre_razon_social, u.nombre, 'Cliente') AS cliente
+                                    (SELECT COALESCE(SUM(IF(UPPER(TRIM(p2.moneda)) = 'USD', p2.monto, p2.monto / NULLIF(p2.tasa_cambio, 0))), 0)
+                                       FROM pagos p2
+                                      WHERE p2.numero_orden = p.numero_orden
+                                        AND p2.estado = 'aprobado'
+                                        AND p2.numero_pago <> p.numero_pago) AS pagado_aprobado
                              FROM pagos p
                              INNER JOIN ventas v ON p.numero_orden = v.numero_orden
                              LEFT JOIN clientes c ON v.cedula_cliente = c.cedula
                              LEFT JOIN usuarios u ON v.cedula_usuario = u.cedula
                              LEFT JOIN metodos_pago mp ON p.codigo_metodo = mp.codigo_metodo
-                             WHERE p.estado = 'pendiente'
+                             WHERE p.estado = 'pendiente' 
+                               AND (mp.requiere_referencia = 1 OR p.codigo_metodo IN ('pago_movil', 'transferencia'))
                              ORDER BY p.fecha_pago DESC";
+
             $stmtPP = $this->db->query($sqlPagosPend);
             $todosPagosPend = $stmtPP ? $stmtPP->fetchAll(PDO::FETCH_OBJ) : [];
             foreach ($todosPagosPend as $p) {

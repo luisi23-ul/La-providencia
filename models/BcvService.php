@@ -115,10 +115,10 @@ class BcvService {
      * Guarda la tasa obtenida del BCV en la base de datos
      */
     public function actualizarTasaBcvEnBD($tasa) {
-        if (!$this->db) return false;
         try {
-            $stmt = $this->db->prepare("UPDATE sistema SET tasa_bcv = ?, fecha_tasa = NOW() WHERE id = 1");
-            return $stmt->execute([$tasa]);
+            // Se quita 'WHERE id = 1' porque la tabla sistema no tiene columna id
+            $stmt = $this->db->prepare("UPDATE sistema SET tasa_bcv = ?, fecha_tasa = NOW() LIMIT 1");
+            return $stmt->execute([(float)$tasa]);
         } catch (Exception $e) {
             return false;
         }
