@@ -3,6 +3,7 @@ $menu = 'ventas';
 $tituloPagina = 'Detalle de venta';
 $detalles = $detalles ?? $productos ?? [];
 $pagos = $pagos ?? [];
+$sinPanel = ($_GET['vista'] ?? '') === 'nota';
 include __DIR__ . '/admin/_abrir.php';
 $estado = $venta->estado ?? '';
 $cancelada = in_array($estado, ['cancelado', 'anulado'], true);
@@ -70,6 +71,10 @@ if (in_array($estado, ['retirado', 'entregado', 'completado'], true)) {
 } elseif ($cancelada) {
     $recorrido[] = ['x', 'Cancelada', '', true];
 }
+if ($sinPanel) {
+    include __DIR__ . '/reportes/_nota_entrega.php';
+    return;
+}
 ?>
 <section class="contenido dv">
   <header class="cab">
@@ -77,6 +82,7 @@ if (in_array($estado, ['retirado', 'entregado', 'completado'], true)) {
     <div class="cab-acc dv-chips">
       <?php if ($chipPago): ?><span class="dv-chip <?= $chipPago[0] ?>"><svg class="i"><use href="#i-<?= $chipPago[1] ?>"/></svg><?= $chipPago[2] ?></span><?php endif; ?>
       <?php if ($chipEstado): ?><span class="dv-chip <?= $chipEstado[0] ?>"><svg class="i"><use href="#i-<?= $chipEstado[1] ?>"/></svg><?= $chipEstado[2] ?></span><?php endif; ?>
+      <a href="index.php?action=detalle_venta&amp;<?= url_clave('venta', $venta) ?>&amp;vista=nota" target="_blank" class="btn btn-sec btn-rep pdf"><svg class="i"><use href="#i-pdf"/></svg>Nota de entrega</a>
     </div>
   </header>
 

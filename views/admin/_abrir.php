@@ -47,6 +47,10 @@ require_once __DIR__ . '/../../models/BcvService.php';
 $bcvService = new BcvService();
 $tasa = $bcvService->obtenerTasaActiva() ?: 875.65;
 $bs = fn($v) => number_format((float) $v * (float) $tasa, 2, ',', '.') . ' Bs';
+if (!empty($sinPanel)) {
+    include __DIR__ . '/../_sistema.php';
+    return;
+}
 
 if (empty($aviso) && !empty($_SESSION['aviso'])) {
     $avisoSesion = $_SESSION['aviso'];
