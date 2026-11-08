@@ -6,13 +6,22 @@ $scripts = ['punto_venta'];
 $productos = $productos ?? [];
 $metodos = $metodos ?? [];
 $clientes = $clientes ?? [];
+$turno = $turno ?? null;
+$arqueo = (object) ($arqueo ?? []);
+$turnoDesde = $turno->fecha_apertura ?? $turno->apertura ?? '';
+$turnoAbierto = !empty($turno) && $turnoDesde !== '';
 include __DIR__ . '/../admin/_abrir.php';
 $categorias = array_values(array_unique(array_filter(array_map(fn($p) => categoria_de($p), $productos))));
 ?>
 <section class="pantalla pv" id="p-punto_venta">
   <header class="pv-top">
-    <div class="pv-caja"><span class="marca-logo">P</span><div><b>Caja · Tienda física</b><span><?= $e($_SESSION['nombre'] ?? '') ?><?= !empty($turno->apertura) ? ', caja abierta desde ' . $e(date('g:i a', strtotime($turno->apertura))) : '' ?></span></div></div>
+    <div class="pv-caja"><span class="marca-logo">P</span><div><b>Caja · Tienda física</b><span><?= $turnoAbierto ? 'Turno abierto por ' . $e($turno->nombre_apertura ?? $_SESSION['nombre'] ?? '') . ', desde ' . $e(date('g:i a', strtotime($turnoDesde))) : 'Sin turno abierto' ?></span></div></div>
     <span class="tasa">Tasa BCV <b><?= number_format($tasa, 2, ',', '.') ?> Bs/$</b></span>
+    <?php if ($turnoAbierto): ?>
+      <button type="button" class="pv-top-btn" data-abrir-modal="modal-turno-cerrar"><svg class="i"><use href="#i-candado"/></svg><span class="txt">Cerrar turno</span></button>
+    <?php else: ?>
+      <button type="button" class="pv-top-btn" data-abrir-modal="modal-turno-abrir"><svg class="i"><use href="#i-caja"/></svg><span class="txt">Iniciar turno</span></button>
+    <?php endif; ?>
     <button type="button" class="pv-top-btn" id="pv-ver-espera"><svg class="i"><use href="#i-recibo"/></svg><span class="txt">En espera</span><span class="cuenta" id="pv-cuenta-espera" hidden>0</span></button>
     <a href="index.php?action=ventas" class="pv-top-btn"><svg class="i"><use href="#i-lista"/></svg><span class="txt">Ventas del día</span></a>
     <a href="index.php?action=dashboard" class="pv-top-btn salir"><svg class="i"><use href="#i-salir"/></svg><span class="txt">Salir de la caja</span></a>
@@ -116,6 +125,44 @@ $categorias = array_values(array_unique(array_filter(array_map(fn($p) => categor
     </footer>
   </form>
 </dialog>
+
+<dialog class="modal chico" id="modal-turno-abrir" aria-labelledby="mta-titulo">
+  <form method="POST" action="index.php?action=abrir_turno">
+    <header class="modal-cab"><span class="modal-ic"><svg class="i"><use href="#i-caja"/></svg></span><div><h3 id="mta-titulo">Iniciar turno</h3><p>Escribe con cuánto efectivo arranca la caja.</p></div><button type="button" class="ic-btn" data-cerrar aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button></header>
+    <div class="modal-cuerpo">
+      <div class="form-grid">
+        <div class="campo"><label for="mta-usd">Fondo en efectivo $</label><input id="mta-usd" name="fondo_usd" type="number" min="0" step="0.01" inputmode="decimal" value="0" required></div>
+        <div class="campo"><label for="mta-bs">Fondo en efectivo Bs</label><input id="mta-bs" name="fondo_bs" type="number" min="0" step="0.01" inputmode="decimal" value="0" required></div>
+      </div>
+      <p class="ayuda">Tasa del turno: <?= number_format($tasa, 2, ',', '.') ?> Bs/$</p>
+      <div class="campo"><label for="mta-nota">Nota (opcional)</label><textarea id="mta-nota" name="nota_apertura" maxlength="255"></textarea></div>
+    </div>
+    <footer class="modal-pie">
+      <button type="button" class="btn btn-sec" data-cerrar>Cancelar</button>
+      <button type="submit" class="btn btn-pri">Iniciar turno</button>
+    </footer>
+  </form>
+</dialog>
+
+<?php if ($turnoAbierto): ?>
+<dialog class="modal chico" id="modal-turno-cerrar" aria-labelledby="mtc-titulo">
+  <form method="POST" action="index.php?action=cerrar_turno">
+    <input type="hidden" name="codigo_turno" value="<?= $e($turno->codigo_turno ?? '') ?>">
+    <header class="modal-cab"><span class="modal-ic"><svg class="i"><use href="#i-candado"/></svg></span><div><h3 id="mtc-titulo">Cerrar turno</h3><p>Cuenta el efectivo de la caja y escríbelo.</p></div><button type="button" class="ic-btn" data-cerrar aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button></header>
+    <div class="modal-cuerpo">
+      <div class="form-grid">
+        <div class="campo"><label for="mtc-usd">Contado en efectivo $</label><input id="mtc-usd" name="contado_usd" type="number" min="0" step="0.01" inputmode="decimal" required><span class="ayuda">Esperado: <?= isset($arqueo->esperado_usd) ? '$' . number_format((float) $arqueo->esperado_usd, 2, ',', '.') : 'sin calcular' ?></span></div>
+        <div class="campo"><label for="mtc-bs">Contado en efectivo Bs</label><input id="mtc-bs" name="contado_bs" type="number" min="0" step="0.01" inputmode="decimal" required><span class="ayuda">Esperado: <?= isset($arqueo->esperado_bs) ? number_format((float) $arqueo->esperado_bs, 2, ',', '.') . ' Bs' : 'sin calcular' ?></span></div>
+      </div>
+      <div class="campo"><label for="mtc-nota">Nota (obligatoria si no cuadra)</label><textarea id="mtc-nota" name="nota_cierre" maxlength="255"></textarea></div>
+    </div>
+    <footer class="modal-pie">
+      <button type="button" class="btn btn-sec" data-cerrar>Cancelar</button>
+      <button type="submit" class="btn btn-pri">Cerrar turno</button>
+    </footer>
+  </form>
+</dialog>
+<?php endif; ?>
 
 <dialog class="modal chico" id="modal-espera" aria-labelledby="mes-titulo">
   <form method="dialog">
