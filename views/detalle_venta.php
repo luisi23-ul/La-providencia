@@ -78,11 +78,14 @@ if ($sinPanel) {
 ?>
 <section class="contenido dv">
   <header class="cab">
-    <div class="cab-txt"><small>Venta, <?= mb_strtolower($origen) === 'tienda online' ? 'online' : 'tienda física' ?></small><div class="titulo-atras"><a href="index.php?action=ventas" class="atras" aria-label="Volver a Ventas"><svg class="i"><use href="#i-volver"/></svg></a><h2><?= $e(numero_doc('venta', $venta)) ?></h2></div><p class="dv-fecha"><?= $e($fechaLarga) ?></p></div>
+    <div class="cab-txt"><small>Venta</small><div class="titulo-atras"><a href="index.php?action=ventas" class="atras" aria-label="Volver a Ventas"><svg class="i"><use href="#i-volver"/></svg></a><h2><?= $e(numero_doc('venta', $venta)) ?></h2><span class="dv-meta"><span class="chip"><svg class="i"><use href="#i-tienda"/></svg><?= $origen ?></span><?php if (!empty($venta->vendedor)): ?><span class="chip"><svg class="i"><use href="#i-usuarios"/></svg>Atendió <?= $e($venta->vendedor) ?></span><?php endif; ?></span></div><p class="dv-fecha"><?= $e($fechaLarga) ?></p></div>
     <div class="cab-acc dv-chips">
       <?php if ($chipPago): ?><span class="dv-chip <?= $chipPago[0] ?>"><svg class="i"><use href="#i-<?= $chipPago[1] ?>"/></svg><?= $chipPago[2] ?></span><?php endif; ?>
       <?php if ($chipEstado): ?><span class="dv-chip <?= $chipEstado[0] ?>"><svg class="i"><use href="#i-<?= $chipEstado[1] ?>"/></svg><?= $chipEstado[2] ?></span><?php endif; ?>
-      <a href="index.php?action=detalle_venta&amp;<?= url_clave('venta', $venta) ?>&amp;vista=nota" target="_blank" class="btn btn-sec btn-rep pdf"><svg class="i"><use href="#i-pdf"/></svg>Nota de entrega</a>
+      <div class="dv-botones">
+        <a href="index.php?action=cliente_detalle&amp;<?= url_valor('cliente', !empty($venta->cedula) ? $venta->cedula : 'SIN_USUARIO') ?>" class="btn btn-sec btn-ir"><svg class="i"><use href="#i-historial"/></svg>Compras del cliente</a>
+        <a href="index.php?action=detalle_venta&amp;<?= url_clave('venta', $venta) ?>&amp;vista=nota" target="_blank" class="btn btn-sec btn-rep pdf"><svg class="i"><use href="#i-pdf"/></svg>Nota de entrega</a>
+      </div>
     </div>
   </header>
 
@@ -148,15 +151,13 @@ if ($sinPanel) {
       <section class="dv-caja" aria-labelledby="dv-cli-t">
         <h3 id="dv-cli-t">Cliente</h3>
         <div class="dv-cliente"><span class="dv-av" aria-hidden="true"><?= $e($iniciales($venta->nombre)) ?></span><b><?= $e($venta->nombre) ?></b><?php if (!empty($venta->correo)): ?><small><?= $e($venta->correo) ?></small><?php endif; ?></div>
+        <?php if (!empty($venta->cedula) && !es_vacio($venta->cedula)): ?>
         <dl class="dv-datos">
-          <?php if (!empty($venta->cedula) && !es_vacio($venta->cedula)): ?>
           <div><dt>Cédula</dt><dd><?= $e($venta->cedula) ?></dd></div>
           <?php if (!empty($venta->telefono)): ?><div><dt>Teléfono</dt><dd><?= $e($venta->telefono) ?></dd></div><?php endif; ?>
           <?php if (!empty($venta->direccion)): ?><div><dt>Dirección</dt><dd><?= $e($venta->direccion) ?></dd></div><?php endif; ?>
-          <?php endif; ?>
-          <div><dt>Origen</dt><dd><?= $origen ?></dd></div>
-          <?php if (!empty($venta->vendedor)): ?><div><dt>Atendió</dt><dd><?= $e($venta->vendedor) ?></dd></div><?php endif; ?>
         </dl>
+        <?php endif; ?>
       </section>
 
       <section class="dv-caja" aria-labelledby="dv-rec-t">

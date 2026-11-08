@@ -28,7 +28,7 @@ $tabs = ['1' => ['Activos', $activos], '0' => ['Desactivados', count($clientes) 
             $nombre = trim(($c->nombre ?? '') . ' ' . ($c->apellido ?? '')) ?: 'Sin nombre';
             $sub = implode(', ', array_filter([$c->cedula ?? '', $c->direccion ?? ''])); ?>
           <tr>
-            <td class="t-tit"><div class="t-nombre"><b><?= $e($nombre) ?></b><?php if ($sub): ?><span><?= $e($sub) ?></span><?php endif; ?><?php if (!empty($c->correo)): ?><span class="si-estrecho"><?= $e($c->correo) ?></span><?php endif; ?></div></td>
+            <td class="t-tit"><div class="t-nombre"><a href="index.php?action=cliente_detalle&amp;<?= url_clave('cliente', $c) ?>" class="enlace cli-nombre"><b><?= $e($nombre) ?></b></a><?php if ($sub): ?><span><?= $e($sub) ?></span><?php endif; ?><?php if (!empty($c->correo)): ?><span class="si-estrecho"><?= $e($c->correo) ?></span><?php endif; ?></div></td>
             <td data-label="Teléfono" class="tel-cli"><?= $e(!empty($c->telefono) ? $c->telefono : 'Sin teléfono') ?></td>
             <td data-label="Correo" class="c-media"><?= $e(!empty($c->correo) ? $c->correo : 'Sin correo') ?></td>
             <td class="num" data-label="Compras"><b><?= (int) ($c->compras ?? 0) ?></b><?php if (!empty($c->total_compras)): ?><br><span class="muted"><?= $usd($c->total_compras) ?></span><?php endif; ?></td>

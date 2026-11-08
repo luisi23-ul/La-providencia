@@ -110,6 +110,53 @@ function paquete_reporte(string $tipo, array $reporte, float $tasa, PDO $db, arr
         return $p;
     }
 
+    if ($tipo === 'cliente') {
+        $cli = (object) ($reporte['cliente'] ?? []);
+        $etiquetas = ['pendiente' => 'Pendiente de pago', 'por_verificar' => 'Por verificar', 'pagado' => 'Pagada, por retirar', 'retirado' => 'Retirada', 'entregado' => 'Retirada', 'completado' => 'Completada', 'cancelado' => 'Anulada', 'anulado' => 'Anulada'];
+        $estadoF = ['pagadas' => 'Solo compras pagadas', 'pendientes' => 'Solo compras con saldo pendiente'][$g('estado')] ?? '';
+        $p['titulo'] = 'Historial de compras del cliente';
+        $p['subtitulo'] = implode(' · ', array_filter([trim((string) ($cli->nombre_razon_social ?? '')), trim((string) ($cli->cedula ?? $g('cedula'))), rp_periodo($desde, $hasta), $estadoF]));
+        $p['columnas'] = [
+            ['texto' => 'Producto', 'ancho' => 36], ['texto' => 'Detalles', 'ancho' => 26], ['texto' => 'Cant.', 'numero' => true, 'decimales' => 0, 'ancho' => 8],
+            ['texto' => 'Precio $', 'numero' => true, 'ancho' => 14], ['texto' => 'Subtotal $', 'numero' => true, 'ancho' => 16],
+        ];
+        $t = 0; $saldo = 0; $n = 0; $conSaldo = 0;
+        foreach ($datos as $c) {
+            $anulada = in_array($c->estado ?? '', ['cancelado', 'anulado'], true);
+            $total = (float) ($c->total ?? 0);
+            $debe = max(0, $total - (float) ($c->pagado ?? 0));
+            $filas = [];
+            foreach ((array) ($c->productos ?? []) as $pr) {
+                $pr = (object) $pr;
+                $det = array_filter([
+                    trim((string) ($pr->talla ?? '')) !== '' ? 'Talla ' . mb_strtoupper(trim((string) $pr->talla)) : '',
+                    trim((string) ($pr->color ?? '')),
+                    trim((string) ($pr->modelo ?? '')),
+                ]);
+                $filas[] = [(string) ($pr->producto_nombre ?? ''), implode(' · ', $det), (int) ($pr->cantidad ?? 0), (float) ($pr->precio_unitario ?? 0), (float) ($pr->subtotal ?? 0)];
+            }
+            $fecha = !empty($c->fecha) ? rp_fecha_larga(date('Y-m-d', strtotime($c->fecha)), false) . ', ' . date('g:i a', strtotime($c->fecha)) : '';
+            $origen = ($c->origen_venta ?? '') === 'online' ? 'Online' : 'Tienda';
+            $nota = $anulada ? 'Anulada, no suma' : ($debe > 0.004 ? 'Debe ' . rp_dinero($debe) : 'Pagada');
+            $p['grupos'][] = [
+                'titulo' => implode(' · ', array_filter([(string) ($c->numero_orden ?? ''), $fecha, $origen, $etiquetas[$c->estado ?? ''] ?? ucfirst((string) ($c->estado ?? ''))])),
+                'filas' => $filas,
+                'subtotal' => ['Total de la compra', $nota, '', '', $total],
+            ];
+            if ($anulada) continue;
+            $n++; $t += $total; $saldo += $debe;
+            if ($debe > 0.004) $conSaldo++;
+        }
+        $p['totales'] = ['Total general', $n . ($n === 1 ? ' compra' : ' compras'), '', '', $t];
+        $p['resumen'] = [
+            ['texto' => 'Compras', 'valor' => (string) $n, 'nota' => 'en el período'],
+            ['texto' => 'Total comprado', 'valor' => rp_dinero($t), 'nota' => rp_bs($t * $tasa)],
+            ['texto' => 'Compra promedio', 'valor' => rp_dinero($n ? $t / $n : 0), 'nota' => rp_bs(($n ? $t / $n : 0) * $tasa)],
+            ['texto' => 'Saldo pendiente', 'valor' => rp_dinero($saldo), 'nota' => $conSaldo ? $conSaldo . ($conSaldo === 1 ? ' compra por cobrar' : ' compras por cobrar') : 'Todo pagado'],
+        ];
+        return $p;
+    }
+
     if ($tipo === 'retiros' || $tipo === 'pendientes') {
         $etiquetas = ['pagado' => 'Por retirar', 'por_retirar' => 'Por retirar', 'retirado' => 'Retirado', 'entregado' => 'Entregado', 'pendiente' => 'Pendiente de pago', 'por_verificar' => 'Por verificar'];
         $p['titulo'] = $tipo === 'retiros' ? 'Reporte de retiros' : 'Reporte de pagos pendientes';

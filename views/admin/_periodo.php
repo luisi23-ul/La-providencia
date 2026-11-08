@@ -10,6 +10,8 @@ $pTodos = [
     '7 días'   => [date('Y-m-d', strtotime('-6 days')), $pHoy],
     '14 días'  => [date('Y-m-d', strtotime('-13 days')), $pHoy],
     'Este mes' => [date('Y-m-01'), $pHoy],
+    'Mes pasado' => [date('Y-m-01', strtotime('first day of last month')), date('Y-m-t', strtotime('first day of last month'))],
+    'Este año' => [date('Y-01-01'), $pHoy],
 ];
 $pNombres = $periodoFiltro['atajos'] ?? ($pModo === 'dia' ? ['Hoy', 'Ayer'] : ['Hoy', 'Ayer', '7 días', 'Este mes']);
 if (!empty($periodoFiltro['todo'])) array_unshift($pNombres, 'Todo');

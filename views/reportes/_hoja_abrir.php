@@ -77,16 +77,31 @@ main > .datos:first-of-type .grupo th, section + .datos .grupo th { padding-top:
 .ficha b { display: block; margin-top: 1mm; font-size: 10.5pt; font-weight: 600; }
 .ficha small { display: block; margin-top: .6mm; font-size: 9pt; line-height: 1.4; color: #4a413a; }
 .bloque { margin: 0 0 2.5mm; font-size: 7.5pt; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: #5b5148; }
-.cuenta { width: 82mm; margin: 4mm 0 7mm auto; border-collapse: collapse; font-variant-numeric: tabular-nums; }
-.cuenta td { padding: 1.6mm 2.5mm; font-size: 9.5pt; }
-.cuenta td + td { text-align: right; white-space: nowrap; }
-.cuenta .tasa td { font-size: 8.5pt; color: #5b5148; }
-.cuenta .grande td { padding-top: 2.6mm; border-top: 2px solid #2a2420; font-size: 11pt; font-weight: 600; }
-.cuenta .grande td:first-child { font-size: 8.5pt; letter-spacing: .08em; text-transform: uppercase; color: #8c4a2f; }
-.cuenta .bs td { padding-top: .4mm; font-size: 10pt; font-weight: 500; }
-.cuenta .saldo td { border-top: 1px solid #cfc2b2; font-weight: 600; }
-.cuenta .saldo.ok td + td { color: #2f6b45; }
-.cuenta .saldo.pend td + td { color: #b42318; }
+.lineas td { padding: 2.6mm 2.5mm; }
+.lineas .c-det { width: 38mm; }
+.lineas .c-cant { width: 13mm; }
+.lineas .c-mon { width: 23mm; }
+.lineas .c-fecha { width: 22mm; }
+.lineas .c-est { width: 23mm; }
+.lineas .prod { font-weight: 500; color: #2a2420; }
+.lineas .det { font-size: 8.5pt; color: #5b5148; }
+.lineas small.det-movil { display: none; }
+.lineas .fecha { white-space: nowrap; }
+.lineas small { display: block; margin-top: .5mm; font-size: 8pt; font-weight: 400; color: #6b6058; }
+.lineas .c-banco { width: 22mm; }
+.lineas th { white-space: nowrap; overflow-wrap: normal; }
+.lineas .c-ref { width: 24mm; }
+.lineas .c-pusd { width: 18mm; }
+.lineas .c-pbs { width: 23mm; }
+.cuenta { width: 104mm; margin: 3mm 0 8mm auto; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.cuenta th, .cuenta td { padding: 1.4mm 2.5mm; font-size: 9.5pt; font-weight: 400; text-align: right; white-space: nowrap; color: #2a2420; }
+.cuenta tbody th { text-align: left; color: #4a413a; white-space: normal; }
+.cuenta thead th { padding-bottom: .6mm; font-size: 7.5pt; font-weight: 600; letter-spacing: .08em; color: #8a7f74; }
+.cuenta .grande th, .cuenta .grande td { padding-top: 2.8mm; border-top: 1.5px solid #2a2420; font-size: 11pt; font-weight: 600; color: #2a2420; }
+.cuenta .grande td { font-size: 12.5pt; }
+.cuenta .saldo th, .cuenta .saldo td { padding-top: 2.4mm; border-top: 1.5px solid #2a2420; font-size: 10.5pt; font-weight: 600; color: #2a2420; }
+.cuenta .saldo.ok td { color: #2f6b45; }
+.cuenta .saldo.pend td { color: #b42318; }
 .est-pago { display: inline-block; padding: .3mm 2mm; border-radius: 3mm; font-size: 8pt; font-weight: 600; background: #f5f0e8; color: #5b5148; }
 .est-pago.ok { background: #e6f1ea; color: #2f6b45; }
 .est-pago.agot { background: #fbe9e7; color: #b42318; }
@@ -100,6 +115,28 @@ main > .datos:first-of-type .grupo th, section + .datos .grupo th { padding-top:
 .pie-dompdf td { padding: 0; }
 .pie-dompdf .pag:after { content: "Página " counter(page) " de " counter(pages); }
 @media screen { body { background: #ede1d3; padding: 24px 16px; } .hoja { background: #fff; padding: 16mm 14mm; box-shadow: 0 18px 40px -24px rgba(110, 70, 45, .45); } }
+@media screen and (max-width: 640px) {
+  body { padding: 0; }
+  .hoja { padding: 20px 16px 28px; box-shadow: none; }
+  .cab td { display: block; width: auto; }
+  .cab-emp { padding: 3mm 0 0 !important; border-left: 0; }
+  .cab-fecha { padding-top: 3mm !important; text-align: left; }
+  .ficha td { display: block; width: auto; border-left: 0; border-top: 1px solid #e3d8ca; }
+  .ficha td:first-child { border-top: 0; }
+  .lineas .c-det, .lineas .c-banco, .lineas .c-ref { width: 0; }
+  .lineas .c-pusd { width: 17mm; }
+  .lineas .c-pbs { width: 22mm; }
+  .lineas .c-fecha { width: 20mm; }
+  .lineas small.det-movil { display: block; }
+  .lineas .det, .lineas th:nth-child(2), .pagos th:nth-child(3) { font-size: 0; padding: 0; }
+  .lineas .c-cant { width: 11mm; }
+  .lineas .c-mon { width: 19mm; }
+  .lineas .c-est { width: 22mm; }
+  .lineas .c-mon2 { width: 22mm; }
+  .lineas td, .lineas th { padding-left: 1.5mm; padding-right: 1.5mm; }
+  .cuenta { width: 100%; }
+  .firmas td { display: block; padding: 0 0 6mm !important; }
+}
 </style>
 </head>
 <body>
