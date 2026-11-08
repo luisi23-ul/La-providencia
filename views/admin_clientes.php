@@ -11,7 +11,7 @@ $tabs = ['1' => ['Activos', $activos], '0' => ['Desactivados', count($clientes) 
 <section class="contenido">
   <header class="cab">
     <div class="cab-txt"><small>Gestión</small><h2>Clientes</h2></div>
-    <div class="cab-acc"><button type="button" class="btn btn-pri" data-abrir-modal="modal-cliente"><svg class="i"><use href="#i-mas"/></svg>Nuevo cliente</button></div>
+    <div class="cab-acc"><?php $exportar = ['tipo' => 'clientes', 'filtros' => ['estado' => $est]]; include __DIR__ . '/admin/_exportar.php'; ?><button type="button" class="btn btn-pri" data-abrir-modal="modal-cliente"><svg class="i"><use href="#i-mas"/></svg>Nuevo cliente</button></div>
   </header>
   <div class="filtros">
     <label class="buscar"><svg class="i"><use href="#i-buscar"/></svg><input type="search" placeholder="Buscar por nombre, cédula o teléfono" aria-label="Buscar cliente" data-filtro-tabla="tabla-cli" data-filtro-vacio="vacio-cli"></label>

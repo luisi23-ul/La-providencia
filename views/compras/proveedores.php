@@ -11,7 +11,7 @@ $tabs = ['1' => ['Activos', $activos], '0' => ['Inactivos', count($proveedores) 
 <section class="contenido">
   <header class="cab">
     <div class="cab-txt"><small>Compras</small><h2>Proveedores</h2></div>
-    <div class="cab-acc"><button type="button" class="btn btn-pri" data-abrir-modal="modal-proveedor"><svg class="i"><use href="#i-mas"/></svg>Nuevo proveedor</button></div>
+    <div class="cab-acc"><?php $exportar = ['tipo' => 'proveedores', 'filtros' => ['estado' => $est]]; include __DIR__ . '/../admin/_exportar.php'; ?><button type="button" class="btn btn-pri" data-abrir-modal="modal-proveedor"><svg class="i"><use href="#i-mas"/></svg>Nuevo proveedor</button></div>
   </header>
   <div class="filtros">
     <label class="buscar"><svg class="i"><use href="#i-buscar"/></svg><input type="search" placeholder="Buscar por RIF, cédula o razón social" aria-label="Buscar proveedor" data-filtro-tabla="tabla-prov" data-filtro-vacio="vacio-prov"></label>
