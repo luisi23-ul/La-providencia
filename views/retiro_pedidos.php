@@ -13,8 +13,7 @@ $numPorRetirar = (int) ($conteoPendientes ?? count($porRetirar));
   <header class="cab">
     <div class="cab-txt"><small>Ventas</small><h2>Retiro de pedidos</h2></div>
     <div class="cab-acc">
-      <a href="index.php?action=exportar_pdf&tipo=retiros" target="_blank" class="btn btn-sec"><svg class="i"><use href="#i-archivo"/></svg>PDF</a>
-      <a href="index.php?action=exportar_excel&tipo=retiros" class="btn btn-sec"><svg class="i"><use href="#i-archivo"/></svg>Excel</a>
+      <?php $exportar = ['tipo' => 'retiros', 'filtros' => ['estado' => $tab]]; include __DIR__ . '/admin/_exportar.php'; ?>
     </div>
   </header>
   <div class="filtros">

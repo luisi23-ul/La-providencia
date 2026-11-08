@@ -29,7 +29,7 @@ $fecha = fn($v) => date('d/m', strtotime($v)) . ' · ' . str_replace(['am', 'pm'
 <section class="contenido">
   <header class="cab">
     <div class="cab-txt"><small>Panel Master</small><h2>Auditoría</h2></div>
-    <div class="cab-acc"><a href="index.php?<?= $e(http_build_query(['action' => 'exportar_auditoria'] + $f)) ?>" class="btn btn-sec"><svg class="i"><use href="#i-archivo"/></svg>Excel</a></div>
+    <div class="cab-acc"><?php $exportar = ['tipo' => 'auditoria', 'filtros' => $f]; include __DIR__ . '/../admin/_exportar.php'; ?></div>
   </header>
 
   <form class="filtros" method="GET" action="index.php" id="filtros-aud" aria-label="Filtros">

@@ -98,8 +98,7 @@ $url = fn($stock) => 'index.php?' . http_build_query(array_filter(['action' => '
   <header class="cab">
     <div class="cab-txt"><small>Inventario</small><h2>Productos</h2></div>
     <div class="cab-acc">
-      <a href="index.php?action=exportar_pdf&tipo=inventario" target="_blank" class="btn btn-sec"><svg class="i"><use href="#i-archivo"/></svg>PDF</a>
-      <a href="index.php?action=exportar_excel&tipo=inventario" class="btn btn-sec"><svg class="i"><use href="#i-archivo"/></svg>Excel</a>
+      <?php $exportar = ['tipo' => 'inventario', 'filtros' => ['stock' => $filtro, 'categoria' => $catSel]]; include __DIR__ . '/admin/_exportar.php'; ?>
       <a href="index.php?action=formulario_producto" class="btn btn-pri"><svg class="i"><use href="#i-mas"/></svg>Nuevo producto</a>
     </div>
   </header>

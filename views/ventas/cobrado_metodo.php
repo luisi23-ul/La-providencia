@@ -18,7 +18,7 @@ foreach ($lista as $v) { $d = date('Y-m-d', strtotime($v->fecha)); $porDia[$d] =
 <section class="contenido">
   <header class="cab">
     <div class="cab-txt"><small>Lo cobrado</small><div class="titulo-atras"><a href="index.php?action=metodos_pago" class="atras" aria-label="Volver a Métodos de pago"><svg class="i"><use href="#i-volver"/></svg></a><h2><?= $e($metodoNombre) ?></h2></div></div>
-    <div class="cab-acc"><a href="index.php?<?= $e(http_build_query(['action' => 'exportar_excel', 'tipo' => 'metodo', 'metodo' => $metodoId, 'desde' => $f['desde'], 'hasta' => $f['hasta']])) ?>" class="btn btn-sec"><svg class="i"><use href="#i-archivo"/></svg>Excel</a></div>
+    <div class="cab-acc"><?php $exportar = ['tipo' => 'metodo', 'filtros' => ['metodo' => $metodoId] + $f]; include __DIR__ . '/../admin/_exportar.php'; ?></div>
   </header>
   <form class="filtros" method="GET" action="index.php" aria-label="Filtros">
     <input type="hidden" name="action" value="ver_reporte">

@@ -150,9 +150,7 @@ $titular = function ($p) {
       <h2>Pagos por banco</h2>
     </div>
     <div class="cab-acc">
-      <a href="index.php?action=exportar_excel&amp;tipo=pagos_banco&amp;<?= $e(http_build_query($f)) ?>" class="btn btn-sec">
-        <svg class="i"><use href="#i-archivo"/></svg>Excel
-      </a>
+      <?php $exportar = ['tipo' => 'pagos_banco', 'filtros' => $f]; include __DIR__ . '/../admin/_exportar.php'; ?>
     </div>
   </header>
 

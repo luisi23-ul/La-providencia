@@ -73,9 +73,7 @@ $barras = function ($id, $titulo, $filas, $vacio, $extra = '') { ?>
   <header class="cab">
     <div class="cab-txt"><small>Gestión</small><h2>Estadísticas</h2></div>
     <div class="cab-acc">
-      <a href="index.php?<?= $e(http_build_query(['action' => 'exportar_pdf', 'tipo' => 'estadisticas', 'desde' => $f['desde'], 'hasta' => $f['hasta']])) ?>" target="_blank" class="btn btn-sec">
-        <svg class="i"><use href="#i-archivo"/></svg>PDF
-      </a>
+      <?php $exportar = ['tipo' => 'estadisticas', 'filtros' => $f]; include __DIR__ . '/admin/_exportar.php'; ?>
     </div>
   </header>
 

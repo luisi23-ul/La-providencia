@@ -37,7 +37,7 @@ $pctOnline = $total > 0 ? (100 - $pctTienda) : 0;
   <header class="cab">
     <div class="cab-txt"><small>Ventas</small><h2>Ventas</h2></div>
     <div class="cab-acc">
-      <a href="index.php?action=exportar_excel&tipo=ventas&<?= http_build_query($f) ?>" class="btn btn-sec"><svg class="i"><use href="#i-archivo"/></svg>Excel</a>
+      <?php $exportar = ['tipo' => 'ventas', 'filtros' => $f]; include __DIR__ . '/../admin/_exportar.php'; ?>
       <a href="index.php?action=punto_venta" class="btn btn-pri"><svg class="i"><use href="#i-pos"/></svg>Nueva venta</a>
     </div>
   </header>

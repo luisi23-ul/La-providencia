@@ -18,8 +18,8 @@ $pastilla = function ($n, $min) {
   <header class="cab">
     <div class="cab-txt"><small>Inventario</small><h2>Movimientos</h2></div>
     <div class="cab-acc">
+      <?php $exportar = ['tipo' => 'kardex', 'filtros' => ['desde' => $f['desde'], 'hasta' => $f['hasta'], 'movimiento' => $f['tipo']]]; include __DIR__ . '/../admin/_exportar.php'; ?>
       <a href="index.php?action=ajustes_inventario" class="btn btn-sec"><svg class="i"><use href="#i-ajuste"/></svg>Nuevo ajuste</a>
-      <a href="index.php?<?= $e(http_build_query(['action' => 'exportar_excel', 'tipo' => 'kardex', 'desde' => $f['desde'], 'hasta' => $f['hasta']])) ?>" class="btn btn-sec"><svg class="i"><use href="#i-archivo"/></svg>Excel</a>
     </div>
   </header>
   <form class="filtros" method="GET" action="index.php" aria-label="Filtros">

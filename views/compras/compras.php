@@ -13,7 +13,7 @@ $url = fn($estado) => 'index.php?' . http_build_query(array_filter(['action' => 
   <header class="cab">
     <div class="cab-txt"><small>Compras</small><h2>Compras</h2></div>
     <div class="cab-acc">
-      <a href="index.php?action=exportar_excel&tipo=compras" class="btn btn-sec"><svg class="i"><use href="#i-archivo"/></svg>Excel</a>
+      <?php $exportar = ['tipo' => 'compras', 'filtros' => $f]; include __DIR__ . '/../admin/_exportar.php'; ?>
       <a href="index.php?action=nueva_compra" class="btn btn-pri"><svg class="i"><use href="#i-mas"/></svg>Registrar compra</a>
     </div>
   </header>
