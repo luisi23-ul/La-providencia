@@ -424,7 +424,7 @@ class VentasController {
         require_once 'views/ventas/ventas.php';
     }
 
-    // =========================================================================
+   // =========================================================================
     // 4. VERIFICACIÓN Y GESTIÓN DE PAGOS
     // =========================================================================
     public function verificarPagos() {
@@ -487,10 +487,28 @@ class VentasController {
         ");
         $conteo = ['pendiente' => (int)$stmtC->fetchColumn()];
 
+        // Obtener tasa actual del sistema
         $tasa = 881.07;
-        $stmtSis = $this->db->query("SELECT tasa_bcv FROM sistema LIMIT 1");
+        $stmtSis = $this->db->query("SELECT tasa_bcv, tasa_manual, tasa_modo FROM sistema LIMIT 1");
         if ($sis = $stmtSis->fetch(PDO::FETCH_OBJ)) {
-            $tasa = (float)($sis->tasa_bcv ?: 881.07);
+            $tasa = ($sis->tasa_modo === 'manual' && (float)$sis->tasa_manual > 0)
+                ? (float)$sis->tasa_manual
+                : (float)($sis->tasa_bcv ?: 881.07);
+        }
+
+        // Determinar pago activo para el panel derecho
+        $ordenSeleccionada = trim((string)($_GET['id'] ?? $_GET['numero_orden'] ?? ''));
+        $pagoActivo = null;
+        if (!empty($ordenSeleccionada)) {
+            foreach ($pagos as $p) {
+                if ($p->numero_orden === $ordenSeleccionada) {
+                    $pagoActivo = $p;
+                    break;
+                }
+            }
+        }
+        if (!$pagoActivo && !empty($pagos)) {
+            $pagoActivo = $pagos[0];
         }
 
         require_once 'views/ventas/verificar_pagos.php';
@@ -509,7 +527,7 @@ class VentasController {
             $stmtV->execute([$numeroOrden]);
             $origen = $stmtV->fetchColumn() ?: 'tienda_fisica';
 
-            if ($origen === 'tienda_fisica') {
+            if ($origen === 'tienda_fisica' || $origen === 'tienda') {
                 $nuevoEstado = 'retirado';
                 $this->db->prepare("
                     UPDATE ventas 
@@ -602,7 +620,7 @@ class VentasController {
                 $stmtMaxLinea->execute([$numeroOrden]);
                 $linea = (int)$stmtMaxLinea->fetchColumn();
 
-                $montoAdicional = 0.0;
+                $montoAdicionalUSD = 0.0;
                 $stmtInsDet = $this->db->prepare("
                     INSERT INTO detalle_ventas (numero_orden, linea, codigo_producto, codigo_variante, cantidad, costo_unitario, precio_unitario, descuento, subtotal)
                     VALUES (?, ?, ?, '', ?, ?, ?, 0.00, ?)
@@ -622,18 +640,28 @@ class VentasController {
                     $precio = (float)($pInfo->precio ?? 0.0);
                     $costo  = (float)($pInfo->costo_compra ?? 0.0);
                     $subt   = round($cant * $precio, 2);
-                    $montoAdicional += $subt;
+                    $montoAdicionalUSD += $subt;
                     $linea++;
 
                     $stmtInsDet->execute([$numeroOrden, $linea, $codProd, $cant, $costo, $precio, $subt]);
                     $stmtDescStock->execute([$cant, $codProd]);
                 }
 
-                if ($montoAdicional > 0) {
+                if ($montoAdicionalUSD > 0) {
+                    // Actualizar total de la venta en dólares
                     $this->db->prepare("UPDATE ventas SET subtotal = subtotal + ?, total = total + ? WHERE numero_orden = ?")
-                             ->execute([$montoAdicional, $montoAdicional, $numeroOrden]);
+                             ->execute([$montoAdicionalUSD, $montoAdicionalUSD, $numeroOrden]);
+
+                    // Consultar moneda y tasa del pago para sumarlo en la moneda correcta
+                    $stmtPagoInfo = $this->db->prepare("SELECT moneda, COALESCE(NULLIF(tasa_cambio, 0), 881.07) AS tasa FROM pagos WHERE numero_orden = ? AND numero_pago = ?");
+                    $stmtPagoInfo->execute([$numeroOrden, $numeroPago]);
+                    $pagoDb = $stmtPagoInfo->fetch(PDO::FETCH_OBJ);
+
+                    $esBs = $pagoDb && (strtoupper(trim($pagoDb->moneda)) === 'BS' || strtoupper(trim($pagoDb->moneda)) === 'VES');
+                    $montoSumar = $esBs ? round($montoAdicionalUSD * (float)$pagoDb->tasa, 2) : $montoAdicionalUSD;
+
                     $this->db->prepare("UPDATE pagos SET monto = monto + ? WHERE numero_orden = ? AND numero_pago = ?")
-                             ->execute([$montoAdicional, $numeroOrden, $numeroPago]);
+                             ->execute([$montoSumar, $numeroOrden, $numeroPago]);
                 }
             }
 
@@ -660,7 +688,6 @@ class VentasController {
         header("Location: index.php?action=verificar_pagos");
         exit();
     }
-
    // =========================================================================
     // 5. PAGOS POR BANCO (CONCILIACIÓN Y REPORTES)
     // =========================================================================

@@ -983,18 +983,21 @@ public function mostrarEstadisticas() {
             require_once 'views/admin/seccion_graficos.php';
         }
     }
-   public function verReporte() {
+  public function verReporte() {
         require_once 'models/MetodoPagoModel.php';
         $metodoModel = new MetodoPagoModel($this->db);
 
-        // Recibir el identificador alfanumérico (ej: efectivo_usd, pago_movil)
-        $idMetodo = trim((string)($_GET['metodo'] ?? 'pago_movil'));
-        $metodo = $metodoModel->obtenerPorId($idMetodo);
+        // Recibir el identificador; si llega '0' o vacío, tomar por defecto 'pago_movil'
+        $idMetodo = trim((string)($_GET['metodo'] ?? ''));
+        if ($idMetodo === '' || $idMetodo === '0') {
+            $idMetodo = 'pago_movil';
+        }
 
+        $metodo = $metodoModel->obtenerPorId($idMetodo);
         $metodoId     = $metodo->codigo_metodo ?? $idMetodo;
         $metodoNombre = $metodo->nombre ?? 'Método de pago';
 
-        // Fechas enviadas por los filtros de la vista
+        // Fechas
         $desde = trim((string)($_GET['desde'] ?? ''));
         $hasta = trim((string)($_GET['hasta'] ?? ''));
         $bancoSel  = trim((string)($_GET['banco'] ?? ''));
@@ -1004,11 +1007,11 @@ public function mostrarEstadisticas() {
         $pagos = $metodoModel->obtenerReportePagos($metodoId, $desde, $hasta, $bancoSel, $estadoSel);
         $ventas = $pagos;
 
-        // Calcular resumen de totales para las tarjetas superiores
+        // Calcular resumen para las tarjetas superiores
         $resumen = $metodoModel->obtenerResumenTotales($metodoId, $desde, $hasta, $bancoSel, $estadoSel);
         $totales = $resumen;
 
-        // Bancos para el filtro desplegable
+        // Bancos para el filtro
         $bancos = $metodoModel->obtenerBancosDisponibles();
 
         // Tasa BCV
