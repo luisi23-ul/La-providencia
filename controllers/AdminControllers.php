@@ -563,7 +563,7 @@ class AdminControllers {
     // MÓDULO DE CATEGORÍAS
     // -------------------------------------------------------------------------
 
-    public function categorias() {
+public function categorias() {
         // 1. Consulta con slug_padre y nombre_padre exactos para que la vista anide las subcategorías
         $sql = "SELECT c.slug, 
                        c.slug AS id,
@@ -599,7 +599,7 @@ class AdminControllers {
         ");
         $categoriasPadre = $stmtPadres->fetchAll(PDO::FETCH_OBJ);
 
-        // 3. Atributos vinculados por slug_categoria (usando las columnas reales de la BD)
+        // 3. Atributos vinculados por slug_categoria
         try {
             $stmtAtr = $this->db->prepare("SELECT codigo_atributo, nombre FROM categoria_atributos WHERE slug_categoria = ?");
             foreach ($categorias as $cat) {
@@ -612,7 +612,7 @@ class AdminControllers {
             }
         }
 
-        // 4. Búsqueda de la vista en todas las rutas posibles del panel
+        // 4. Búsqueda de la vista en las rutas del panel
         $rutas = [
             'views/admin/categorias.php',
             'views/categorias.php',
@@ -774,10 +774,6 @@ class AdminControllers {
         }
     }
 
-    // -------------------------------------------------------------------------
-    // AJUSTES DE STOCK Y KARDEX
-    // -------------------------------------------------------------------------
-
     public function ajustesInventario() {
         $stmtP = $this->db->query("
             SELECT codigo, codigo AS id, nombre_producto, stock, stock_minimo 
@@ -841,7 +837,7 @@ class AdminControllers {
             $stmtP->execute([$codigoProducto]);
             $stockActual = (int)$stmtP->fetchColumn();
 
-            // Operación aritmética correcta de merma o entrada
+            // Operación aritmética de merma (resta) o entrada (suma)
             if ($tipo === 'merma') {
                 $nuevoStock = max(0, $stockActual - $cantidad);
                 $cantKardex = -$cantidad;
