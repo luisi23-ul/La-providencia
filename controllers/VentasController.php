@@ -179,62 +179,54 @@ class VentasController {
         require_once 'views/ventas/punto_venta.php';
     }
 
-    public function abrirTurno() {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            require_once "models/TurnoCajaModel.php";
-            $mTurno = new TurnoCajaModel($this->db);
-
-            $cedula = $_SESSION['usuario']['cedula'] ?? $_SESSION['cedula'] ?? 'V-00000010';
-
-            // Validar que no haya otro turno abierto en el único cajón de dinero
-            $turnoExistente = $mTurno->obtenerTurnoAbierto();
-            if ($turnoExistente) {
-                $_SESSION['aviso'] = [
-                    "Ya existe un turno abierto (Turno #{$turnoExistente->numero_turno}) por el cajero {$turnoExistente->cedula_cajero}. Debe cerrarse antes de abrir uno nuevo.",
-                    'error'
-                ];
-                header("Location: index.php?action=punto_venta");
-                exit;
-            }
-
-            $stSis = $this->db->query("SELECT tasa_bcv, tasa_manual, tasa_modo FROM sistema LIMIT 1");
-            $sis = $stSis ? $stSis->fetch(PDO::FETCH_OBJ) : null;
-            $tasa = ($sis && $sis->tasa_modo === 'manual' && (float)$sis->tasa_manual > 0)
-                ? (float)$sis->tasa_manual
-                : (float)($sis->tasa_bcv ?? 896.12);
-
-            $ok = $mTurno->iniciarTurno([
-                'cedula_cajero' => $cedula,
-                'fondo_usd'     => (float)($_POST['fondo_usd'] ?? 0),
-                'fondo_bs'      => (float)($_POST['fondo_bs'] ?? 0),
-                'tasa_apertura' => $tasa,
-                'nota_apertura' => trim($_POST['nota_apertura'] ?? '')
-            ]);
-
-            $_SESSION['aviso'] = $ok 
-                ? ['Turno iniciado correctamente.', 'ok'] 
-                : ['Error al iniciar el turno.', 'error'];
-        }
-        header("Location: index.php?action=punto_venta");
-        exit;
-    }
-
     public function cerrarTurno() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             require_once "models/TurnoCajaModel.php";
             $mTurno = new TurnoCajaModel($this->db);
 
-            $cedula      = $_SESSION['usuario']['cedula'] ?? $_SESSION['cedula'] ?? 'V-00000010';
-            $numeroTurno = (int)($_POST['codigo_turno'] ?? $_POST['id_turno'] ?? 0);
-            $cierreUsd   = (float)($_POST['contado_usd'] ?? 0);
-            $cierreBs    = (float)($_POST['contado_bs'] ?? 0);
-            $nota        = trim($_POST['nota_cierre'] ?? '');
+            $numeroTurno = (int)($_POST['codigo_turno'] ?? 0);
 
-            if ($mTurno->cerrarTurno($cedula, $numeroTurno, $cierreUsd, $cierreBs, $nota)) {
+            // Sanitizar montos contados en el modal de cierre
+            $rawUsd = str_replace([' ', '$'], '', (string)($_POST['contado_usd'] ?? '0'));
+            if (strpos($rawUsd, ',') !== false && strpos($rawUsd, '.') !== false) {
+                $rawUsd = str_replace('.', '', $rawUsd);
+                $rawUsd = str_replace(',', '.', $rawUsd);
+            } elseif (strpos($rawUsd, ',') !== false) {
+                $rawUsd = str_replace(',', '.', $rawUsd);
+            }
+            $cierreUsd = (float)$rawUsd;
+
+            $rawBs = str_replace([' ', 'Bs', 'bs'], '', (string)($_POST['contado_bs'] ?? '0'));
+            if (strpos($rawBs, ',') !== false && strpos($rawBs, '.') !== false) {
+                $rawBs = str_replace('.', '', $rawBs);
+                $rawBs = str_replace(',', '.', $rawBs);
+            } elseif (strpos($rawBs, ',') !== false) {
+                $rawBs = str_replace(',', '.', $rawBs);
+            }
+            $cierreBs = (float)$rawBs;
+
+            $nota = trim($_POST['nota_cierre'] ?? '');
+
+            // 1. Obtener el turno abierto de la BD ordenando por fecha_apertura y numero_turno
+            $stmtT = $this->db->prepare("SELECT numero_turno, cedula_cajero FROM turnos_caja WHERE estado = 'abierto' ORDER BY fecha_apertura DESC, numero_turno DESC LIMIT 1");
+            $stmtT->execute();
+            $turnoActual = $stmtT->fetch(PDO::FETCH_OBJ);
+
+            if (!$turnoActual || ($numeroTurno > 0 && (int)$turnoActual->numero_turno !== $numeroTurno)) {
+                $_SESSION['aviso'] = ['No se encontró ningún turno abierto coincidente para cerrar.', 'error'];
+                header("Location: index.php?action=punto_venta");
+                exit;
+            }
+
+            $cedulaDuenioTurno = $turnoActual->cedula_cajero;
+            $numTurnoCerrar    = (int)$turnoActual->numero_turno;
+
+            // 2. Ejecutar cierre con la cédula real del turno
+            if ($mTurno->cerrarTurno($cedulaDuenioTurno, $numTurnoCerrar, $cierreUsd, $cierreBs, $nota)) {
                 // Registrar log de auditoría
                 try {
                     $stLog = $this->db->prepare("SELECT COALESCE(MAX(numero_registro), 0) + 1 FROM auditoria_logs WHERE cedula = ?");
-                    $stLog->execute([$cedula]);
+                    $stLog->execute([$cedulaDuenioTurno]);
                     $numReg = (int)$stLog->fetchColumn();
 
                     $stInsLog = $this->db->prepare("
@@ -242,15 +234,14 @@ class VentasController {
                         VALUES (?, ?, 'Caja', 'UPDATE', ?, '127.0.0.1', NOW())
                     ");
                     $stInsLog->execute([
-                        $cedula,
+                        $cedulaDuenioTurno,
                         $numReg,
-                        "Cierre de turno #{$numeroTurno} | USD: {$cierreUsd} | Bs: {$cierreBs}"
+                        "Cierre de turno #{$numTurnoCerrar} | USD: {$cierreUsd} | Bs: {$cierreBs}"
                     ]);
-                } catch (Exception $e) {}
+                } catch (\Throwable $th) {}
 
                 $_SESSION['aviso'] = ['Turno cerrado exitosamente. El arqueo ha quedado registrado.', 'ok'];
-                
-                header("Location: index.php?action=punto_venta&comprobante_turno=" . $numeroTurno . "&cajero=" . urlencode($cedula));
+                header("Location: index.php?action=punto_venta&comprobante_turno=" . $numTurnoCerrar . "&cajero=" . urlencode($cedulaDuenioTurno));
                 exit;
             } else {
                 $_SESSION['aviso'] = ['No se pudo cerrar el turno. Inténtalo de nuevo.', 'error'];
@@ -264,7 +255,7 @@ class VentasController {
     // =========================================================================
     // 2. GUARDAR VENTA EN TIENDA (POS)
     // =========================================================================
-    public function guardarVentaTienda() {
+   public function guardarVentaTienda() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header("Location: index.php?action=punto_venta");
             exit();
@@ -273,11 +264,17 @@ class VentasController {
         try {
             $this->db->beginTransaction();
 
+            // 0. REGLA OBLIGATORIA: Validar que exista un turno abierto antes de permitir cobrar
+            $stmtTurnoCheck = $this->db->query("SELECT numero_turno FROM turnos_caja WHERE estado = 'abierto' LIMIT 1");
+            if (!$stmtTurnoCheck || !$stmtTurnoCheck->fetchColumn()) {
+                throw new Exception("No hay ningún turno de caja abierto. Debe iniciar un turno para poder procesar ventas.");
+            }
+
             $cedulaCliente = trim((string)($_POST['cedula_cliente'] ?? $_POST['id_cliente'] ?? $_POST['id_usuario'] ?? 'SIN_USUARIO'));
             if (empty($cedulaCliente) || $cedulaCliente === '0') {
                 $cedulaCliente = 'SIN_USUARIO';
             }
-            $cedulaCajero = $_SESSION['cedula'] ?? $_SESSION['id_usuario'] ?? 'SIN_USUARIO';
+            $cedulaCajero = $_SESSION['usuario']['cedula'] ?? $_SESSION['cedula'] ?? $_SESSION['id_usuario'] ?? 'SIN_USUARIO';
 
             if (!empty($_POST['nuevo_cliente']) && is_array($_POST['nuevo_cliente'])) {
                 $ncDoc = trim((string)($_POST['nuevo_cliente']['cedula'] ?? ''));
@@ -500,6 +497,19 @@ class VentasController {
 
                 $monedaP = (stripos($metodoId, 'usd') !== false) ? 'USD' : 'Bs';
 
+                // CORRECCIÓN DE VUELTO:
+                // Si el método es en efectivo y hubo vuelto en esa misma moneda,
+                // registrar en la tabla pagos el ingreso neto real para que el arqueo no infle el dinero físico.
+                $montoNetoGuardar = $montoP;
+                if ($vuelto > 0) {
+                    $esVueltoUsd = in_array(strtoupper($vueltoMoneda), ['USD', '$'], true);
+                    if ($monedaP === 'USD' && $esVueltoUsd && stripos($metodoId, 'efectivo') !== false) {
+                        $montoNetoGuardar = max(0, $montoP - $vuelto);
+                    } elseif ($monedaP === 'Bs' && !$esVueltoUsd && stripos($metodoId, 'efectivo') !== false) {
+                        $montoNetoGuardar = max(0, $montoP - $vuelto);
+                    }
+                }
+
                 $stmtP->execute([
                     $numeroOrden,
                     $pIdx + 1,
@@ -508,7 +518,7 @@ class VentasController {
                     $cedulaCajero,
                     $bancoP,
                     $monedaP,
-                    $montoP,
+                    $montoNetoGuardar,
                     $tasaCambio,
                     $refP,
                     $titP,
@@ -524,7 +534,7 @@ class VentasController {
                 $pagosTicket[] = [
                     'metodo'     => $nomMetodo,
                     'moneda'     => $monedaP,
-                    'monto'      => $montoP,
+                    'monto'      => $montoNetoGuardar,
                     'referencia' => $refP
                 ];
             }

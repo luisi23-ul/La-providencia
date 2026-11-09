@@ -509,6 +509,61 @@ return [
         }
 
         exit("Tipo de reporte no válido.");
+
+        if ($tipo === 'cierre') {
+            $fecha = !empty($_GET['fecha']) ? trim($_GET['fecha']) : date('Y-m-d');
+
+            // 1. Turnos de ese día
+            $stmtTurnos = $this->db->prepare("
+                SELECT tc.cedula_cajero,
+                       tc.numero_turno,
+                       CONCAT(COALESCE(u.nombre, ''), ' ', COALESCE(u.apellido, '')) AS cajero,
+                       DATE_FORMAT(tc.fecha_apertura, '%Y-%m-%d %H:%i:%s') AS fecha_apertura,
+                       IF(tc.fecha_cierre IS NOT NULL, DATE_FORMAT(tc.fecha_cierre, '%Y-%m-%d %H:%i:%s'), NULL) AS fecha_cierre,
+                       tc.estado,
+                       COALESCE(tc.fondo_usd, 0) AS fondo_usd,
+                       COALESCE(tc.fondo_bs, 0) AS fondo_bs,
+                       IF(tc.estado = 'cerrado', COALESCE(tc.cierre_usd, 0), 0) AS cierre_usd,
+                       IF(tc.estado = 'cerrado', COALESCE(tc.cierre_bs, 0), 0) AS cierre_bs
+                FROM turnos_caja tc
+                LEFT JOIN usuarios u ON tc.cedula_cajero = u.cedula
+                WHERE DATE(tc.fecha_apertura) = ?
+                ORDER BY tc.fecha_apertura ASC
+            ");
+            $stmtTurnos->execute([$fecha]);
+            $listaTurnos = $stmtTurnos->fetchAll(PDO::FETCH_ASSOC);
+
+            // 2. Pagos de tienda de ese día (incluyendo anuladas con estado 'cancelado')
+            $stmtPagos = $this->db->prepare("
+                SELECT v.numero_orden,
+                       DATE_FORMAT(p.fecha_pago, '%Y-%m-%d %H:%i:%s') AS fecha_pago,
+                       COALESCE(c.nombre_razon_social, u.nombre, 'Consumidor Final') AS cliente,
+                       p.codigo_metodo,
+                       COALESCE(mp.nombre, p.codigo_metodo) AS metodo_nombre,
+                       p.moneda,
+                       p.monto,
+                       p.tasa_cambio,
+                       COALESCE(p.banco, '') AS banco,
+                       COALESCE(p.referencia, '') AS referencia,
+                       v.estado AS estado_venta
+                FROM pagos p
+                INNER JOIN ventas v ON p.numero_orden = v.numero_orden
+                LEFT JOIN metodos_pago mp ON p.codigo_metodo = mp.codigo_metodo
+                LEFT JOIN clientes c ON v.cedula_cliente = c.cedula
+                LEFT JOIN usuarios u ON v.cedula_usuario = u.cedula
+                WHERE DATE(p.fecha_pago) = ?
+                  AND v.origen_venta IN ('tienda', 'tienda_fisica')
+                ORDER BY p.fecha_pago ASC
+            ");
+            $stmtPagos->execute([$fecha]);
+            $listaPagos = $stmtPagos->fetchAll(PDO::FETCH_ASSOC);
+
+            return [
+                'fecha'  => $fecha,
+                'turnos' => $listaTurnos,
+                'datos'  => $listaPagos
+            ];
+        }
     }
 
     // Consultas específicas para el análisis estadístico

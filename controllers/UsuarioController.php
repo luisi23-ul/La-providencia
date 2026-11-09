@@ -398,11 +398,44 @@ class UsuarioController {
     }
 
     public function cerrarSesion() {
-        if (session_status() == PHP_SESSION_NONE) {
+        if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
+
+        // 1. Extraer el rol desde cualquier estructura de sesión existente
+        $rol = strtolower(trim((string)(
+            $_SESSION['usuario']['codigo_rol'] ??
+            $_SESSION['usuario']['rol'] ??
+            $_SESSION['codigo_rol'] ??
+            $_SESSION['rol'] ??
+            $_SESSION['usuario']['id_rol'] ??
+            $_SESSION['id_rol'] ??
+            ''
+        )));
+
+        // 2. Verificar si es personal administrativo / cajero / master
+        $rolesPanel = ['master', 'admin', 'administrador', 'cajero', 'empleado', '1', '2', '3'];
+        $origenPanel = isset($_GET['desde']) && $_GET['desde'] === 'panel';
+        
+        $esPersonalPanel = in_array($rol, $rolesPanel, true) || $origenPanel;
+
+        // 3. Destruir la sesión completamente
+        $_SESSION = [];
+        if (ini_get("session.use_cookies")) {
+            $params = session_get_cookie_params();
+            setcookie(session_name(), '', time() - 42000,
+                $params["path"], $params["domain"],
+                $params["secure"], $params["httponly"]
+            );
+        }
         session_destroy();
-        header("Location: index.php?action=inicio");
+
+        // 4. Redirección según procedencia
+        if ($esPersonalPanel) {
+            header("Location: index.php?action=login");
+        } else {
+            header("Location: index.php?action=inicio");
+        }
         exit();
     }
 }

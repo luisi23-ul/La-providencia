@@ -48,7 +48,8 @@ $acciones_admin = [
     'proveedores', 'guardar_proveedor', 'cambiar_estado_proveedor',
     'compras', 'nueva_compra', 'guardar_compra', 'detalle_compra', 'anular_compra',
     'lista_clientes', 'guardar_cliente', 'cliente_detalle', 'cambiarEstadoCliente',
-    'turnos_caja', 'cierres_caja', 'abrir_turno', 'iniciar_turno', 'cerrar_turno'
+    'turnos_caja', 'cierres_caja', 'abrir_turno', 'iniciar_turno', 'cerrar_turno' , 'cerrar_sesion',
+    'logout'
 ];
 
 // -----------------------------------------------------------------------------
@@ -322,7 +323,7 @@ switch ($action) {
     // Control de Turnos de Caja (Accesible para Master y Admin)
     case 'turnos_caja':
     case 'cierres_caja':
-        $ventaC->listarCierresCaja();
+      $masterC->listarCierresCaja();
         break;
 
     case 'abrir_turno':
@@ -335,6 +336,12 @@ switch ($action) {
         break;
 
     case 'ver_reporte':              $adminC->verReporte(); break;
+
+    // Cierre de sesión unificado
+    case 'cerrar_sesion':
+    case 'logout':
+        $usuarioC->cerrarSesion();
+        break;
 
     // Panel Admin: Compras y Proveedores
     case 'proveedores':              $provC->listar(); break;
