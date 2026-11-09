@@ -79,7 +79,7 @@ function paquete_reporte(string $tipo, array $reporte, float $tasa, PDO $db, arr
             $cat !== '' && $lista ? 'Categoría: ' . ($lista[0]->nombre_categoria ?? $cat) : '',
         ]));
         $p['columnas'] = [
-            ['texto' => 'Código', 'ancho' => 12], ['texto' => 'Producto', 'ancho' => 28], ['texto' => 'Categoría', 'ancho' => 16],
+            ['texto' => 'Código', 'ancho' => 14], ['texto' => 'Producto', 'ancho' => 25], ['texto' => 'Categoría', 'ancho' => 15],
             ['texto' => 'Stock', 'numero' => true, 'decimales' => 0, 'ancho' => 9],
             ['texto' => 'Costo $', 'numero' => true, 'ancho' => 11], ['texto' => 'Precio $', 'numero' => true, 'ancho' => 11],
             ['texto' => 'Valor a costo $', 'numero' => true, 'ancho' => 15],
@@ -378,8 +378,8 @@ function paquete_reporte(string $tipo, array $reporte, float $tasa, PDO $db, arr
         $p['titulo'] = 'Lo cobrado' . ($nombreMetodo !== '' ? ' con ' . $nombreMetodo : ' por método de pago');
         $p['subtitulo'] = rp_periodo($desde, $hasta) . ($g('banco') !== '' ? ' · ' . $g('banco') : '');
         $p['columnas'] = [
-            ['texto' => 'Hora', 'ancho' => 10], ['texto' => 'N.º venta', 'ancho' => 13], ['texto' => 'Cliente', 'ancho' => 20], ['texto' => 'Método', 'ancho' => 14],
-            ['texto' => 'Banco y referencia', 'ancho' => 24], ['texto' => 'Monto', 'numero' => true, 'ancho' => 13], ['texto' => 'Monto Bs', 'numero' => true, 'ancho' => 16],
+            ['texto' => 'N.º venta', 'ancho' => 15], ['texto' => 'Hora', 'ancho' => 9], ['texto' => 'Cliente', 'ancho' => 14], ['texto' => 'Método', 'ancho' => 14],
+            ['texto' => 'Banco y referencia', 'ancho' => 19], ['texto' => 'Monto', 'numero' => true, 'ancho' => 12], ['texto' => 'Monto Bs', 'numero' => true, 'ancho' => 17],
         ];
         $t = 0; $tBs = 0;
         $porDia = rp_agrupar($datos, fn($d) => date('Y-m-d', strtotime($d->fecha)));
@@ -387,7 +387,7 @@ function paquete_reporte(string $tipo, array $reporte, float $tasa, PDO $db, arr
         foreach ($porDia as $dia => $items) {
             $filas = []; $s = 0; $sBs = 0;
             foreach ($items as $d) {
-                $filas[] = [date('g:i a', strtotime($d->fecha)), $d->id ?? '', $d->nombre ?? '', $d->metodo_nombre ?? '', implode(' · ', array_filter([$d->banco ?? '', $d->referencia ?? ''])), (float) $d->total, (float) ($d->total_bs ?? 0)];
+                $filas[] = [$d->id ?? '', date('g:i a', strtotime($d->fecha)), $d->nombre ?? '', $d->metodo_nombre ?? '', implode(' · ', array_filter([$d->banco ?? '', $d->referencia ?? ''])), (float) $d->total, (float) ($d->total_bs ?? 0)];
                 $s += (float) $d->total; $sBs += (float) ($d->total_bs ?? 0);
             }
             $t += $s; $tBs += $sBs;
@@ -435,6 +435,111 @@ function paquete_reporte(string $tipo, array $reporte, float $tasa, PDO $db, arr
             ['texto' => 'Ventas', 'valor' => (string) $ventas, 'nota' => 'promedio ' . rp_dinero($ventas ? $vendido / $ventas : 0)],
             ['texto' => 'Ganancia', 'valor' => rp_dinero($ganancia), 'nota' => 'margen ' . ($vendido > 0 ? round($ganancia / $vendido * 100) : 0) . ' %'],
             ['texto' => 'Tienda / online', 'valor' => ($vendido > 0 ? round($tienda / $vendido * 100) : 0) . ' % / ' . ($vendido > 0 ? 100 - round($tienda / $vendido * 100) : 0) . ' %', 'nota' => 'del total vendido'],
+        ];
+        return $p;
+    }
+
+    if ($tipo === 'clientes') {
+        $est = $g('estado');
+        $p['titulo'] = 'Directorio de clientes';
+        $p['subtitulo'] = $est === '1' || $est === 'activo' ? 'Clientes activos' : ($est === '0' || $est === 'inactivo' ? 'Clientes inactivos' : 'Todos los clientes');
+        $p['columnas'] = [
+            ['texto' => 'Cédula', 'ancho' => 15], ['texto' => 'Nombre', 'ancho' => 22], ['texto' => 'Teléfono', 'ancho' => 15], ['texto' => 'Correo', 'ancho' => 26],
+            ['texto' => 'Compras', 'numero' => true, 'decimales' => 0, 'ancho' => 10], ['texto' => 'Gastado $', 'numero' => true, 'ancho' => 12],
+        ];
+        $correo = fn($c) => str_ends_with((string) $c, '@providencia.local') ? '' : (string) $c;
+        $n = 0; $gas = 0; $top = null;
+        $porEstado = rp_agrupar($datos, fn($d) => (string) ($d->estado_nombre ?? 'Activo'));
+        ksort($porEstado);
+        foreach ($porEstado as $estado => $items) {
+            usort($items, fn($a, $b) => strcasecmp((string) $a->nombre, (string) $b->nombre));
+            $filas = []; $sc = 0; $sg = 0;
+            foreach ($items as $d) {
+                $cedula = in_array($d->cedula ?? '', ['SIN_USUARIO', 'raiz'], true) ? '' : (string) $d->cedula;
+                $filas[] = [$cedula, (string) ($d->nombre ?? ''), (string) ($d->telefono ?? ''), $correo($d->correo ?? ''), (int) ($d->total_compras ?? 0), (float) ($d->total_gastado ?? 0)];
+                $sc += (int) ($d->total_compras ?? 0);
+                $sg += (float) ($d->total_gastado ?? 0);
+                if ($cedula !== '' && (!$top || (float) $d->total_gastado > (float) $top->total_gastado)) $top = $d;
+            }
+            $n += $sc;
+            $gas += $sg;
+            $p['grupos'][] = ['titulo' => $estado . 's · ' . count($items) . (count($items) === 1 ? ' cliente' : ' clientes'), 'filas' => $filas, 'subtotal' => ['Subtotal', '', '', '', $sc, $sg]];
+        }
+        $p['totales'] = ['Total general', '', '', '', $n, $gas];
+        $p['resumen'] = [
+            ['texto' => 'Clientes', 'valor' => (string) count($datos), 'nota' => count($porEstado['Activo'] ?? []) . ' activos'],
+            ['texto' => 'Compras', 'valor' => (string) $n, 'nota' => 'promedio ' . rp_dinero($n ? $gas / $n : 0)],
+            ['texto' => 'Total gastado', 'valor' => rp_dinero($gas), 'nota' => rp_bs($gas * $tasa)],
+            ['texto' => 'Mejor cliente', 'valor' => $top ? (string) $top->nombre : 'Sin compras', 'nota' => $top ? rp_dinero($top->total_gastado) : ''],
+        ];
+        return $p;
+    }
+
+    if ($tipo === 'proveedores') {
+        $est = $g('estado');
+        $p['titulo'] = 'Directorio de proveedores';
+        $p['subtitulo'] = $est === '1' || $est === 'activo' ? 'Proveedores activos' : ($est === '0' || $est === 'inactivo' ? 'Proveedores inactivos' : 'Todos los proveedores');
+        $p['columnas'] = [
+            ['texto' => 'RIF / Cédula', 'ancho' => 16], ['texto' => 'Razón social', 'ancho' => 24], ['texto' => 'Teléfono', 'ancho' => 17], ['texto' => 'Correo', 'ancho' => 31],
+            ['texto' => 'Compras', 'numero' => true, 'decimales' => 0, 'ancho' => 12],
+        ];
+        $n = 0; $conCompras = 0;
+        $porEstado = rp_agrupar($datos, fn($d) => (string) ($d->estado ?? 'Activo'));
+        ksort($porEstado);
+        foreach ($porEstado as $estado => $items) {
+            usort($items, fn($a, $b) => strcasecmp((string) $a->razon_social, (string) $b->razon_social));
+            $filas = []; $sc = 0;
+            foreach ($items as $d) {
+                $filas[] = [(string) ($d->rif_cedula ?? $d->rif ?? ''), (string) ($d->razon_social ?? ''), (string) ($d->telefono ?? ''), (string) ($d->correo ?? ''), (int) ($d->compras ?? 0)];
+                $sc += (int) ($d->compras ?? 0);
+                if ((int) ($d->compras ?? 0) > 0) $conCompras++;
+            }
+            $n += $sc;
+            $p['grupos'][] = ['titulo' => $estado . 's · ' . count($items) . (count($items) === 1 ? ' proveedor' : ' proveedores'), 'filas' => $filas, 'subtotal' => ['Subtotal', '', '', '', $sc]];
+        }
+        $p['totales'] = ['Total general', '', '', '', $n];
+        $p['resumen'] = [
+            ['texto' => 'Proveedores', 'valor' => (string) count($datos), 'nota' => count($porEstado['Activo'] ?? []) . ' activos'],
+            ['texto' => 'Con compras', 'valor' => (string) $conCompras, 'nota' => 'de ' . count($datos)],
+            ['texto' => 'Compras', 'valor' => (string) $n, 'nota' => 'registradas'],
+        ];
+        return $p;
+    }
+
+    if ($tipo === 'compras') {
+        $p['titulo'] = 'Reporte de compras';
+        $p['subtitulo'] = rp_periodo($desde, $hasta);
+        $p['columnas'] = [
+            ['texto' => 'Factura', 'ancho' => 14], ['texto' => 'Proveedor', 'ancho' => 26], ['texto' => 'Artículos', 'numero' => true, 'decimales' => 0, 'ancho' => 11],
+            ['texto' => 'Estado', 'ancho' => 13], ['texto' => 'Total $', 'numero' => true, 'ancho' => 13], ['texto' => 'Total Bs', 'numero' => true, 'ancho' => 17],
+        ];
+        $dia = function ($d) {
+            $f = DateTime::createFromFormat('d/m/Y', (string) $d->fecha);
+            return $f ? $f->format('Y-m-d') : date('Y-m-d', strtotime((string) $d->fecha));
+        };
+        $anulada = fn($d) => stripos((string) ($d->estado ?? ''), 'anul') !== false;
+        $t = 0; $tb = 0; $uds = 0; $nAnul = 0;
+        $porDia = rp_agrupar($datos, $dia);
+        krsort($porDia);
+        foreach ($porDia as $fecha => $items) {
+            $filas = []; $s = 0; $sb = 0;
+            foreach ($items as $d) {
+                $u = (int) preg_replace('/\D/', '', (string) ($d->articulos ?? '0'));
+                $filas[] = [(string) ($d->numero_factura ?? ''), (string) ($d->proveedor ?? ''), $u, (string) ($d->estado ?? ''), (float) $d->total, (float) ($d->total_bs ?? 0)];
+                if ($anulada($d)) { $nAnul++; continue; }
+                $s += (float) $d->total;
+                $sb += (float) ($d->total_bs ?? 0);
+                $uds += $u;
+            }
+            $t += $s;
+            $tb += $sb;
+            $p['grupos'][] = ['titulo' => rp_fecha_larga($fecha) . ' · ' . count($items) . (count($items) === 1 ? ' compra' : ' compras'), 'filas' => $filas, 'subtotal' => ['Subtotal del día', '', '', '', $s, $sb]];
+        }
+        $p['totales'] = ['Total general', '', '', '', $t, $tb];
+        $p['resumen'] = [
+            ['texto' => 'Compras', 'valor' => (string) count($datos), 'nota' => $nAnul ? $nAnul . ($nAnul === 1 ? ' anulada, no suma' : ' anuladas, no suman') : 'en ' . count($porDia) . (count($porDia) === 1 ? ' día' : ' días')],
+            ['texto' => 'Total comprado', 'valor' => rp_dinero($t), 'nota' => rp_bs($tb)],
+            ['texto' => 'Artículos', 'valor' => (string) $uds, 'nota' => 'unidades recibidas'],
         ];
         return $p;
     }

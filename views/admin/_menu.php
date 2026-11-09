@@ -33,6 +33,7 @@ $grupos = $panelMaster ? [
         ['lista_clientes', 'Clientes', 'clientes', 'usuarios'],
         ['metodos_pago', 'Métodos de pago', 'metodos_pago', 'tarjeta'],
         ['seccion_graficos', 'Estadísticas', 'graficos', 'grafico'],
+        ['reportes', 'Reportes', 'graficos', 'reportes'],
     ]],
 ];
 $contadores = $contadores ?? [];

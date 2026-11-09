@@ -38,7 +38,7 @@ $acciones_master = [
 $acciones_admin = [
     'dashboard', 'admin', 'listado_productos', 'formulario_producto', 
     'guardar_producto', 'editar', 'actualizar_producto', 'eliminar_producto',
-    'seccion_graficos', 'grafico_barras', 'grafico_tortas',
+    'seccion_graficos', 'grafico_barras', 'grafico_tortas', 'reportes',
     'metodos_pago', 'guardar_metodo_pago', 'cambiar_estado_metodo',
     'punto_venta', 'guardar_venta_tienda', 'ventas', 'verificar_pagos', 
     'editar_pago_verificacion', 'aprobar_pago', 'rechazar_pago', 'deshacer_pago', 
@@ -303,6 +303,7 @@ switch ($action) {
     case 'seccion_graficos':    $adminC->mostrarEstadisticas(); break;
     case 'grafico_barras':      $adminC->grafico_barras(); break;
     case 'grafico_tortas':      $adminC->grafico_torta(); break;
+    case 'reportes':            include 'views/admin/reportes.php'; break;
 
     // Panel Admin: Ventas, POS y Pagos
     case 'punto_venta':              $ventaC->puntoVenta(); break;

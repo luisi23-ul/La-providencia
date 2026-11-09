@@ -1289,6 +1289,19 @@ body:has(.panel.modo-pos) .avisos { top: 76px; }
 .f-quitar { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 12px; border-radius: 10px; color: var(--texto-2); font-size: 14.5px; font-weight: 600; text-decoration: none; transition: background-color 150ms ease, color 150ms ease; }
 .f-quitar:hover { background: var(--fondo); color: var(--texto); }
 .f-quitar svg.i { width: 16px; height: 16px; }
+.rp-periodo { margin: 0 4px 0 auto; font-size: 14.5px; color: var(--texto-2); }
+.rp-periodo b { font-weight: 600; color: var(--texto); }
+.panel .rp-tabla tbody th { padding: 10px 16px; text-align: left; background: var(--marca-tenue); font-size: 13px; letter-spacing: .06em; text-transform: uppercase; font-weight: 700; color: var(--texto-2); }
+.rp-tabla td.t-tit b { font-weight: 600; }
+.rp-hoy { display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 999px; background: var(--fondo); font-size: 12.5px; font-weight: 600; color: var(--texto-3); white-space: nowrap; }
+.rp-tabla .acc { flex-wrap: nowrap; }
+@container tabla (max-width: 760px) {
+  .rp-tabla tbody th { display: block; }
+  .rp-tabla td.rp-que { display: block; text-align: left; color: var(--texto-2); }
+  .rp-tabla td.rp-que::before { content: none; }
+  .rp-tabla td.t-acc .acc { width: 100%; }
+  .rp-tabla td.t-acc .btn-rep { flex: 1; justify-content: center; min-height: 44px; }
+}
 
 .f-rango { position: relative; }
 .f-pop { position: absolute; top: calc(100% + 12px); left: 0; z-index: 30; width: 340px; padding: 16px; display: grid; gap: 14px; background: var(--tarjeta); border: 1px solid var(--linea); border-radius: 16px; box-shadow: 0 22px 44px -20px rgba(16, 58, 43, .4); transition: opacity 180ms var(--ease-out), transform 180ms var(--ease-out); }

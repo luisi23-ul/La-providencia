@@ -1,0 +1,78 @@
+<?php
+$menu = 'reportes';
+$tituloPagina = 'Reportes';
+include __DIR__ . '/_abrir.php';
+
+$periodo = ['desde' => $_GET['desde'] ?? date('Y-m-01'), 'hasta' => $_GET['hasta'] ?? date('Y-m-d')];
+$diaCierre = $periodo['hasta'] !== '' ? $periodo['hasta'] : date('Y-m-d');
+$meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+$diaCorto = function ($f) use ($meses) {
+    $t = strtotime($f);
+    if (!$t) return $f;
+    return date('j', $t) . ' ' . $meses[date('n', $t) - 1] . (date('Y', $t) !== date('Y') ? ' ' . date('Y', $t) : '');
+};
+$secciones = [
+    'Ventas' => [
+        ['Ventas', 'Cada venta con su cliente, estado, origen y total', 'ventas', $periodo],
+        ['Cobrado por método', 'Lo cobrado en el periodo, agrupado por método de pago', 'metodo', $periodo],
+        ['Pagos del banco', 'Transferencias y pagos móviles recibidos', 'pagos_banco', $periodo],
+        ['Pagos pendientes', 'Ventas que aún no se han pagado', 'pendientes', null],
+        ['Pedidos por retirar', 'Pedidos pagados que esperan su retiro', 'retiros', null],
+    ],
+    'Caja' => [
+        ['Cierres de caja', 'Los turnos cerrados con su fondo y lo contado', 'cierre_caja', $periodo],
+        ['Cierre del día', 'Arqueo de todos los turnos de un día', 'cierre', ['fecha' => $diaCierre]],
+    ],
+    'Inventario' => [
+        ['Inventario', 'Productos con su stock y precio actuales', 'inventario', null],
+        ['Movimientos', 'Entradas y salidas de stock (kardex)', 'kardex', $periodo],
+    ],
+    'Compras' => [
+        ['Compras', 'Facturas de compra con proveedor y total', 'compras', $periodo],
+        ['Proveedores', 'Lista de proveedores con sus datos de contacto', 'proveedores', null],
+    ],
+    'Gestión' => [
+        ['Clientes', 'Clientes registrados con sus compras', 'clientes', null],
+        ['Estadísticas', 'Ventas por día y productos más vendidos', 'estadisticas', $periodo],
+    ],
+];
+if (es_rol('master', $rol)) $secciones['Gestión'][] = ['Auditoría', 'Cambios hechos en el sistema y quién los hizo', 'auditoria', $periodo];
+?>
+<section class="contenido">
+  <header class="cab">
+    <div class="cab-txt"><small>Gestión</small><h2>Reportes</h2></div>
+  </header>
+
+  <form class="filtros" method="GET" action="index.php" aria-label="Periodo de los reportes">
+    <input type="hidden" name="action" value="reportes">
+    <?php $periodoFiltro = ['modo' => 'rango', 'defecto' => 'Este mes', 'atajos' => ['Hoy', 'Ayer', '7 días', 'Este mes', 'Mes pasado']]; include __DIR__ . '/_periodo.php'; ?>
+    <p class="rp-periodo">Los reportes se descargan <?php if ($periodo['desde'] === $periodo['hasta']): ?>del <b><?= $e($diaCorto($periodo['desde'])) ?></b><?php else: ?>del <b><?= $e($diaCorto($periodo['desde'])) ?></b> al <b><?= $e($diaCorto($periodo['hasta'])) ?></b><?php endif; ?></p>
+  </form>
+
+  <section class="tabla-caja" aria-label="Reportes disponibles">
+    <div class="tabla-scroll">
+      <table class="tabla-resp rp-tabla">
+        <thead>
+          <tr>
+            <th>Reporte</th>
+            <th>Qué incluye</th>
+            <th class="num">Descargar</th>
+          </tr>
+        </thead>
+        <?php foreach ($secciones as $seccion => $reportes): ?>
+        <tbody>
+          <tr><th scope="rowgroup" colspan="3"><?= $e($seccion) ?></th></tr>
+          <?php foreach ($reportes as [$nombre, $incluye, $tipo, $filtros]): ?>
+          <tr>
+            <td class="t-tit" data-label="Reporte"><b><?= $e($nombre) ?></b><?php if ($filtros === null): ?><span class="rp-hoy">Al día de hoy</span><?php endif; ?></td>
+            <td class="rp-que" data-label="Qué incluye"><?= $e($incluye) ?></td>
+            <td class="t-acc"><div class="acc"><?php $exportar = ['tipo' => $tipo, 'filtros' => $filtros ?? []]; include __DIR__ . '/_exportar.php'; ?></div></td>
+          </tr>
+          <?php endforeach; ?>
+        </tbody>
+        <?php endforeach; ?>
+      </table>
+    </div>
+  </section>
+</section>
+<?php include __DIR__ . '/_cerrar.php'; ?>
