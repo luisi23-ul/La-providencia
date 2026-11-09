@@ -178,7 +178,64 @@ class VentasController {
 
         require_once 'views/ventas/punto_venta.php';
     }
+public function abrirTurno() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            require_once "models/TurnoCajaModel.php";
+            $mTurno = new TurnoCajaModel($this->db);
 
+            $cedula = $_SESSION['usuario']['cedula'] ?? $_SESSION['cedula'] ?? 'V-00000010';
+
+            // Validar que no haya otro turno abierto en el único cajón de dinero
+            $turnoExistente = $mTurno->obtenerTurnoAbierto();
+            if ($turnoExistente) {
+                $_SESSION['aviso'] = [
+                    "Ya existe un turno abierto (Turno #{$turnoExistente->numero_turno}) por el cajero {$turnoExistente->cedula_cajero}. Debe cerrarse antes de abrir uno nuevo.",
+                    'error'
+                ];
+                header("Location: index.php?action=punto_venta");
+                exit;
+            }
+
+            $stSis = $this->db->query("SELECT tasa_bcv, tasa_manual, tasa_modo FROM sistema LIMIT 1");
+            $sis = $stSis ? $stSis->fetch(PDO::FETCH_OBJ) : null;
+            $tasa = ($sis && $sis->tasa_modo === 'manual' && (float)$sis->tasa_manual > 0)
+                ? (float)$sis->tasa_manual
+                : (float)($sis->tasa_bcv ?? 896.12);
+
+            // Sanitizar formatos con separadores de miles para que "1.000" no se guarde como 1.00
+            $rawUsd = str_replace([' ', '$'], '', (string)($_POST['fondo_usd'] ?? '0'));
+            if (strpos($rawUsd, ',') !== false && strpos($rawUsd, '.') !== false) {
+                $rawUsd = str_replace('.', '', $rawUsd);
+                $rawUsd = str_replace(',', '.', $rawUsd);
+            } elseif (strpos($rawUsd, ',') !== false) {
+                $rawUsd = str_replace(',', '.', $rawUsd);
+            }
+            $fondoUsd = (float)$rawUsd;
+
+            $rawBs = str_replace([' ', 'Bs', 'bs'], '', (string)($_POST['fondo_bs'] ?? '0'));
+            if (strpos($rawBs, ',') !== false && strpos($rawBs, '.') !== false) {
+                $rawBs = str_replace('.', '', $rawBs);
+                $rawBs = str_replace(',', '.', $rawBs);
+            } elseif (strpos($rawBs, ',') !== false) {
+                $rawBs = str_replace(',', '.', $rawBs);
+            }
+            $fondoBs = (float)$rawBs;
+
+            $ok = $mTurno->iniciarTurno([
+                'cedula_cajero' => $cedula,
+                'fondo_usd'     => $fondoUsd,
+                'fondo_bs'      => $fondoBs,
+                'tasa_apertura' => $tasa,
+                'nota_apertura' => trim($_POST['nota_apertura'] ?? '')
+            ]);
+
+            $_SESSION['aviso'] = $ok 
+                ? ['Turno iniciado correctamente.', 'ok'] 
+                : ['Error al iniciar el turno.', 'error'];
+        }
+        header("Location: index.php?action=punto_venta");
+        exit;
+    }
     public function cerrarTurno() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             require_once "models/TurnoCajaModel.php";
