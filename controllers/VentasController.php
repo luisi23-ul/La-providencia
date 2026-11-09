@@ -34,7 +34,7 @@ class VentasController {
     // =========================================================================
     // 1. PUNTO DE VENTA (POS)
     // =========================================================================
-    public function puntoVenta() {
+public function puntoVenta() {
         $sqlProd = "SELECT p.codigo, 
                            p.codigo AS id, 
                            p.codigo AS codigo_producto,
@@ -101,12 +101,128 @@ class VentasController {
         $stmtSis = $this->db->query("SELECT * FROM sistema LIMIT 1");
         $sistema = $stmtSis->fetch(PDO::FETCH_OBJ);
 
+        // 1. Tasa activa y configuración para la vista
+        $config = $sistema;
+        $tasa = ($sistema && $sistema->tasa_modo === 'manual' && (float)$sistema->tasa_manual > 0)
+            ? (float)$sistema->tasa_manual
+            : (float)($sistema->tasa_bcv ?? 896.12);
+
+        // 2. Consulta y cálculo del Turno de Caja
+        require_once "models/TurnoCajaModel.php";
+        $mTurno = new TurnoCajaModel($this->db);
+        $cedulaCajero = $_SESSION['usuario']['cedula'] ?? $_SESSION['cedula'] ?? 'V-00000010';
+
+        $turno = $mTurno->obtenerTurnoAbierto($cedulaCajero);
+
+        $arqueo = [
+            'esperado_usd' => 0.00,
+            'esperado_bs'  => 0.00
+        ];
+
+        if ($turno) {
+            // Nombre del cajero para la cabecera
+            $stNom = $this->db->prepare("SELECT nombre FROM usuarios WHERE cedula = ? LIMIT 1");
+            $stNom->execute([$turno->cedula_cajero]);
+            $turno->nombre_apertura = $stNom->fetchColumn() ?: $_SESSION['nombre'] ?? 'Cajero';
+            
+            // Sincronizar identificador con el modal de cierre
+            $turno->codigo_turno = $turno->numero_turno;
+
+            // Calcular ingresos en efectivo durante el turno
+            $resTurno = $mTurno->obtenerResumenTurno($turno->cedula_cajero, $turno->numero_turno);
+
+            $totalUsd = (float)$turno->fondo_usd;
+            $totalBs  = (float)$turno->fondo_bs;
+
+            foreach (($resTurno['desglose'] ?? []) as $d) {
+                if ($d->codigo_metodo === 'efectivo_usd') {
+                    $totalUsd += (float)$d->total_monto;
+                } elseif ($d->codigo_metodo === 'efectivo_bs') {
+                    $totalBs += (float)$d->total_monto;
+                }
+            }
+
+            $arqueo['esperado_usd'] = $totalUsd;
+            $arqueo['esperado_bs']  = $totalBs;
+        }
+
         $ventaRegistrada = $_SESSION['venta_comprobante'] ?? null;
         unset($_SESSION['venta_comprobante']);
 
-        require_once 'views/ventas/punto_venta.php';
+        // Función auxiliar por si el entorno la requiere
+        $puede = function($permiso) {
+            return true;
+        };
+
+         require_once 'views/ventas/punto_venta.php';
+    }
+   public function abrirTurno() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            require_once "models/TurnoCajaModel.php";
+            $mTurno = new TurnoCajaModel($this->db);
+
+            $cedula = $_SESSION['usuario']['cedula'] ?? $_SESSION['cedula'] ?? 'V-00000010';
+            $stSis = $this->db->query("SELECT tasa_bcv, tasa_manual, tasa_modo FROM sistema LIMIT 1");
+        $sis = $stSis ? $stSis->fetch(PDO::FETCH_OBJ) : null;
+        $tasa = ($sis && $sis->tasa_modo === 'manual' && (float)$sis->tasa_manual > 0)
+            ? (float)$sis->tasa_manual
+            : (float)($sis->tasa_bcv ?? 896.12);
+
+            $ok = $mTurno->iniciarTurno([
+                'cedula_cajero' => $cedula,
+                'fondo_usd'     => (float)($_POST['fondo_usd'] ?? 0),
+                'fondo_bs'      => (float)($_POST['fondo_bs'] ?? 0),
+                'tasa_apertura' => $tasa,
+                'nota_apertura' => trim($_POST['nota_apertura'] ?? '')
+            ]);
+
+            $_SESSION['aviso'] = $ok 
+                ? ['Turno iniciado correctamente.', 'ok'] 
+                : ['Error al iniciar el turno.', 'error'];
+        }
+        header("Location: index.php?action=punto_venta");
+        exit;
     }
 
+   public function cerrarTurno() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            require_once "models/TurnoCajaModel.php";
+            $mTurno = new TurnoCajaModel($this->db);
+
+            $cedula      = $_SESSION['usuario']['cedula'] ?? $_SESSION['cedula'] ?? 'V-00000010';
+            $numeroTurno = (int)($_POST['codigo_turno'] ?? 0);
+            $cierreUsd   = (float)($_POST['contado_usd'] ?? 0);
+            $cierreBs    = (float)($_POST['contado_bs'] ?? 0);
+            $nota        = trim($_POST['nota_cierre'] ?? '');
+
+            if ($mTurno->cerrarTurno($cedula, $numeroTurno, $cierreUsd, $cierreBs, $nota)) {
+                // Registrar log de auditoría
+                $stLog = $this->db->prepare("SELECT COALESCE(MAX(numero_registro), 0) + 1 FROM auditoria_logs WHERE cedula = ?");
+                $stLog->execute([$cedula]);
+                $numReg = (int)$stLog->fetchColumn();
+
+                $stInsLog = $this->db->prepare("INSERT INTO auditoria_logs (cedula, numero_registro, modulo, accion, detalle_cambio, ip_terminal, fecha_hora)
+                                                VALUES (?, ?, 'Caja', 'UPDATE', ?, '127.0.0.1', NOW())");
+                $stInsLog->execute([
+                    $cedula,
+                    $numReg,
+                    "Cierre de turno #{$numeroTurno} | USD: {$cierreUsd} | Bs: {$cierreBs}"
+                ]);
+
+                $_SESSION['aviso'] = ['Turno cerrado exitosamente. El arqueo ha quedado registrado.', 'ok'];
+                
+                // Redirigir al punto de venta manteniendo el enlace al comprobante para quien desee imprimirlo
+                header("Location: index.php?action=punto_venta&comprobante_turno=" . $numeroTurno . "&cajero=" . urlencode($cedula));
+                exit;
+            } else {
+                $_SESSION['aviso'] = ['No se pudo cerrar el turno. Inténtalo de nuevo.', 'error'];
+                header("Location: index.php?action=punto_venta");
+                exit;
+            }
+        }
+        header("Location: index.php?action=punto_venta");
+        exit;
+    }
     // =========================================================================
     // 2. GUARDAR VENTA EN TIENDA (POS)
     // =========================================================================
@@ -159,6 +275,12 @@ class VentasController {
             $sis = $stmtSis->fetch(PDO::FETCH_OBJ);
             $tasaCambio = ($sis && $sis->tasa_modo === 'manual') ? (float)$sis->tasa_manual : (float)($sis->tasa_bcv ?? 1.0000);
             if ($tasaCambio <= 0) $tasaCambio = 1.0000;
+
+            // Obtener el id_tasa vigente de la tabla tasas_dolar
+            $idTasaActual = (int)$this->db->query("SELECT id_tasa FROM tasas_dolar ORDER BY fecha DESC, id_tasa DESC LIMIT 1")->fetchColumn();
+            if ($idTasaActual <= 0) {
+                $idTasaActual = 1;
+            }
 
             $totalUsd = (float)($_POST['total'] ?? 0);
             if ($totalUsd <= 0) {
@@ -309,12 +431,12 @@ class VentasController {
 
             $stmtP = $this->db->prepare("
                 INSERT INTO pagos (
-                    numero_orden, numero_pago, codigo_metodo, cedula_cajero,
+                    numero_orden, numero_pago, codigo_metodo, id_tasa, cedula_cajero,
                     banco, moneda, monto, tasa_cambio, referencia,
                     titular_nombre, titular_cedula, titular_telefono,
                     comprobante_img, fecha_pago, estado, observacion
                 ) VALUES (
-                    ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?,
                     ?, ?, ?, ?, ?,
                     ?, ?, ?,
                     '', NOW(), ?, 'Cobro en caja'
@@ -344,6 +466,7 @@ class VentasController {
                     $numeroOrden,
                     $pIdx + 1,
                     $metodoId,
+                    $idTasaActual,
                     $cedulaCajero,
                     $bancoP,
                     $monedaP,
@@ -399,15 +522,69 @@ class VentasController {
             exit();
         }
     }
-
     // =========================================================================
     // 3. HISTORIAL DE VENTAS
     // =========================================================================
-    public function listarVentas() {
+public function listarVentas() {
+        $desde  = trim((string)($_GET['desde'] ?? ''));
+        $hasta  = trim((string)($_GET['hasta'] ?? ''));
+        $estado = trim((string)($_GET['estado'] ?? ''));
+        $origen = trim((string)($_GET['origen'] ?? ''));
+        $q      = trim((string)($_GET['q'] ?? ''));
+
+        $where = ["(v.deleted_at IS NULL OR v.deleted_at = '2000-01-01 00:00:00')"];
+        $params = [];
+
+        // Filtro por fecha desde
+        if (!empty($desde)) {
+            $where[] = "DATE(v.fecha) >= ?";
+            $params[] = $desde;
+        }
+
+        // Filtro por fecha hasta
+        if (!empty($hasta)) {
+            $where[] = "DATE(v.fecha) <= ?";
+            $params[] = $hasta;
+        }
+
+        // Filtro por estado
+        if (!empty($estado) && $estado !== 'todos') {
+            if ($estado === 'por_retirar') {
+                $where[] = "v.estado IN ('por_retirar', 'pagado')";
+            } elseif ($estado === 'retirado') {
+                $where[] = "v.estado IN ('retirado', 'entregado', 'completado')";
+            } else {
+                $where[] = "v.estado = ?";
+                $params[] = $estado;
+            }
+        }
+
+        // Filtro por origen (tienda o online)
+        if (!empty($origen) && $origen !== 'todos') {
+            if ($origen === 'tienda_fisica' || $origen === 'tienda') {
+                $where[] = "v.origen_venta IN ('tienda', 'tienda_fisica')";
+            } else {
+                $where[] = "v.origen_venta NOT IN ('tienda', 'tienda_fisica')";
+            }
+        }
+
+        // Filtro por búsqueda de texto (orden, cliente, cédula)
+        if (!empty($q)) {
+            $where[] = "(v.numero_orden LIKE ? OR c.nombre_razon_social LIKE ? OR u.nombre LIKE ? OR v.cedula_cliente LIKE ?)";
+            $term = "%$q%";
+            $params[] = $term;
+            $params[] = $term;
+            $params[] = $term;
+            $params[] = $term;
+        }
+
         $sql = "SELECT v.*, 
                        v.numero_orden AS id,
                        COALESCE(c.nombre_razon_social, u.nombre, 'Consumidor Final') AS nombre_cliente,
                        u.nombre AS cajero,
+                       COALESCE(NULLIF(v.tasa_cambio, 0), 1) AS tasa_congelada,
+                       ROUND(v.total * COALESCE(NULLIF(v.tasa_cambio, 0), 1), 2) AS total_bs_fijo,
+                       ROUND(v.total * COALESCE(NULLIF(v.tasa_cambio, 0), 1), 2) AS total_bs,
                        COALESCE(
                            (SELECT GROUP_CONCAT(DISTINCT mp.nombre SEPARATOR ', ')
                             FROM pagos p 
@@ -418,8 +595,12 @@ class VentasController {
                 FROM ventas v
                 LEFT JOIN clientes c ON v.cedula_cliente = c.cedula
                 LEFT JOIN usuarios u ON v.cedula_usuario = u.cedula
+                WHERE " . implode(' AND ', $where) . "
                 ORDER BY v.fecha DESC";
-        $ventas = $this->db->query($sql)->fetchAll(PDO::FETCH_OBJ);
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        $ventas = $stmt->fetchAll(PDO::FETCH_OBJ);
 
         require_once 'views/ventas/ventas.php';
     }

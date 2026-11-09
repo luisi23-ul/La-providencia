@@ -360,7 +360,7 @@ class ReporteController {
                 $item = new stdClass();
                 $item->fecha          = date('d/m/Y', strtotime($fechaVal));
                 $item->numero_factura = $numFact;
-                $item->proveedor      = $nombreProv;
+                $item->proveedor      = $nombreProv; 
                 $item->articulos      = $totalArts . ' uds';
                 $item->total          = (float)$f->total;
                 $item->total_bs       = $totalBs;
@@ -462,10 +462,49 @@ class ReporteController {
                 $c->productos = $sd->fetchAll(PDO::FETCH_OBJ); 
             }
 
-            return [
+return [
                 'titulo'  => 'Historial de compras del cliente',
                 'cliente' => $cliente,
                 'datos'   => $compras
+            ];
+        } elseif ($tipo === 'cierre_caja' || $tipo === 'cierre') {
+            require_once "models/TurnoCajaModel.php";
+            $mTurno = new TurnoCajaModel($this->db);
+
+            $cedula = trim((string)($_GET['cedula'] ?? ''));
+            $turno  = (int)($_GET['turno'] ?? 0);
+
+            // Obtener el registro del turno y el desglose de cobros
+            $resumen  = $mTurno->obtenerResumenTurno($cedula, $turno);
+            $turnoObj = $resumen['turno'] ?? null;
+            $desglose = $resumen['desglose'] ?? [];
+
+            // Obtener nombre del cajero
+            $nombreCajero = 'Cajero';
+            if ($turnoObj && !empty($turnoObj->cedula_cajero)) {
+                $stCaj = $this->db->prepare("SELECT nombre FROM usuarios WHERE cedula = ? LIMIT 1");
+                $stCaj->execute([$turnoObj->cedula_cajero]);
+                $nombreCajero = $stCaj->fetchColumn() ?: 'Cajero';
+            }
+
+            // Mapear filas limpias para la plantilla
+            $datos = [];
+            foreach ($desglose as $d) {
+                $fila = new stdClass();
+                $fila->metodo_nombre           = $d->metodo_nombre ?? $d->codigo_metodo;
+                $fila->cantidad_transacciones = (int)$d->cantidad_transacciones;
+                $fila->total_monto             = (float)$d->total_monto;
+                $fila->moneda                  = $d->moneda;
+                $fila->total_usd               = (float)$d->total_usd;
+                $fila->total_bs                = (float)$d->total_bs;
+                $datos[] = $fila;
+            }
+
+            return [
+                'titulo' => 'COMPROBANTE DE CIERRE Y ARQUEO DE CAJA',
+                'cajero' => $nombreCajero,
+                'turno'  => $turnoObj,
+                'datos'  => $datos
             ];
         }
 

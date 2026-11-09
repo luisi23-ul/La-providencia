@@ -20,11 +20,12 @@ class ProductoModel {
         return (bool)$stmt->fetch();
     }
 
-   public function obtenerTodos() {
+    public function obtenerTodos() {
         $sql = "SELECT p.*, 
                        p.codigo AS id,
                        COALESCE(c.nombre_categoria, 'General') AS nombre_categoria, 
                        COALESCE(c.nombre_categoria, 'General') AS nombre_categoria_padre,
+                       COALESCE(sub.nombre_subcategoria, '') AS nombre_subcategoria,
                        (
                            SELECT GROUP_CONCAT(
                                CONCAT_WS(':', 
@@ -40,6 +41,7 @@ class ProductoModel {
                        ) AS resumen_variantes
                 FROM productos p
                 LEFT JOIN categorias c ON p.slug_categoria = c.slug
+                LEFT JOIN subcategorias sub ON p.id_subcategoria = sub.id_subcategoria
                 WHERE (p.deleted_at IS NULL OR p.deleted_at = '2000-01-01 00:00:00' OR p.deleted_at = '0000-00-00 00:00:00')
                 ORDER BY p.created_at DESC, p.codigo DESC";
 
@@ -52,9 +54,11 @@ class ProductoModel {
             SELECT p.*, 
                    p.codigo AS id,
                    COALESCE(c.nombre_categoria, 'General') AS nombre_categoria, 
-                   COALESCE(c.nombre_categoria, 'General') AS nombre_categoria_padre
+                   COALESCE(c.nombre_categoria, 'General') AS nombre_categoria_padre,
+                   COALESCE(sub.nombre_subcategoria, '') AS nombre_subcategoria
             FROM productos p
             LEFT JOIN categorias c ON p.slug_categoria = c.slug
+            LEFT JOIN subcategorias sub ON p.id_subcategoria = sub.id_subcategoria
             WHERE p.codigo = ? AND (p.deleted_at IS NULL OR p.deleted_at = '2000-01-01 00:00:00')
             LIMIT 1
         ");
@@ -80,9 +84,11 @@ class ProductoModel {
         $sql = "SELECT p.*, 
                        p.codigo AS id,
                        COALESCE(c.nombre_categoria, 'General') AS nombre_categoria, 
-                       COALESCE(c.nombre_categoria, 'General') AS nombre_categoria_padre
+                       COALESCE(c.nombre_categoria, 'General') AS nombre_categoria_padre,
+                       COALESCE(sub.nombre_subcategoria, '') AS nombre_subcategoria
                 FROM productos p
                 LEFT JOIN categorias c ON p.slug_categoria = c.slug
+                LEFT JOIN subcategorias sub ON p.id_subcategoria = sub.id_subcategoria
                 WHERE " . implode(' AND ', $where) . "
                 ORDER BY p.nombre_producto ASC";
 
@@ -124,7 +130,6 @@ class ProductoModel {
         }
 
         if (!empty($slugCategoria) && $slugCategoria !== 'todas') {
-            // Coincidencia exacta o por subcategoría/prefijo (ej: 'abrigos' coincide con 'dama-abrigos')
             $where[] = "(p.slug_categoria = ? OR p.slug_categoria LIKE ?)";
             $params[] = $slugCategoria;
             $params[] = "%$slugCategoria%";
@@ -134,6 +139,7 @@ class ProductoModel {
                        p.codigo AS id,
                        COALESCE(c.nombre_categoria, 'General') AS nombre_categoria, 
                        COALESCE(c.nombre_categoria, 'General') AS nombre_categoria_padre,
+                       COALESCE(sub.nombre_subcategoria, '') AS nombre_subcategoria,
                        (
                            SELECT GROUP_CONCAT(
                                CONCAT_WS(':', 
@@ -149,6 +155,7 @@ class ProductoModel {
                        ) AS resumen_variantes
                 FROM productos p
                 LEFT JOIN categorias c ON p.slug_categoria = c.slug
+                LEFT JOIN subcategorias sub ON p.id_subcategoria = sub.id_subcategoria
                 WHERE " . implode(' AND ', $where) . "
                 ORDER BY p.created_at DESC, p.codigo DESC";
 
@@ -162,6 +169,8 @@ class ProductoModel {
             SELECT pv.codigo_variante, 
                    pv.codigo_variante AS id, 
                    pv.codigo_producto, 
+                   pv.id_talla,
+                   pv.id_color,
                    pv.talla, 
                    pv.color, 
                    pv.modelo, 
@@ -184,13 +193,14 @@ class ProductoModel {
         }
 
         $sql = "INSERT INTO productos (
-                    codigo, slug_categoria, nombre_producto, descripcion, 
+                    codigo, slug_categoria, id_subcategoria, nombre_producto, descripcion, 
                     precio, costo_compra, stock, stock_minimo, imagen, estado, deleted_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '2000-01-01 00:00:00')";
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '2000-01-01 00:00:00')";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([
             $codigo,
             $datos['slug_categoria'] ?? $datos['id_categoria'] ?? 'general',
+            !empty($datos['id_subcategoria']) ? (int)$datos['id_subcategoria'] : null,
             $datos['nombre_producto'] ?? '',
             $datos['descripcion'] ?? '',
             (float)($datos['precio'] ?? 0),
@@ -211,6 +221,7 @@ class ProductoModel {
     public function actualizarCompleto($codigo, $datos, $atributos = [], $variantes = []) {
         $sql = "UPDATE productos SET 
                     slug_categoria = ?, 
+                    id_subcategoria = ?,
                     nombre_producto = ?, 
                     descripcion = ?, 
                     precio = ?, 
@@ -222,6 +233,7 @@ class ProductoModel {
         $stmt = $this->db->prepare($sql);
         $stmt->execute([
             $datos['slug_categoria'] ?? $datos['id_categoria'] ?? 'general',
+            !empty($datos['id_subcategoria']) ? (int)$datos['id_subcategoria'] : null,
             $datos['nombre_producto'],
             $datos['descripcion'],
             (float)$datos['precio'],
@@ -250,35 +262,37 @@ class ProductoModel {
         $totalStock = 0;
 
         $stmtIns = $this->db->prepare("
-            INSERT INTO producto_variantes (codigo_variante, codigo_producto, talla, color, modelo, stock, precio)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO producto_variantes (codigo_variante, codigo_producto, id_talla, id_color, talla, color, modelo, stock, precio)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
 
         $stmtUpd = $this->db->prepare("
             UPDATE producto_variantes 
-            SET talla = ?, color = ?, modelo = ?, stock = ?, precio = ?
+            SET id_talla = ?, id_color = ?, talla = ?, color = ?, modelo = ?, stock = ?, precio = ?
             WHERE codigo_variante = ? AND codigo_producto = ?
         ");
 
         $vIdx = 1;
         foreach ($variantes as $v) {
-            $talla  = trim($v['talla'] ?? '');
-            $color  = trim($v['color'] ?? '');
-            $modelo = trim($v['modelo'] ?? '');
-            $stk    = max(0, (int)($v['stock'] ?? 0));
-            $varCod = trim((string)($v['codigo_variante'] ?? $v['id'] ?? ''));
-            $precio = isset($v['precio']) && $v['precio'] !== '' ? (float)$v['precio'] : 0.00;
+            $talla   = trim($v['talla'] ?? '');
+            $color   = trim($v['color'] ?? '');
+            $modelo  = trim($v['modelo'] ?? '');
+            $idTalla = !empty($v['id_talla']) ? (int)$v['id_talla'] : null;
+            $idColor = !empty($v['id_color']) ? (int)$v['id_color'] : null;
+            $stk     = max(0, (int)($v['stock'] ?? 0));
+            $varCod  = trim((string)($v['codigo_variante'] ?? $v['id'] ?? ''));
+            $precio  = isset($v['precio']) && $v['precio'] !== '' ? (float)$v['precio'] : 0.00;
 
             if ($talla === '' && $color === '' && $modelo === '') {
                 continue;
             }
 
             if (!empty($varCod) && isset($previas[$varCod])) {
-                $stmtUpd->execute([$talla, $color, $modelo, $stk, $precio, $varCod, $codigoProducto]);
+                $stmtUpd->execute([$idTalla, $idColor, $talla, $color, $modelo, $stk, $precio, $varCod, $codigoProducto]);
                 $idsMantener[] = $varCod;
             } else {
                 $nuevoCodVar = $codigoProducto . '-V' . str_pad($vIdx, 2, '0', STR_PAD_LEFT);
-                $stmtIns->execute([$nuevoCodVar, $codigoProducto, $talla, $color, $modelo, $stk, $precio]);
+                $stmtIns->execute([$nuevoCodVar, $codigoProducto, $idTalla, $idColor, $talla, $color, $modelo, $stk, $precio]);
                 $idsMantener[] = $nuevoCodVar;
                 $vIdx++;
             }

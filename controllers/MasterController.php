@@ -269,7 +269,7 @@ class MasterController {
         $this->vistaConfiguracion();
     }
 
-    public function actualizarConfiguracion() {
+   public function actualizarConfiguracion() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $datos = $_POST;
 
@@ -286,6 +286,7 @@ class MasterController {
                 $datos['logo_path'] = $_POST['logo_path_actual'] ?? '';
             }
 
+            $tasaAGuardar = 0;
             if ($datos['tasa_modo'] === 'bcv') {
                 if (file_exists('models/BcvService.php')) {
                     require_once 'models/BcvService.php';
@@ -293,23 +294,36 @@ class MasterController {
                     $nuevaTasa = $bcvService->consultarApiBcv();
                     if ($nuevaTasa > 0) {
                         $bcvService->actualizarTasaBcvEnBD($nuevaTasa);
+                        $tasaAGuardar = (float)$nuevaTasa;
                     }
                 }
+                // Si la API no respondió en el momento, tomar la tasa BCV que ya tenía la BD
+                if ($tasaAGuardar <= 0) {
+                    $tasaAGuardar = (float)$this->db->query("SELECT tasa_bcv FROM sistema LIMIT 1")->fetchColumn();
+                }
+            } else {
+                $tasaAGuardar = (float)$datos['tasa_manual'];
             }
 
             if ($this->modeloConfig->actualizar($datos)) {
-            $_SESSION['aviso'] = ['Configuración guardada correctamente.', 'ok'];
-            
-            // Registrar auditoría solo cuando realmente se actualizó en la BD
-            if (isset($this->modeloAuditoria)) {
-                $this->modeloAuditoria->registrar('CONFIGURACION', 'Actualización de configuración general del sistema');
-            }
-        } else {
-            $_SESSION['aviso'] = ['No se pudieron guardar los cambios. Inténtalo de nuevo.', 'error'];
-        }
+                // Registrar en la nueva tabla histórica tasas_dolar si el valor es válido
+                if ($tasaAGuardar > 0) {
+                    $stHist = $this->db->prepare("INSERT INTO tasas_dolar (valor, fecha, fuente) VALUES (?, NOW(), ?)");
+                    $stHist->execute([$tasaAGuardar, $datos['tasa_modo']]);
+                }
 
-        header('Location: index.php?action=configuracion_sistema');
-        exit;
+                $_SESSION['aviso'] = ['Configuración guardada correctamente.', 'ok'];
+                
+                // Registrar auditoría solo cuando realmente se actualizó en la BD
+                if (isset($this->modeloAuditoria)) {
+                    $this->modeloAuditoria->registrar('CONFIGURACION', 'Actualización de configuración general del sistema');
+                }
+            } else {
+                $_SESSION['aviso'] = ['No se pudieron guardar los cambios. Inténtalo de nuevo.', 'error'];
+            }
+
+            header('Location: index.php?action=configuracion_sistema');
+            exit;
         }
     }
 
@@ -476,5 +490,19 @@ class MasterController {
                 ':ip_terminal'     => $ip
             ]);
         } catch (Exception $e) {}
+    }
+
+    public function listarCierresCaja() {
+        require_once "models/TurnoCajaModel.php";
+        $mTurno = new TurnoCajaModel($this->db);
+
+        $desde  = trim((string)($_GET['desde'] ?? ''));
+        $hasta  = trim((string)($_GET['hasta'] ?? ''));
+        $cajero = trim((string)($_GET['cajero'] ?? ''));
+
+        $turnos = $mTurno->listarTodos($desde, $hasta, $cajero);
+        $cajeros = $this->db->query("SELECT cedula, nombre, apellido FROM usuarios WHERE codigo_rol IN ('cajero', 'master', 'administrador', 'vendedor') ORDER BY nombre ASC")->fetchAll(PDO::FETCH_OBJ);
+
+        require_once 'views/admin/turnos_caja.php';
     }
 }

@@ -229,6 +229,10 @@ if (in_array($action, $acciones_master)) {
             case 'guardar_permisos':         $masterC->guardarPermisos(); break;
             case 'guardar_rol':              $masterC->guardarRol(); break;
             case 'auditoria':                $masterC->auditoria(); break;
+            case 'turnos_caja':
+    case 'cierres_caja':
+        $masterC->listarCierresCaja();
+        break;
         }
         ob_end_flush();
         exit();
@@ -325,6 +329,14 @@ switch ($action) {
     case 'confirmar_pago':           $ventaC->confirmarPago($_GET['id'] ?? null); break;
     case 'procesar_retiro':          $ventaC->procesarRetiro($_GET['id'] ?? null); break;
     case 'detalle_venta':            $ventaC->verDetalle($_GET['id'] ?? null); break;
+    case 'abrir_turno':
+    case 'iniciar_turno':
+        $ventaC->abrirTurno();
+        break;
+
+    case 'cerrar_turno':
+        $ventaC->cerrarTurno();
+        break;
     case 'ver_reporte':              $adminC->verReporte(); break;
 
     // Panel Admin: Compras y Proveedores
@@ -336,7 +348,6 @@ switch ($action) {
     case 'guardar_compra':           $compraC->guardar(); break;
     case 'detalle_compra':           $compraC->detalle(); break;
     case 'anular_compra':            $compraC->anular(); break;
-
     // Panel Admin: Clientes y Métodos de Pago
     case 'metodos_pago':         $adminC->metodosPago(); break;
     case 'guardar_metodo_pago':  $adminC->guardarMetodoPago(); break;

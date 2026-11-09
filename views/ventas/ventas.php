@@ -14,20 +14,21 @@ $f = [
 
 // Mapeo completo de estados soportados en BD
 $estados = [
-    'pendiente'   => ['pend', 'Pendiente de pago'],
+    'pendiente'    => ['pend', 'Pendiente de pago'],
     'por_verificar'=> ['pend', 'Por verificar'],
-    'por_retirar' => ['ok',   'Pagado, por retirar'],
-    'pagado'      => ['ok',   'Pagado, por retirar'],
-    'retirado'    => ['ok',   'Retirado'],
-    'entregado'   => ['ok',   'Retirado'],
-    'completado'  => ['ok',   'Completado'],
-    'cancelado'   => ['agot', 'Cancelado'],
-    'anulado'     => ['agot', 'Anulada']
+    'por_retirar'  => ['ok',   'Pagado, por retirar'],
+    'pagado'       => ['ok',   'Pagado, por retirar'],
+    'retirado'     => ['ok',   'Retirado'],
+    'entregado'    => ['ok',   'Retirado'],
+    'completado'   => ['ok',   'Completado'],
+    'cancelado'    => ['agot', 'Cancelado'],
+    'anulado'      => ['agot', 'Anulada']
 ];
 
 // Cálculo de métricas sobre las ventas filtradas
 $validas   = array_filter($ventas, fn($v) => !in_array($v->estado ?? '', ['cancelado', 'anulado'], true));
 $total     = array_sum(array_map(fn($v) => (float)($v->total ?? 0), $validas));
+$totalBsHistorico = array_sum(array_map(fn($v) => (float)($v->total_bs ?? $v->total_bs_fijo ?? ((float)($v->total ?? 0) * (float)($v->tasa_cambio ?? 1))), $validas));
 $tienda    = array_sum(array_map(fn($v) => (float)($v->total ?? 0), array_filter($validas, fn($v) => ($v->origen_venta ?? '') === 'tienda_fisica')));
 $porCobrar = array_sum(array_map(fn($v) => (float)($v->total ?? 0), array_filter($ventas, fn($v) => in_array($v->estado ?? '', ['pendiente', 'por_verificar']))));
 $pctTienda = $total > 0 ? round(($tienda / $total) * 100) : 0;
@@ -67,7 +68,7 @@ $pctOnline = $total > 0 ? (100 - $pctTienda) : 0;
   </form>
 
   <section class="mini-kpis" aria-label="Resumen del periodo">
-    <div><span class="mk-ic"><svg class="i"><use href="#i-dolar"/></svg></span><span>Vendido</span><b><?= $usd($total) ?></b><small><?= $bs($total) ?></small></div>
+    <div><span class="mk-ic"><svg class="i"><use href="#i-dolar"/></svg></span><span>Vendido</span><b><?= $usd($total) ?></b><small><?= number_format($totalBsHistorico, 2, ',', '.') ?> Bs</small></div>
     <div class="mk-oscuro"><span class="mk-ic"><svg class="i"><use href="#i-recibo"/></svg></span><span>Ventas</span><b><?= count($validas) ?></b><small>ticket promedio <?= $usd(count($validas) ? $total / count($validas) : 0) ?></small></div>
     <div class="mk-claro"><span class="mk-ic"><svg class="i"><use href="#i-tienda"/></svg></span><span>Tienda / Online</span><b><?= $pctTienda ?>% / <?= $pctOnline ?>%</b><small><?= $usd($tienda) ?> en tienda</small><span class="mk-barra" aria-hidden="true"><i style="width: <?= $pctTienda ?>%"></i><i style="width: <?= $pctOnline ?>%"></i></span></div>
     <div class="mk-ambar"><span class="mk-ic"><svg class="i"><use href="#i-alerta"/></svg></span><span>Por cobrar</span><b><?= $usd($porCobrar) ?></b><small>pagos sin verificar</small></div>
@@ -93,6 +94,7 @@ $pctOnline = $total > 0 ? (100 - $pctTienda) : 0;
           $keyEstado = empty($rawEst) ? 'pendiente' : strtolower($rawEst);
           $es = $estados[$keyEstado] ?? ['pend', ($rawEst ?: 'Pendiente')]; 
           $origen = ($v->origen_venta ?? 'online') === 'online' ? 'Online' : 'Tienda'; 
+          $montoBsFila = isset($v->total_bs) ? (float)$v->total_bs : (isset($v->total_bs_fijo) ? (float)$v->total_bs_fijo : ((float)($v->total ?? 0) * (float)($v->tasa_cambio ?? 1)));
         ?>
           <tr>
             <td class="t-tit">
@@ -111,7 +113,7 @@ $pctOnline = $total > 0 ? (100 - $pctTienda) : 0;
             <td data-label="Pago" class="c-media"><?= $e($v->metodo_nombre ?? 'N/A') ?></td>
             <td class="num" data-label="Total">
               <b><?= $usd($v->total ?? 0) ?></b><br>
-              <span class="muted"><?= $bs($v->total ?? 0) ?></span>
+              <span class="muted"><?= number_format($montoBsFila, 2, ',', '.') ?> Bs</span>
             </td>
             <td data-label="Estado">
               <span class="est <?= $es[0] ?>"><?= $e($es[1]) ?></span>

@@ -242,6 +242,12 @@ class AdminControllers {
     }
     public function mostrarPanel() {
         $categorias = $this->obtenerCategoriasConAtributos();
+        
+        // Consultar catálogos normalizados para los selectores
+        $tallasDisponibles = $this->db->query("SELECT id_talla, nombre FROM tallas ORDER BY nombre ASC")->fetchAll(PDO::FETCH_OBJ);
+        $coloresDisponibles = $this->db->query("SELECT id_color, nombre, hex FROM colores ORDER BY nombre ASC")->fetchAll(PDO::FETCH_OBJ);
+        $subcategoriasDisponibles = $this->db->query("SELECT id_subcategoria, slug_categoria, nombre_subcategoria FROM subcategorias ORDER BY nombre_subcategoria ASC")->fetchAll(PDO::FETCH_OBJ);
+
         $p = null;
         include 'views/formulario_producto.php';
     }
@@ -309,7 +315,7 @@ class AdminControllers {
         return $cats;
     }
 
-    public function agregar() {
+   public function agregar() {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $db = $this->productoModelo->getDb();
             try {
@@ -324,6 +330,9 @@ class AdminControllers {
                 // Categoría por slug
                 $slugCat = !empty($_POST['slug_categoria']) ? trim((string)$_POST['slug_categoria']) : (!empty($_POST['categoria']) ? trim((string)$_POST['categoria']) : (!empty($_POST['id_categoria']) ? trim((string)$_POST['id_categoria']) : 'general'));
                 
+                // Subcategoría normalizada
+                $idSubcat = !empty($_POST['id_subcategoria']) ? (int)$_POST['id_subcategoria'] : null;
+
                 $estado = isset($_POST['estado']) ? (int)$_POST['estado'] : 1;
                 $atributos = $_POST['atributo'] ?? [];
                 $variantes = $_POST['variantes'] ?? [];
@@ -350,9 +359,35 @@ class AdminControllers {
                     'stock'           => $stock,
                     'stock_minimo'    => $stockMinimo,
                     'slug_categoria'  => $slugCat,
+                    'id_subcategoria' => $idSubcat,
                     'estado'          => $estado,
                     'imagen'          => $nombreImagen
                 ];
+
+                // Mapear id_talla e id_color a partir del texto o selector
+                $stT = $this->db->prepare("SELECT id_talla FROM tallas WHERE nombre = ? LIMIT 1");
+                $stC = $this->db->prepare("SELECT id_color FROM colores WHERE nombre = ? LIMIT 1");
+
+                foreach ($variantes as &$v) {
+                    $txtTalla = trim((string)($v['talla'] ?? ''));
+                    $txtColor = trim((string)($v['color'] ?? ''));
+
+                    $idTalla = !empty($v['id_talla']) ? (int)$v['id_talla'] : null;
+                    if (!$idTalla && !empty($txtTalla)) {
+                        $stT->execute([$txtTalla]);
+                        $idTalla = $stT->fetchColumn() ?: null;
+                    }
+
+                    $idColor = !empty($v['id_color']) ? (int)$v['id_color'] : null;
+                    if (!$idColor && !empty($txtColor)) {
+                        $stC->execute([$txtColor]);
+                        $idColor = $stC->fetchColumn() ?: null;
+                    }
+
+                    $v['id_talla'] = $idTalla;
+                    $v['id_color'] = $idColor;
+                }
+                unset($v);
 
                 $db->beginTransaction();
 
@@ -375,24 +410,29 @@ class AdminControllers {
             }
         }
     }
-    public function editar() {
-    $codigo = trim((string)($_GET['id'] ?? $_GET['codigo'] ?? ''));
-    $p = $this->productoModelo->obtenerPorId($codigo);
+   public function editar() {
+        $codigo = trim((string)($_GET['id'] ?? $_GET['codigo'] ?? ''));
+        $p = $this->productoModelo->obtenerPorId($codigo);
 
-    if (!$p) {
-        $_SESSION['aviso'] = 'El producto solicitado no existe.';
-        header("Location: index.php?action=listado_productos");
-        exit();
+        if (!$p) {
+            $_SESSION['aviso'] = 'El producto solicitado no existe.';
+            header("Location: index.php?action=listado_productos");
+            exit();
+        }
+
+        $p->variantes = $this->productoModelo->obtenerVariantesProducto($codigo);
+        $categorias = $this->productoModelo->obtenerCategorias();
+
+        // Consultar catálogos normalizados para edición
+        $tallasDisponibles = $this->db->query("SELECT id_talla, nombre FROM tallas ORDER BY nombre ASC")->fetchAll(PDO::FETCH_OBJ);
+        $coloresDisponibles = $this->db->query("SELECT id_color, nombre, hex FROM colores ORDER BY nombre ASC")->fetchAll(PDO::FETCH_OBJ);
+        $subcategoriasDisponibles = $this->db->query("SELECT id_subcategoria, slug_categoria, nombre_subcategoria FROM subcategorias ORDER BY nombre_subcategoria ASC")->fetchAll(PDO::FETCH_OBJ);
+
+        $aviso = $_SESSION['aviso'] ?? null;
+        unset($_SESSION['aviso']);
+
+        require_once 'views/editar_producto.php';
     }
-
-    $p->variantes = $this->productoModelo->obtenerVariantesProducto($codigo);
-    $categorias = $this->productoModelo->obtenerCategorias();
-
-    $aviso = $_SESSION['aviso'] ?? null;
-    unset($_SESSION['aviso']);
-
-    require_once 'views/editar_producto.php';
-}
 
   public function actualizar() {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -434,6 +474,11 @@ class AdminControllers {
 
                 $slugCat = !empty($_POST['slug_categoria']) ? trim((string)$_POST['slug_categoria']) : (!empty($_POST['categoria']) ? trim((string)$_POST['categoria']) : (!empty($_POST['id_categoria']) ? trim((string)$_POST['id_categoria']) : $pActual->slug_categoria));
                 
+                // Subcategoría normalizada
+                $idSubcat = isset($_POST['id_subcategoria']) && $_POST['id_subcategoria'] !== '' 
+                            ? (int)$_POST['id_subcategoria'] 
+                            : ($pActual->id_subcategoria ?? null);
+
                 $estado = isset($_POST['estado']) ? (int)$_POST['estado'] : 1;
                 $atributos = $_POST['atributo'] ?? [];
                 $variantes = $_POST['variantes'] ?? [];
@@ -446,9 +491,35 @@ class AdminControllers {
                     'costo_compra'    => $costo,
                     'stock_minimo'    => $stockMinimo,
                     'slug_categoria'  => $slugCat,
+                    'id_subcategoria' => $idSubcat,
                     'estado'          => $estado,
                     'imagen'          => $nombreImagen
                 ];
+
+                // Mapear id_talla e id_color en variantes para normalización
+                $stT = $this->db->prepare("SELECT id_talla FROM tallas WHERE nombre = ? LIMIT 1");
+                $stC = $this->db->prepare("SELECT id_color FROM colores WHERE nombre = ? LIMIT 1");
+
+                foreach ($variantes as &$v) {
+                    $txtTalla = trim((string)($v['talla'] ?? ''));
+                    $txtColor = trim((string)($v['color'] ?? ''));
+
+                    $idTalla = !empty($v['id_talla']) ? (int)$v['id_talla'] : null;
+                    if (!$idTalla && !empty($txtTalla)) {
+                        $stT->execute([$txtTalla]);
+                        $idTalla = $stT->fetchColumn() ?: null;
+                    }
+
+                    $idColor = !empty($v['id_color']) ? (int)$v['id_color'] : null;
+                    if (!$idColor && !empty($txtColor)) {
+                        $stC->execute([$txtColor]);
+                        $idColor = $stC->fetchColumn() ?: null;
+                    }
+
+                    $v['id_talla'] = $idTalla;
+                    $v['id_color'] = $idColor;
+                }
+                unset($v);
 
                 $db->beginTransaction();
 
@@ -472,7 +543,6 @@ class AdminControllers {
             }
         }
     }
-
 
     public function eliminar() {
     $codigo = trim((string)($_GET['id'] ?? $_GET['codigo'] ?? ''));
