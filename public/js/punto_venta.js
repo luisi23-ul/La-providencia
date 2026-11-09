@@ -688,7 +688,7 @@
       $('mtc-nota-req').textContent = descuadre ? '(obligatoria: la caja no cuadra)' : '(obligatoria si no cuadra)';
       $('mtc-nota-req').classList.toggle('tc-req', descuadre);
       nota.setCustomValidity(descuadre && !nota.value.trim() ? 'Explica por qué no cuadra la caja.' : '');
-      if (nota.checkValidity() && nota.getAttribute('aria-invalid')) { var c = nota.closest('.campo'); c.classList.remove('con-error'); var m = c.querySelector('.error-campo'); if (m) m.remove(); nota.removeAttribute('aria-invalid'); }
+      if (nota.validity.valid && nota.getAttribute('aria-invalid')) { var c = nota.closest('.campo'); c.classList.remove('con-error'); var m = c.querySelector('.error-campo'); if (m) m.remove(); nota.removeAttribute('aria-invalid'); }
     };
     mtc.addEventListener('input', cuadre);
     $('modal-turno-cerrar').addEventListener('close', function () { setTimeout(cuadre, 0); });

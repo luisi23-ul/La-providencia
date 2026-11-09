@@ -14,10 +14,10 @@ foreach ($pagos as $p) {
     elseif (ref('pago.estado', $p) === 'pendiente') $porVerificar += $enUsd($p);
 }
 $saldo = max(0, (float) $venta->total - $aprobado);
+if ($saldo < 0.005) $saldo = 0;
 $conTasa = array_filter($pagos, fn($p) => (float) ($p->tasa_cambio ?? 0) > 0);
 usort($conTasa, fn($x, $y) => strcmp((string) $x->fecha_pago, (string) $y->fecha_pago));
 $tasaVenta = $conTasa ? (float) reset($conTasa)->tasa_cambio : (float) $tasa;
-$bsVenta = fn($v) => number_format((float) $v * $tasaVenta, 2, ',', '.') . ' Bs';
 $saldada = $saldo < 0.005;
 $unidades = array_sum(array_map(fn($d) => $d->cantidad, $detalles));
 $verif = ['aprobado' => ['ok', 'Aprobado'], 'pendiente' => ['pend', 'Por verificar'], 'rechazado' => ['agot', 'Rechazado']];
@@ -29,18 +29,17 @@ $t = strtotime($venta->fecha);
 $fechaLarga = ucfirst($dias[date('w', $t)]) . ' ' . date('j', $t) . ' de ' . $meses[date('n', $t) - 1] . ' de ' . date('Y', $t) . ', ' . date('g:i a', $t);
 $corta = fn($f) => $f ? date('d/m, g:i a', strtotime($f)) : '';
 
-if ($cancelada) $chipPago = null;
-elseif ($saldada) $chipPago = ['', 'check', 'Pagada'];
-elseif ($porVerificar > 0) $chipPago = ['pend', 'alerta', 'Pago por verificar'];
-else $chipPago = ['pend', 'alerta', 'Pendiente de pago'];
-$chipEstado = [
-    'pagado' => ['neutro', 'bolsa', 'Por retirar'],
-    'retirado' => ['', 'bolsa', 'Retirada'],
-    'entregado' => ['', 'bolsa', 'Entregada'],
-    'completado' => ['', 'check', 'Completada'],
-    'cancelado' => ['agot', 'x', 'Cancelada'],
-    'anulado' => ['agot', 'x', 'Anulada'],
-][$estado] ?? null;
+$sumaLineas = array_sum(array_map(fn($d) => (float) $d->subtotal, $detalles));
+$descuento = max(0, $sumaLineas - (float) $venta->total);
+$cliente = trim((string) ($venta->nombre ?? '')) ?: 'Consumidor final';
+$contacto = implode(' · ', array_filter([trim((string) ($venta->cedula ?? '')), trim((string) ($venta->telefono ?? ''))], fn($v) => $v !== '' && !preg_match('/^sin_/i', $v)));
+$estadoTxt = $cancelada ? 'Anulada' : ($saldada ? 'Pagada' : ($porVerificar > 0 ? 'Pago por verificar' : 'Pendiente de pago'));
+$entrega = [
+    'pagado' => 'Por retirar',
+    'retirado' => 'Retirada',
+    'entregado' => 'Entregada',
+    'completado' => 'Completada',
+][$venta->estado ?? ''] ?? '';
 
 $iconoMetodo = function ($m) {
     $m = mb_strtolower($m ?? '');
@@ -52,10 +51,6 @@ $iconoMetodo = function ($m) {
 $titular = fn($p) => trim(($p->titular_nombre ?? '') . ' ' . ($p->titular_cedula ?? '')) !== ''
     ? implode(' · ', array_filter([trim($p->titular_nombre ?? ''), trim($p->titular_cedula ?? ''), trim($p->titular_telefono ?? '')]))
     : (preg_match('/Titular:\s*([^|]*?)\s*\|\s*Tel:\s*(.*)$/u', $p->observacion ?? '', $m) ? trim($m[1]) . ($m[2] !== '' ? ' · ' . trim($m[2]) : '') : '');
-$iniciales = function ($nombre) {
-    $partes = preg_split('/\s+/', trim((string) $nombre));
-    return mb_strtoupper(mb_substr($partes[0] ?? '', 0, 1) . mb_substr($partes[1] ?? '', 0, 1));
-};
 
 $recorrido = [['recibo', 'Venta registrada', $corta($venta->fecha) . (!empty($venta->vendedor) ? ' · ' . $venta->vendedor : ''), true]];
 foreach ($pagos as $p) {
@@ -75,13 +70,34 @@ if ($sinPanel) {
     include __DIR__ . '/reportes/_nota_entrega.php';
     return;
 }
+
+$num = fn($v) => number_format((float) $v, 2, ',', '.');
+$conSigno = fn($v) => ($v < 0 ? '− ' : '') . $num(abs($v));
+$claseEstado = $cancelada ? 'agot' : ($saldada ? 'ok' : 'pend');
+$pendientes = array_values(array_filter($pagos, fn($p) => ref('pago.estado', $p) === 'pendiente'));
+$queFalta = function () use ($pendientes, $iconoMetodo) {
+    if (count($pendientes) > 1) return count($pendientes) . ' pagos';
+    $ic = $iconoMetodo($pendientes[0]->metodo ?? '');
+    if ($ic === 'movil') return 'el pago móvil';
+    if ($ic === 'banco') return 'la transferencia';
+    return 'el pago con ' . mb_strtolower((string) ($pendientes[0]->metodo ?? ''));
+};
+if ($cancelada) $aviso = ['x', 'Venta anulada', false];
+elseif ($saldada) $aviso = ['check', 'Venta saldada', false];
+elseif ($pendientes) $aviso = [count($pendientes) === 1 ? $iconoMetodo($pendientes[0]->metodo) : 'alerta', 'Falta aprobar ' . $queFalta(), true];
+else $aviso = ['alerta', 'Falta cobrar', false];
+
+$cifras = [['Subtotal', $sumaLineas, '']];
+if ($descuento > 0.004) $cifras[] = ['Descuento', -$descuento, 'cu-desc'];
+$cifras[] = ['Total', (float) $venta->total, 'cu-tot'];
+$cifras[] = ['Pagado', $aprobado, 'cu-pag'];
+if ($porVerificar > 0.004) $cifras[] = ['Por verificar', $porVerificar, 'cu-ver'];
+$cifras[] = ['Saldo', $saldo, 'cu-saldo'];
 ?>
-<section class="contenido dv">
+<section class="contenido dv dn">
   <header class="cab">
-    <div class="cab-txt"><small>Venta</small><div class="titulo-atras"><a href="index.php?action=ventas" class="atras" aria-label="Volver a Ventas"><svg class="i"><use href="#i-volver"/></svg></a><h2><?= $e(numero_doc('venta', $venta)) ?></h2><span class="dv-meta"><span class="chip"><svg class="i"><use href="#i-tienda"/></svg><?= $origen ?></span><?php if (!empty($venta->vendedor)): ?><span class="chip"><svg class="i"><use href="#i-usuarios"/></svg>Atendió <?= $e($venta->vendedor) ?></span><?php endif; ?></span></div><p class="dv-fecha"><?= $e($fechaLarga) ?></p></div>
+    <div class="cab-txt"><small>Venta</small><div class="titulo-atras"><a href="index.php?action=ventas" class="atras" aria-label="Volver a Ventas"><svg class="i"><use href="#i-volver"/></svg></a><h2><?= $e(numero_doc('venta', $venta)) ?></h2></div><p class="dv-fecha"><?= $e($fechaLarga) ?></p></div>
     <div class="cab-acc dv-chips">
-      <?php if ($chipPago): ?><span class="dv-chip <?= $chipPago[0] ?>"><svg class="i"><use href="#i-<?= $chipPago[1] ?>"/></svg><?= $chipPago[2] ?></span><?php endif; ?>
-      <?php if ($chipEstado): ?><span class="dv-chip <?= $chipEstado[0] ?>"><svg class="i"><use href="#i-<?= $chipEstado[1] ?>"/></svg><?= $chipEstado[2] ?></span><?php endif; ?>
       <div class="dv-botones">
         <a href="index.php?action=cliente_detalle&amp;<?= url_valor('cliente', !empty($venta->cedula) ? $venta->cedula : 'SIN_USUARIO') ?>" class="btn btn-sec btn-ir"><svg class="i"><use href="#i-historial"/></svg>Compras del cliente</a>
         <a href="index.php?action=detalle_venta&amp;<?= url_clave('venta', $venta) ?>&amp;vista=nota" target="_blank" class="btn btn-sec btn-rep pdf"><svg class="i"><use href="#i-pdf"/></svg>Nota de entrega</a>
@@ -89,86 +105,81 @@ if ($sinPanel) {
     </div>
   </header>
 
-  <section class="rc<?= $saldada || $cancelada ? '' : ' pend' ?>" aria-label="Cuenta de la venta">
-    <div class="rc-lineas">
-      <h3>Cuenta</h3>
-      <div class="rc-linea"><span><?= count($detalles) === 1 ? '1 producto' : count($detalles) . ' productos' ?><?= $unidades != count($detalles) ? ' (' . (int) $unidades . ' unidades)' : '' ?></span><b><?= $usd($venta->total) ?></b></div>
-      <div class="rc-linea total"><span>Total</span><span><?= $usd($venta->total) ?> · <?= $bsVenta($venta->total) ?></span></div>
-      <?php foreach ($pagos as $p): $vf = $verif[ref('pago.estado', $p)] ?? ['pend', ref('pago.estado', $p)]; ?>
-      <div class="rc-linea <?= $vf[0] ?>"><span><?= $e($p->metodo) ?><span class="est <?= $vf[0] ?>"><?= $vf[1] ?></span></span><b><?= ref('pago.estado', $p) === 'aprobado' ? '− ' : '' ?><?= $usd($enUsd($p)) ?></b></div>
-      <?php endforeach; ?>
-      <?php if (!$pagos): ?><div class="rc-linea"><span>Todavía no hay pagos registrados</span></div><?php endif; ?>
-    </div>
-    <div class="rc-saldo">
-      <span>Saldo</span>
-      <b><?= $usd($saldo) ?></b>
-      <?php if ($cancelada): ?><small><svg class="i"><use href="#i-x"/></svg>Venta cancelada</small>
-      <?php elseif ($saldada): ?><small><svg class="i"><use href="#i-check"/></svg>Venta saldada</small>
-      <?php elseif ($porVerificar > 0): ?><small><svg class="i"><use href="#i-alerta"/></svg><?= $usd($porVerificar) ?> por verificar</small><a href="index.php?action=verificar_pagos" class="btn btn-pri">Revisar pago</a>
-      <?php else: ?><small><svg class="i"><use href="#i-alerta"/></svg>Falta cobrar</small><?php endif; ?>
-    </div>
-  </section>
+  <ol class="dn-pasos" aria-label="Recorrido de la venta" style="--pasos: <?= max(1, count($recorrido) - 1) ?>">
+    <?php foreach ($recorrido as [$ic, $titulo, $detalle, $hecho]): ?>
+    <li class="<?= $hecho ? '' : 'falta' ?>"><span class="punto"><svg class="i"><use href="#i-<?= $ic ?>"/></svg></span><div><b><?= $e($titulo) ?></b><?php if ($detalle): ?><small><?= $e($detalle) ?></small><?php endif; ?></div></li>
+    <?php endforeach; ?>
+  </ol>
 
-  <div class="dv-cuerpo">
-    <div class="dv-col">
-      <section class="dv-caja" aria-labelledby="dv-prod-t">
-        <h3 id="dv-prod-t">Productos <span><?= count($detalles) ?></span></h3>
-        <?php if ($detalles): ?>
-        <ul class="dv-prods">
-          <?php foreach ($detalles as $d): ?>
-          <li class="dv-prod">
-            <?php if (!empty($d->imagen)): ?><img src="public/uploads/<?= $e($d->imagen) ?>" alt="" width="56" height="56" loading="lazy"><?php else: ?><span class="dv-sin-foto"><svg class="i"><use href="#i-caja"/></svg></span><?php endif; ?>
-            <div><b><?= $e($d->producto_nombre) ?></b><?php $varTxt = implode(' · ', array_filter([trim($d->talla ?? '') !== '' ? 'Talla ' . trim($d->talla) : '', trim($d->color ?? '')])); if ($varTxt !== ''): ?><small class="dv-var"><?= $e($varTxt) ?></small><?php endif; ?><small><?= (int) $d->cantidad ?> ×<?= $usd($d->precio_unitario) ?><?php if (!empty($d->descuento) && $d->descuento > 0): ?> · descuento <?= (float) $d->descuento ?>%<?php endif; ?></small></div>
-            <span><?= $usd($d->subtotal) ?></span>
-          </li>
+  <article class="dn-hoja" aria-label="Nota de entrega <?= $e(numero_doc('venta', $venta)) ?>">
+    <dl class="dn-membrete">
+      <div><dt>Cliente</dt><dd><?= $e($cliente) ?><small><?= $contacto !== '' ? $e($contacto) : 'Sin datos del cliente' ?></small></dd></div>
+      <div><dt>Venta</dt><dd><?= $origen ?><small><?= !empty($venta->vendedor) ? 'Atendió ' . $e($venta->vendedor) : 'Compra en línea' ?></small></dd></div>
+      <div><dt>Estado</dt><dd class="dn-estado <?= $claseEstado ?>"><?= $estadoTxt ?><?php if ($entrega !== ''): ?><small><?= $entrega ?></small><?php endif; ?></dd></div>
+      <div><dt>Tasa de la venta</dt><dd><?= $num($tasaVenta) ?> Bs<small>por cada $</small></dd></div>
+    </dl>
+
+    <section aria-labelledby="dn-prod-t">
+      <h3 id="dn-prod-t" class="dn-tit">Productos <span><?= (int) $unidades ?> <?= (int) $unidades === 1 ? 'unidad' : 'unidades' ?></span></h3>
+      <?php if ($detalles): ?>
+      <table class="dn-tabla dn-prods">
+        <thead><tr><th scope="col" class="izq">Producto</th><th scope="col" class="izq">Detalles</th><th scope="col" class="num">Cant.</th><th scope="col" class="num">Precio $</th><th scope="col" class="num">Subtotal $</th></tr></thead>
+        <tbody>
+          <?php foreach ($detalles as $d): $det = implode(' · ', array_filter([trim($d->talla ?? '') !== '' ? 'Talla ' . trim($d->talla) : '', trim($d->color ?? ''), !empty($d->descuento) && $d->descuento > 0 ? 'Descuento ' . (float) $d->descuento . '%' : ''])); ?>
+          <tr>
+            <td class="dn-prod" data-c="Producto"><?php if (!empty($d->imagen)): ?><img src="public/uploads/<?= $e($d->imagen) ?>" alt="" width="44" height="44" loading="lazy"><?php else: ?><span class="dn-sinfoto"><svg class="i"><use href="#i-caja"/></svg></span><?php endif; ?><b><?= $e($d->producto_nombre) ?></b></td>
+            <td class="dn-det" data-c="Detalles"><?= $det !== '' ? $e($det) : '<span class="dn-nada">Sin talla ni color</span>' ?></td>
+            <td class="num" data-c="Cant."><?= (int) $d->cantidad ?></td>
+            <td class="num" data-c="Precio $"><?= $num($d->precio_unitario) ?></td>
+            <td class="num fuerte" data-c="Subtotal $"><?= $num($d->subtotal) ?></td>
+          </tr>
           <?php endforeach; ?>
-        </ul>
-        <?php else: ?><p class="vacio-filtro">Esta venta no tiene productos registrados.</p><?php endif; ?>
-      </section>
+        </tbody>
+      </table>
+      <?php else: ?><p class="vacio-filtro">Esta venta no tiene productos registrados.</p><?php endif; ?>
+    </section>
 
-      <section class="dv-caja" aria-labelledby="dv-pagos-t">
-        <h3 id="dv-pagos-t">Pagos <span><?= count($pagos) ?></span><?php if (count($pagos) > 1): ?><small class="muted">Pago mixto</small><?php endif; ?></h3>
-        <?php if (!$pagos): ?><p class="vacio-filtro">Todavía no hay pagos registrados.</p><?php endif; ?>
-        <div class="dv-pagos">
-          <?php foreach ($pagos as $p): $vf = $verif[ref('pago.estado', $p)] ?? ['pend', ref('pago.estado', $p)]; $tit = $titular($p); ?>
-          <article class="dv-pago <?= $vf[0] ?>">
-            <span class="dv-pago-ic"><svg class="i"><use href="#i-<?= $iconoMetodo($p->metodo) ?>"/></svg></span>
-            <b><?= $e($p->metodo) ?></b>
-            <span class="monto"><?= ($p->moneda ?? 'Bs') === 'USD' ? $usd($p->monto) : number_format((float) $p->monto, 2, ',', '.') . ' Bs' ?><?php if (($p->moneda ?? 'Bs') !== 'USD'): ?><small><?= $usd($enUsd($p)) ?></small><?php endif; ?></span>
-            <dl>
-              <?php if (!empty($p->banco) && $p->banco !== 'Caja Física'): ?><div><dt>Banco</dt><dd><?= $e($p->banco) ?></dd></div><?php endif; ?>
-              <?php if (!empty($p->referencia) && $p->referencia !== 'No aplica'): ?><div><dt>Ref.</dt><dd><?= $e($p->referencia) ?></dd></div><?php endif; ?>
-              <?php if ($tit): ?><div><dt>Titular</dt><dd><?= $e($tit) ?></dd></div><?php endif; ?>
-            </dl>
-            <div class="pie"><span class="est <?= $vf[0] ?>"><?= $vf[1] ?></span><?= !empty($p->verificado_por_nombre) ? 'por ' . $e($p->verificado_por_nombre) . ' · ' : '' ?><?= $corta($p->fecha_pago) ?></div>
-          </article>
+    <section aria-labelledby="dn-pag-t">
+      <h3 id="dn-pag-t" class="dn-tit">Pagos <span><?= count($pagos) === 1 ? '1 pago' : count($pagos) . ' pagos' ?></span></h3>
+      <?php if ($pagos): ?>
+      <table class="dn-tabla dn-pagos">
+        <thead><tr><th scope="col" class="izq">Método</th><th scope="col" class="izq">Banco y referencia</th><th scope="col" class="izq">Fecha</th><th scope="col" class="izq">Estado</th><th scope="col" class="num">Monto $</th><th scope="col" class="num">Monto Bs</th></tr></thead>
+        <tbody>
+          <?php foreach ($pagos as $p): $vf = $verif[ref('pago.estado', $p)] ?? ['pend', ref('pago.estado', $p)]; $tit = $titular($p); $banco = !empty($p->banco) && $p->banco !== 'Caja Física' ? $p->banco : ''; $refPago = !empty($p->referencia) && $p->referencia !== 'No aplica' ? $p->referencia : ''; ?>
+          <tr>
+            <td class="dn-metodo" data-c="Método"><span class="dn-ic <?= $vf[0] ?>"><svg class="i"><use href="#i-<?= $iconoMetodo($p->metodo) ?>"/></svg></span><b><?= $e($p->metodo) ?></b></td>
+            <td class="dn-det" data-c="Banco y ref."><?php if ($banco !== '' || $refPago !== ''): ?><?= $e(implode(' · ', array_filter([$banco, $refPago !== '' ? 'Ref. ' . $refPago : '']))) ?><?php if ($tit): ?><small>Titular: <?= $e($tit) ?></small><?php endif; ?><?php else: ?><span class="dn-nada">En caja</span><?php endif; ?></td>
+            <td data-c="Fecha"><?= $p->fecha_pago ? date('d/m/Y', strtotime($p->fecha_pago)) : '' ?></td>
+            <td data-c="Estado"><span class="est <?= $vf[0] ?>"><?= $e($vf[1]) ?></span></td>
+            <td class="num fuerte" data-c="Monto $"><?= $num($enUsd($p)) ?></td>
+            <td class="num" data-c="Monto Bs"><?= $num(($p->moneda ?? 'Bs') === 'USD' ? (float) $p->monto * $tasaVenta : (float) $p->monto) ?></td>
+          </tr>
           <?php endforeach; ?>
-        </div>
-      </section>
-    </div>
+        </tbody>
+      </table>
+      <?php else: ?><p class="vacio-filtro">Todavía no hay pagos registrados.</p><?php endif; ?>
+    </section>
 
-    <div class="dv-col">
-      <section class="dv-caja" aria-labelledby="dv-cli-t">
-        <h3 id="dv-cli-t">Cliente</h3>
-        <div class="dv-cliente"><span class="dv-av" aria-hidden="true"><?= $e($iniciales($venta->nombre)) ?></span><b><?= $e($venta->nombre) ?></b><?php if (!empty($venta->correo)): ?><small><?= $e($venta->correo) ?></small><?php endif; ?></div>
-        <?php if (!empty($venta->cedula) && !es_vacio($venta->cedula)): ?>
-        <dl class="dv-datos">
-          <div><dt>Cédula</dt><dd><?= $e($venta->cedula) ?></dd></div>
-          <?php if (!empty($venta->telefono)): ?><div><dt>Teléfono</dt><dd><?= $e($venta->telefono) ?></dd></div><?php endif; ?>
-          <?php if (!empty($venta->direccion)): ?><div><dt>Dirección</dt><dd><?= $e($venta->direccion) ?></dd></div><?php endif; ?>
-        </dl>
-        <?php endif; ?>
-      </section>
-
-      <section class="dv-caja" aria-labelledby="dv-rec-t">
-        <h3 id="dv-rec-t">Recorrido</h3>
-        <ol class="dv-tiempo">
-          <?php foreach ($recorrido as [$ic, $titulo, $detalle, $hecho]): ?>
-          <li class="<?= $hecho ? '' : 'falta' ?>"><span class="punto"><svg class="i"><use href="#i-<?= $ic ?>"/></svg></span><div><b><?= $e($titulo) ?></b><?php if ($detalle): ?><small><?= $e($detalle) ?></small><?php endif; ?></div></li>
+    <section class="dn-cu <?= $claseEstado ?>" aria-labelledby="dn-cu-t">
+      <h3 id="dn-cu-t" class="dn-tit">Cuenta <span>a la tasa de la venta, <?= $num($tasaVenta) ?> Bs por $</span></h3>
+      <table class="dn-cu-libro">
+        <thead><tr><td></td><?php foreach ($cifras as [$txt, , $cl]): ?><th scope="col" class="<?= $cl ?>"><?= $txt ?></th><?php endforeach; ?></tr></thead>
+        <tbody>
+          <tr><th scope="row">Dólares</th><?php foreach ($cifras as [, $v, $cl]): ?><td class="<?= $cl ?>"><?= ($v < 0 ? '− ' : '') . '$' . $num(abs($v)) ?></td><?php endforeach; ?></tr>
+          <tr><th scope="row">Bolívares</th><?php foreach ($cifras as [, $v, $cl]): ?><td class="<?= $cl ?>"><?= $conSigno($v * $tasaVenta) ?></td><?php endforeach; ?></tr>
+        </tbody>
+      </table>
+      <table class="dn-cu-tabla">
+        <thead><tr><th scope="col"><span class="dn-oculto">Concepto</span></th><th scope="col">Dólares</th><th scope="col">Bolívares</th></tr></thead>
+        <tbody>
+          <?php foreach (array_slice($cifras, 0, -1) as [$txt, $v, $cl]): ?>
+          <tr class="<?= $cl ?>"><th scope="row"><?= $txt ?></th><td><?= ($v < 0 ? '− ' : '') . '$' . $num(abs($v)) ?></td><td><?= $conSigno($v * $tasaVenta) ?></td></tr>
           <?php endforeach; ?>
-        </ol>
-      </section>
-    </div>
-  </div>
+        </tbody>
+        <tfoot><tr class="cu-saldo"><th scope="row">Saldo</th><td>$<?= $num($saldo) ?></td><td><?= $num($saldo * $tasaVenta) ?></td></tr></tfoot>
+      </table>
+      <div class="dn-aviso" role="status"><span class="dn-aviso-ic"><svg class="i"><use href="#i-<?= $aviso[0] ?>"/></svg></span><p><?= $e($aviso[1]) ?></p><?php if ($aviso[2]): ?><a href="index.php?action=verificar_pagos" class="btn btn-pri"><svg class="i"><use href="#i-ojo"/></svg>Revisar pago</a><?php endif; ?></div>
+    </section>
+  </article>
 </section>
 <?php include __DIR__ . '/admin/_cerrar.php'; ?>

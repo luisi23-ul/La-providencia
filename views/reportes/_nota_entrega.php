@@ -14,17 +14,6 @@ $numero = numero_doc('venta', $venta);
 $titulo = 'Nota de entrega';
 $subtitulo = 'N.º ' . $numero . ' · ' . $fechaLarga;
 
-$sumaLineas = array_sum(array_map(fn($d) => (float) $d->subtotal, $detalles));
-$descuento = max(0, $sumaLineas - (float) $venta->total);
-$cliente = trim((string) ($venta->nombre ?? '')) ?: 'Consumidor final';
-$contacto = implode(' · ', array_filter([trim((string) ($venta->cedula ?? '')), trim((string) ($venta->telefono ?? ''))], fn($v) => $v !== '' && !preg_match('/^sin_/i', $v)));
-$estadoTxt = $cancelada ? 'Anulada' : ($saldada ? 'Pagada' : ($porVerificar > 0 ? 'Pago por verificar' : 'Pendiente de pago'));
-$entrega = [
-    'pagado' => 'Por retirar',
-    'retirado' => 'Retirada',
-    'entregado' => 'Entregada',
-    'completado' => 'Completada',
-][$venta->estado ?? ''] ?? '';
 $recibe = in_array($venta->estado ?? '', ['retirado', 'entregado', 'completado'], true) ? trim((string) ($venta->retirado_por ?? '')) : '';
 
 include __DIR__ . '/_hoja_abrir.php';
