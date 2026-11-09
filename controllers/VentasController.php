@@ -39,27 +39,23 @@ class VentasController {
 
     public function puntoVenta() {
         // 1. Catálogo de productos con categoría y subcategoría normalizada
-        $sqlProd = "SELECT p.codigo, 
-                           p.codigo AS id, 
-                           p.codigo AS codigo_producto,
-                           p.slug_categoria,
-                           p.slug_categoria AS id_categoria,
-                           p.id_subcategoria,
-                           COALESCE(c.nombre_categoria, 'General') AS nombre_categoria,
-                           COALESCE(sub.nombre_subcategoria, '') AS nombre_subcategoria,
-                           p.nombre_producto, 
+        $sqlProd = "SELECT p.codigo,
+                           p.codigo AS id,
+                           p.nombre_producto,
                            p.descripcion,
-                           p.precio, 
-                           p.costo_compra, 
-                           p.stock, 
-                           p.stock_minimo, 
-                           p.imagen, 
-                           p.estado
-                    FROM productos p 
+                           p.precio,
+                           p.costo_compra,
+                           p.stock,
+                           p.stock_minimo,
+                           p.imagen,
+                           p.estado,
+                           COALESCE(c.nombre_categoria, 'General') AS categoria_nombre,
+                           COALESCE(cp.nombre_categoria, '') AS categoria_padre_nombre
+                    FROM productos p
                     LEFT JOIN categorias c ON p.slug_categoria = c.slug
-                    LEFT JOIN subcategorias sub ON p.id_subcategoria = sub.id_subcategoria
+                    LEFT JOIN categorias cp ON c.slug_padre = cp.slug
                     WHERE (p.deleted_at = '2000-01-01 00:00:00' OR p.deleted_at IS NULL OR p.deleted_at = '0000-00-00 00:00:00')
-                      AND p.estado = 1 
+                      AND p.estado = 1
                     ORDER BY p.nombre_producto ASC";
         $stmtProd = $this->db->query($sqlProd);
         $productos = $stmtProd->fetchAll(PDO::FETCH_OBJ);

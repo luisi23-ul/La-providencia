@@ -240,42 +240,40 @@ class AdminControllers {
 
         include "views/dashboard.php";
     }
-    public function mostrarPanel() {
-        // 1. Obtener todas las categorías con su slug_padre para alimentar el selector dependiente del frontend
-        $stmtCat = $this->db->query("
-            SELECT slug, slug_padre, nombre_categoria 
-            FROM categorias 
-            WHERE slug != 'raiz' 
-            ORDER BY 
-                CASE WHEN slug_padre = 'raiz' OR slug_padre IS NULL OR slug_padre = '' THEN 0 ELSE 1 END ASC,
-                nombre_categoria ASC
-        ");
-        $categorias = $stmtCat->fetchAll(PDO::FETCH_OBJ);
+  public function mostrarPanel() {
+        // 1. Obtener categorías COMPLETAS (con slug_padre, atributos y opciones)
+        // Usamos la función auxiliar que ya recorre categoria_atributos y categoria_atributo_opciones
+        $categorias = $this->obtenerCategoriasConAtributos();
 
         // 2. Consultar catálogos de tallas y colores normalizados
         $tallasDisponibles = $this->db->query("SELECT id_talla, nombre FROM tallas ORDER BY id_talla ASC")->fetchAll(PDO::FETCH_OBJ);
         $coloresDisponibles = $this->db->query("SELECT id_color, nombre, hex FROM colores ORDER BY nombre ASC")->fetchAll(PDO::FETCH_OBJ);
 
-        // 3. Array vacío o null para $subcategoriasDisponibles para no romper código antiguo de la vista mientras tu compañero sube el cambio
+        // 3. Array vacío para evitar errores en vistas que aún lean la variable antigua
         $subcategoriasDisponibles = [];
 
         $p = null;
         include 'views/formulario_producto.php';
     }
 
-  public function mostrarListado() {
+    public function mostrarListado() {
         $busqueda  = trim((string)($_GET['q'] ?? $_GET['busqueda'] ?? ''));
         $categoria = trim((string)($_GET['categoria'] ?? $_GET['slug_categoria'] ?? ''));
 
         // Obtener la lista filtrada o completa según los parámetros
         $listaProductos = $this->productoModelo->obtenerFiltrados($busqueda, $categoria);
 
-        // Listar categorías para el selector desplegable
+        // Listar categorías con su slug_padre para el selector desplegable
         $stmtCat = $this->db->query("
-            SELECT slug, slug AS id, nombre_categoria 
+            SELECT slug, 
+                   slug AS id, 
+                   COALESCE(slug_padre, 'raiz') AS slug_padre,
+                   nombre_categoria 
             FROM categorias 
             WHERE slug != 'raiz' 
-            ORDER BY nombre_categoria ASC
+            ORDER BY 
+                CASE WHEN slug_padre = 'raiz' OR slug_padre IS NULL OR slug_padre = '' THEN 0 ELSE 1 END ASC,
+                nombre_categoria ASC
         ");
         $categorias = $stmtCat->fetchAll(PDO::FETCH_OBJ);
         
@@ -286,10 +284,19 @@ class AdminControllers {
     }
 
     public function catalogo() {
-        $nombre = $_GET['busqueda'] ?? '';
-        $id_cat = $_GET['id_categoria'] ?? '';
+        $nombre = trim((string)($_GET['busqueda'] ?? ''));
+        $id_cat = trim((string)($_GET['id_categoria'] ?? $_GET['slug_categoria'] ?? ''));
 
-        $categorias = $this->productoModelo->obtenerCategorias();
+        // Obtener categorías completas con su jerarquía para el filtro
+        $categorias = $this->db->query("
+            SELECT slug, slug_padre, nombre_categoria 
+            FROM categorias 
+            WHERE slug != 'raiz' 
+            ORDER BY 
+                CASE WHEN slug_padre = 'raiz' OR slug_padre IS NULL OR slug_padre = '' THEN 0 ELSE 1 END ASC,
+                nombre_categoria ASC
+        ")->fetchAll(PDO::FETCH_OBJ);
+
         $listaProductos = $this->productoModelo->buscarProductos($nombre, $id_cat);
 
         require_once 'views/catalogo.php';
@@ -299,33 +306,56 @@ class AdminControllers {
     // PRODUCTOS: CREAR, EDITAR Y BORRAR
     // -------------------------------------------------------------------------
 
-   private function obtenerCategoriasConAtributos() {
+    private function obtenerCategoriasConAtributos() {
+        // 1. Obtener categorías con slug_padre para el selector dependiente
         $stmtCat = $this->db->query("
             SELECT slug, 
                    slug AS id, 
+                   COALESCE(slug_padre, 'raiz') AS slug_padre,
                    nombre_categoria 
             FROM categorias 
             WHERE slug != 'raiz'
-            ORDER BY nombre_categoria ASC
+            ORDER BY 
+                CASE WHEN slug_padre = 'raiz' OR slug_padre IS NULL OR slug_padre = '' THEN 0 ELSE 1 END ASC,
+                nombre_categoria ASC
         ");
         $cats = $stmtCat->fetchAll(PDO::FETCH_OBJ);
 
-        // Si existe la tabla de atributos por categoría
+        // 2. Consultar atributos y opciones usando las columnas reales de la BD
         try {
-            $stmtAtr = $this->db->prepare("SELECT id, nombre FROM categoria_atributos WHERE id_categoria = ?");
-            foreach ($cats as $cat) {
+            $stmtAtr = $this->db->prepare("
+                SELECT codigo_atributo, nombre 
+                FROM categoria_atributos 
+                WHERE slug_categoria = ?
+            ");
+            $stmtOpc = $this->db->prepare("
+                SELECT valor 
+                FROM categoria_atributo_opciones 
+                WHERE codigo_atributo = ?
+            ");
+
+            foreach ($cats as &$cat) {
                 $stmtAtr->execute([$cat->slug]);
-                $cat->atributos = $stmtAtr->fetchAll(PDO::FETCH_OBJ);
+                $atributos = $stmtAtr->fetchAll(PDO::FETCH_OBJ);
+
+                foreach ($atributos as &$atr) {
+                    $stmtOpc->execute([$atr->codigo_atributo]);
+                    $atr->opciones = $stmtOpc->fetchAll(PDO::FETCH_COLUMN);
+                }
+                unset($atr);
+
+                $cat->atributos = $atributos;
             }
+            unset($cat);
         } catch (Exception $e) {
-            foreach ($cats as $cat) {
+            foreach ($cats as &$cat) {
                 $cat->atributos = [];
             }
+            unset($cat);
         }
 
         return $cats;
     }
-
    public function agregar() {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $db = $this->productoModelo->getDb();
@@ -430,19 +460,11 @@ class AdminControllers {
 
         $p->variantes = $this->productoModelo->obtenerVariantesProducto($codigo);
         
-        // Obtener categorías con slug_padre para alimentar el selector anidado
-        $stmtCat = $this->db->query("
-            SELECT slug, slug_padre, nombre_categoria 
-            FROM categorias 
-            WHERE slug != 'raiz' 
-            ORDER BY 
-                CASE WHEN slug_padre = 'raiz' OR slug_padre IS NULL OR slug_padre = '' THEN 0 ELSE 1 END ASC,
-                nombre_categoria ASC
-        ");
-        $categorias = $stmtCat->fetchAll(PDO::FETCH_OBJ);
+        // Obtener categorías completas con slug_padre, atributos y opciones
+        $categorias = $this->obtenerCategoriasConAtributos();
 
         // Consultar catálogos normalizados para edición
-        $tallasDisponibles = $this->db->query("SELECT id_talla, nombre FROM tallas ORDER BY nombre ASC")->fetchAll(PDO::FETCH_OBJ);
+        $tallasDisponibles = $this->db->query("SELECT id_talla, nombre FROM tallas ORDER BY id_talla ASC")->fetchAll(PDO::FETCH_OBJ);
         $coloresDisponibles = $this->db->query("SELECT id_color, nombre, hex FROM colores ORDER BY nombre ASC")->fetchAll(PDO::FETCH_OBJ);
 
         $aviso = $_SESSION['aviso'] ?? null;
@@ -450,7 +472,6 @@ class AdminControllers {
 
         require_once 'views/editar_producto.php';
     }
-
     public function actualizar() {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $db = $this->productoModelo->getDb();
@@ -653,7 +674,7 @@ public function categorias() {
             try {
                 $this->db->beginTransaction();
 
-                // 1. Si eligió crear una categoría padre al vuelo
+                // 1. Crear categoría padre al vuelo si se especificó
                 if (!empty($nuevaPadreNom)) {
                     $slugPadreGenerado = $this->generarSlugLimpio($nuevaPadreNom);
                     $stmtCheckP = $this->db->prepare("SELECT slug FROM categorias WHERE slug = ? LIMIT 1");
@@ -679,7 +700,7 @@ public function categorias() {
                     $slugFinal = $slugOriginal;
                     $this->log('Inventario', 'UPDATE', "Editó categoría: {$nombre} ({$slugOriginal})");
                 } else {
-                    // Crear categoría nueva con prefijo del padre si es subcategoría
+                    // Crear categoría nueva
                     $slugBase = $this->generarSlugLimpio($nombre);
                     $slugFinal = ($slugPadre !== 'raiz') ? ($slugPadre . '-' . $slugBase) : $slugBase;
 
@@ -694,33 +715,32 @@ public function categorias() {
                     $this->log('Inventario', 'INSERT', "Creó categoría: {$nombre} ({$slugFinal})");
                 }
 
-                // 2. Guardar atributos y sus opciones si se enviaron desde el formulario
-                $codigosAtrib  = (array)($_POST['codigo_atributo'] ?? []);
-                $nombresAtrib  = (array)($_POST['atributo_nombre'] ?? []);
-                $opcionesAtrib = (array)($_POST['atributo_opciones'] ?? []);
+                // 2. Procesar Atributos y Opciones
+                $nombresAtrib  = (array)($_POST['atributo_nombre'] ?? $_POST['atributo'] ?? []);
+                $opcionesAtrib = (array)($_POST['atributo_opciones'] ?? $_POST['opciones'] ?? []);
 
                 if (!empty($nombresAtrib)) {
+                    // Si se está editando, limpiamos atributos previos de esta categoría para evitar basura huérfana
+                    if (!empty($slugOriginal)) {
+                        $this->db->prepare("DELETE FROM categoria_atributos WHERE slug_categoria = ?")->execute([$slugFinal]);
+                    }
+
                     $stAtrib = $this->db->prepare("
                         INSERT INTO categoria_atributos (codigo_atributo, slug_categoria, nombre)
                         VALUES (?, ?, ?)
-                        ON DUPLICATE KEY UPDATE nombre = VALUES(nombre)
                     ");
 
                     $stOpc = $this->db->prepare("
                         INSERT INTO categoria_atributo_opciones (codigo_atributo, valor)
                         VALUES (?, ?)
-                        ON DUPLICATE KEY UPDATE valor = VALUES(valor)
                     ");
 
+                    $idx = 1;
                     for ($i = 0; $i < count($nombresAtrib); $i++) {
                         $nomAt = trim((string)($nombresAtrib[$i] ?? ''));
                         if (empty($nomAt)) continue;
 
-                        $codAt = trim((string)($codigosAtrib[$i] ?? ''));
-                        if (empty($codAt)) {
-                            $codAt = $slugFinal . '-' . $this->generarSlugLimpio($nomAt) . '-' . ($i + 1);
-                        }
-
+                        $codAt = $slugFinal . '-' . $this->generarSlugLimpio($nomAt) . '-' . $idx;
                         $stAtrib->execute([$codAt, $slugFinal, $nomAt]);
 
                         $opcRaw = trim((string)($opcionesAtrib[$i] ?? ''));
@@ -732,6 +752,7 @@ public function categorias() {
                                 }
                             }
                         }
+                        $idx++;
                     }
                 }
 

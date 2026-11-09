@@ -24,8 +24,14 @@ class ProductoModel {
         $sql = "SELECT p.*, 
                        p.codigo AS id,
                        COALESCE(c.nombre_categoria, 'General') AS nombre_categoria, 
-                       COALESCE(c.nombre_categoria, 'General') AS nombre_categoria_padre,
-                       COALESCE(sub.nombre_subcategoria, '') AS nombre_subcategoria,
+                       CASE 
+                           WHEN c.slug_padre IS NULL OR c.slug_padre = 'raiz' OR c.slug_padre = '' THEN COALESCE(c.nombre_categoria, 'General')
+                           ELSE COALESCE(cp.nombre_categoria, 'General')
+                       END AS nombre_categoria_padre,
+                       CASE 
+                           WHEN c.slug_padre IS NOT NULL AND c.slug_padre != 'raiz' AND c.slug_padre != '' THEN c.nombre_categoria
+                           ELSE ''
+                       END AS nombre_subcategoria,
                        (
                            SELECT GROUP_CONCAT(
                                CONCAT_WS(':', 
@@ -41,7 +47,7 @@ class ProductoModel {
                        ) AS resumen_variantes
                 FROM productos p
                 LEFT JOIN categorias c ON p.slug_categoria = c.slug
-                LEFT JOIN subcategorias sub ON p.id_subcategoria = sub.id_subcategoria
+                LEFT JOIN categorias cp ON c.slug_padre = cp.slug
                 WHERE (p.deleted_at IS NULL OR p.deleted_at = '2000-01-01 00:00:00' OR p.deleted_at = '0000-00-00 00:00:00')
                 ORDER BY p.created_at DESC, p.codigo DESC";
 
@@ -54,11 +60,18 @@ class ProductoModel {
             SELECT p.*, 
                    p.codigo AS id,
                    COALESCE(c.nombre_categoria, 'General') AS nombre_categoria, 
-                   COALESCE(c.nombre_categoria, 'General') AS nombre_categoria_padre,
-                   COALESCE(sub.nombre_subcategoria, '') AS nombre_subcategoria
+                   CASE 
+                       WHEN c.slug_padre IS NULL OR c.slug_padre = 'raiz' OR c.slug_padre = '' THEN COALESCE(c.nombre_categoria, 'General')
+                       ELSE COALESCE(cp.nombre_categoria, 'General')
+                   END AS nombre_categoria_padre,
+                   CASE 
+                       WHEN c.slug_padre IS NOT NULL AND c.slug_padre != 'raiz' AND c.slug_padre != '' THEN c.nombre_categoria
+                       ELSE ''
+                   END AS nombre_subcategoria,
+                   c.slug_padre
             FROM productos p
             LEFT JOIN categorias c ON p.slug_categoria = c.slug
-            LEFT JOIN subcategorias sub ON p.id_subcategoria = sub.id_subcategoria
+            LEFT JOIN categorias cp ON c.slug_padre = cp.slug
             WHERE p.codigo = ? AND (p.deleted_at IS NULL OR p.deleted_at = '2000-01-01 00:00:00')
             LIMIT 1
         ");
@@ -77,18 +90,25 @@ class ProductoModel {
         }
 
         if (!empty($slug_cat)) {
-            $where[] = "p.slug_categoria = ?";
+            $where[] = "(p.slug_categoria = ? OR c.slug_padre = ?)";
+            $params[] = $slug_cat;
             $params[] = $slug_cat;
         }
 
         $sql = "SELECT p.*, 
                        p.codigo AS id,
                        COALESCE(c.nombre_categoria, 'General') AS nombre_categoria, 
-                       COALESCE(c.nombre_categoria, 'General') AS nombre_categoria_padre,
-                       COALESCE(sub.nombre_subcategoria, '') AS nombre_subcategoria
+                       CASE 
+                           WHEN c.slug_padre IS NULL OR c.slug_padre = 'raiz' OR c.slug_padre = '' THEN COALESCE(c.nombre_categoria, 'General')
+                           ELSE COALESCE(cp.nombre_categoria, 'General')
+                       END AS nombre_categoria_padre,
+                       CASE 
+                           WHEN c.slug_padre IS NOT NULL AND c.slug_padre != 'raiz' AND c.slug_padre != '' THEN c.nombre_categoria
+                           ELSE ''
+                       END AS nombre_subcategoria
                 FROM productos p
                 LEFT JOIN categorias c ON p.slug_categoria = c.slug
-                LEFT JOIN subcategorias sub ON p.id_subcategoria = sub.id_subcategoria
+                LEFT JOIN categorias cp ON c.slug_padre = cp.slug
                 WHERE " . implode(' AND ', $where) . "
                 ORDER BY p.nombre_producto ASC";
 
@@ -98,7 +118,12 @@ class ProductoModel {
     }
 
     public function obtenerCategorias() {
-        $stmt = $this->db->query("SELECT slug, slug AS id, nombre_categoria FROM categorias ORDER BY nombre_categoria ASC");
+        $stmt = $this->db->query("
+            SELECT slug, slug AS id, slug_padre, nombre_categoria 
+            FROM categorias 
+            WHERE slug != 'raiz'
+            ORDER BY nombre_categoria ASC
+        ");
         return $stmt->fetchAll(PDO::FETCH_OBJ);
     }
 
@@ -107,7 +132,7 @@ class ProductoModel {
             $stmt = $this->db->prepare("
                 SELECT pa.*, ca.nombre
                 FROM producto_atributos pa
-                INNER JOIN categoria_atributos ca ON pa.id_atributo = ca.id
+                INNER JOIN categoria_atributos ca ON pa.id_atributo = ca.codigo_atributo
                 WHERE pa.codigo_producto = ?
             ");
             $stmt->execute([(string)$codigoProducto]);
@@ -130,16 +155,22 @@ class ProductoModel {
         }
 
         if (!empty($slugCategoria) && $slugCategoria !== 'todas') {
-            $where[] = "(p.slug_categoria = ? OR p.slug_categoria LIKE ?)";
+            $where[] = "(p.slug_categoria = ? OR c.slug_padre = ?)";
             $params[] = $slugCategoria;
-            $params[] = "%$slugCategoria%";
+            $params[] = $slugCategoria;
         }
 
         $sql = "SELECT p.*, 
                        p.codigo AS id,
                        COALESCE(c.nombre_categoria, 'General') AS nombre_categoria, 
-                       COALESCE(c.nombre_categoria, 'General') AS nombre_categoria_padre,
-                       COALESCE(sub.nombre_subcategoria, '') AS nombre_subcategoria,
+                       CASE 
+                           WHEN c.slug_padre IS NULL OR c.slug_padre = 'raiz' OR c.slug_padre = '' THEN COALESCE(c.nombre_categoria, 'General')
+                           ELSE COALESCE(cp.nombre_categoria, 'General')
+                       END AS nombre_categoria_padre,
+                       CASE 
+                           WHEN c.slug_padre IS NOT NULL AND c.slug_padre != 'raiz' AND c.slug_padre != '' THEN c.nombre_categoria
+                           ELSE ''
+                       END AS nombre_subcategoria,
                        (
                            SELECT GROUP_CONCAT(
                                CONCAT_WS(':', 
@@ -155,7 +186,7 @@ class ProductoModel {
                        ) AS resumen_variantes
                 FROM productos p
                 LEFT JOIN categorias c ON p.slug_categoria = c.slug
-                LEFT JOIN subcategorias sub ON p.id_subcategoria = sub.id_subcategoria
+                LEFT JOIN categorias cp ON c.slug_padre = cp.slug
                 WHERE " . implode(' AND ', $where) . "
                 ORDER BY p.created_at DESC, p.codigo DESC";
 
@@ -193,21 +224,20 @@ class ProductoModel {
         }
 
         $sql = "INSERT INTO productos (
-                    codigo, slug_categoria, id_subcategoria, nombre_producto, descripcion, 
+                    codigo, slug_categoria, nombre_producto, descripcion, 
                     precio, costo_compra, stock, stock_minimo, imagen, estado, deleted_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '2000-01-01 00:00:00')";
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '2000-01-01 00:00:00')";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([
             $codigo,
-            $datos['slug_categoria'] ?? $datos['id_categoria'] ?? 'general',
-            !empty($datos['id_subcategoria']) ? (int)$datos['id_subcategoria'] : null,
+            $datos['slug_categoria'] ?? $datos['id_categoria'] ?? 'raiz',
             $datos['nombre_producto'] ?? '',
             $datos['descripcion'] ?? '',
             (float)($datos['precio'] ?? 0),
             (float)($datos['costo_compra'] ?? 0),
             (int)($datos['stock'] ?? 0),
             (int)($datos['stock_minimo'] ?? 5),
-            $datos['imagen'] ?? null,
+            $datos['imagen'] ?? '',
             (int)($datos['estado'] ?? 1)
         ]);
 
@@ -221,26 +251,24 @@ class ProductoModel {
     public function actualizarCompleto($codigo, $datos, $atributos = [], $variantes = []) {
         $sql = "UPDATE productos SET 
                     slug_categoria = ?, 
-                    id_subcategoria = ?,
                     nombre_producto = ?, 
                     descripcion = ?, 
                     precio = ?, 
                     costo_compra = ?, 
                     stock_minimo = ?, 
                     estado = ?, 
-                    imagen = COALESCE(?, imagen)
+                    imagen = COALESCE(NULLIF(?, ''), imagen)
                 WHERE codigo = ?";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([
-            $datos['slug_categoria'] ?? $datos['id_categoria'] ?? 'general',
-            !empty($datos['id_subcategoria']) ? (int)$datos['id_subcategoria'] : null,
+            $datos['slug_categoria'] ?? $datos['id_categoria'] ?? 'raiz',
             $datos['nombre_producto'],
             $datos['descripcion'],
             (float)$datos['precio'],
             (float)$datos['costo_compra'],
             (int)$datos['stock_minimo'],
             (int)$datos['estado'],
-            $datos['imagen'],
+            $datos['imagen'] ?? '',
             (string)$codigo
         ]);
 
@@ -277,8 +305,8 @@ class ProductoModel {
             $talla   = trim($v['talla'] ?? '');
             $color   = trim($v['color'] ?? '');
             $modelo  = trim($v['modelo'] ?? '');
-            $idTalla = !empty($v['id_talla']) ? (int)$v['id_talla'] : null;
-            $idColor = !empty($v['id_color']) ? (int)$v['id_color'] : null;
+            $idTalla = !empty($v['id_talla']) ? (int)$v['id_talla'] : 999;
+            $idColor = !empty($v['id_color']) ? (int)$v['id_color'] : 999;
             $stk     = max(0, (int)($v['stock'] ?? 0));
             $varCod  = trim((string)($v['codigo_variante'] ?? $v['id'] ?? ''));
             $precio  = isset($v['precio']) && $v['precio'] !== '' ? (float)$v['precio'] : 0.00;
