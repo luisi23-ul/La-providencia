@@ -101,7 +101,9 @@
     $('pv-tab-cuenta').textContent = art ? '(' + art + ')' : '';
     $('pv-barra-art').textContent = art;
     $('pv-barra-total').textContent = usd(tot);
-    $('pv-cobrar').textContent = pv.lineas.length ? 'Cobrar ' + usd(tot) : 'Cobrar';
+    var bloq = D.turno !== 'abierto' && pv.lineas.length;
+    $('pv-cobrar').textContent = !pv.lineas.length ? 'Cobrar' : D.turno === 'sin' ? 'Inicia el turno para cobrar' : D.turno === 'viejo' ? 'Cierra el turno para cobrar' : 'Cobrar ' + usd(tot);
+    $('pv-cobrar').classList.toggle('tc-bloq', !!bloq);
     $('pv-cobrar').disabled = !pv.lineas.length;
     var n = leerEspera().length;
     $('pv-cuenta-espera').textContent = n; $('pv-cuenta-espera').hidden = !n;
@@ -445,7 +447,10 @@
     $('pv-cobro').hidden = p !== 'cobro'; $('pv-listo').hidden = p !== 'listo';
     $('pv-tk-titulo').textContent = 'Ticket'; $('pv-tk-meta').textContent = '';
   }
-  $('pv-cobrar').addEventListener('click', function () { if (!pv.lineas.length) return; nuevoCobro(); mostrar('cobro'); pintarCobro(); enfocarMonto(); });
+  $('pv-cobrar').addEventListener('click', function () {
+    if (!pv.lineas.length) return;
+    if (D.turno !== 'abierto') { var m = $(D.turno === 'viejo' ? 'modal-turno-cerrar' : 'modal-turno-abrir'); if (m) document.querySelector('[data-abrir-modal="' + m.id + '"]').click(); return; }
+    nuevoCobro(); mostrar('cobro'); pintarCobro(); enfocarMonto(); });
   $('pv-seguir').addEventListener('click', function () { mostrar('venta'); pintarPV(); volverAlLector(); });
   $('pv-cobro').addEventListener('click', function (e) {
     var t = function (s) { return e.target.closest(s); }, b;
@@ -666,6 +671,30 @@
     $('pl-nueva').focus({ preventScroll: true });
   }
 
+  var mtc = $('mtc-form');
+  if (mtc) {
+    var nota = $('mtc-nota'), fmtBs = Panel.fmtBs;
+    var cuadre = function () {
+      var descuadre = false;
+      mtc.querySelectorAll('input[data-esperado]').forEach(function (inp) {
+        var out = $('mtc-dif-' + inp.getAttribute('data-moneda')), esBs = inp.getAttribute('data-moneda') === 'bs';
+        if (inp.value === '' || isNaN(+inp.value)) { out.innerHTML = '<b>Por contar</b>'; return; }
+        var d = Math.round((+inp.value - +inp.getAttribute('data-esperado')) * 100) / 100;
+        var txt = esBs ? fmtBs(Math.abs(d)) + ' Bs' : usd(Math.abs(d));
+        var est = d === 0 ? ['Cuadra', 'ok'] : d > 0 ? ['Sobra', 'sobra'] : ['Falta', 'falta'];
+        if (d !== 0) descuadre = true;
+        out.innerHTML = (d === 0 ? '' : '<b>' + (d > 0 ? '+' : '−') + txt + '</b>') + '<span class="chip tc-chip ' + est[1] + '">' + est[0] + '</span>';
+      });
+      $('mtc-nota-req').textContent = descuadre ? '(obligatoria: la caja no cuadra)' : '(obligatoria si no cuadra)';
+      $('mtc-nota-req').classList.toggle('tc-req', descuadre);
+      nota.setCustomValidity(descuadre && !nota.value.trim() ? 'Explica por qué no cuadra la caja.' : '');
+      if (nota.checkValidity() && nota.getAttribute('aria-invalid')) { var c = nota.closest('.campo'); c.classList.remove('con-error'); var m = c.querySelector('.error-campo'); if (m) m.remove(); nota.removeAttribute('aria-invalid'); }
+    };
+    mtc.addEventListener('input', cuadre);
+    $('modal-turno-cerrar').addEventListener('close', function () { setTimeout(cuadre, 0); });
+    cuadre();
+  }
+
   if (D.venta) { try { localStorage.removeItem('pv-actual'); } catch (e) {} comprobante(D.venta); }
-  else { var habia = recuperarActual(); pintarPV(); if (habia) avisar('Recuperamos el ticket que tenías abierto', 'info'); volverAlLector(); }
+  else { var habia = recuperarActual(); pintarPV(); if (habia && !document.querySelector('.tc-con-cierre')) avisar('Recuperamos el ticket que tenías abierto', 'info'); volverAlLector(); }
 })();

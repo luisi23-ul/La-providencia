@@ -10,22 +10,103 @@ $turno = $turno ?? null;
 $arqueo = (object) ($arqueo ?? []);
 $turnoDesde = $turno->fecha_apertura ?? $turno->apertura ?? '';
 $turnoAbierto = !empty($turno) && $turnoDesde !== '';
+$turnoViejo = $turnoAbierto && date('Y-m-d', strtotime($turnoDesde)) < date('Y-m-d');
+$turnoEstado = $turnoViejo ? 'viejo' : ($turnoAbierto ? 'abierto' : 'sin');
+$horaCorta = fn($f) => str_replace(['am', 'pm'], ['a. m.', 'p. m.'], date('g:i a', strtotime($f)));
+$bsFmt = fn($v) => number_format((float) $v, 2, ',', '.') . ' Bs';
+$cuadre = function ($d) { $d = round((float) $d, 2); return $d == 0 ? ['Cuadra', 'ok'] : ($d > 0 ? ['Sobra', 'sobra'] : ['Falta', 'falta']); };
+$cierre = null;
+if (!$turnoAbierto && !empty($_GET['comprobante_turno']) && !empty($_GET['cajero'])) {
+    $conexion = isset($this) && isset($this->db) ? $this->db : ($db ?? null);
+    if ($conexion) {
+        require_once __DIR__ . '/../../models/TurnoCajaModel.php';
+        $res = (new TurnoCajaModel($conexion))->obtenerResumenTurno((string) $_GET['cajero'], (int) $_GET['comprobante_turno']);
+        if ($res && ($res['turno']->estado ?? '') === 'cerrado') {
+            $t = $res['turno'];
+            $espUsd = (float) $t->fondo_usd;
+            $espBs = (float) $t->fondo_bs;
+            foreach ($res['desglose'] as $d) {
+                $met = strtolower($d->codigo_metodo ?? '');
+                $mon = strtoupper(trim($d->moneda ?? ''));
+                if ($met === 'efectivo_usd' || ($met === 'efectivo' && $mon === 'USD')) $espUsd += (float) $d->total_monto;
+                elseif ($met === 'efectivo_bs' || ($met === 'efectivo' && $mon === 'BS')) $espBs += (float) $d->total_monto;
+            }
+            $stNom = $conexion->prepare('SELECT nombre FROM usuarios WHERE cedula = ? LIMIT 1');
+            $stNom->execute([$t->cedula_cajero]);
+            $cierre = (object) ['t' => $t, 'nombre' => ucwords(mb_strtolower((string) ($stNom->fetchColumn() ?: 'Cajero'))), 'esp_usd' => $espUsd, 'esp_bs' => $espBs, 'cobros' => $res['desglose']];
+        }
+    }
+}
 include __DIR__ . '/../admin/_abrir.php';
 $categorias = array_values(array_unique(array_filter(array_map(fn($p) => categoria_de($p), $productos))));
 ?>
-<section class="pantalla pv" id="p-punto_venta">
+<section class="pantalla pv<?= $cierre ? ' tc-con-cierre' : '' ?>" id="p-punto_venta">
   <header class="pv-top">
-    <div class="pv-caja"><span class="marca-logo">P</span><div><b>Caja · Tienda física</b><span><?= $turnoAbierto ? 'Turno abierto por ' . $e($turno->nombre_apertura ?? $_SESSION['nombre'] ?? '') . ', desde ' . $e(date('g:i a', strtotime($turnoDesde))) : 'Sin turno abierto' ?></span></div></div>
+    <div class="pv-caja"><span class="marca-logo">P</span><div><b>Caja · Tienda física</b>
+      <?php if ($turnoViejo): ?>
+        <span class="tc-estado viejo"><svg class="i"><use href="#i-alerta"/></svg>Turno del <?= $e(date('d/m', strtotime($turnoDesde))) ?> sin cerrar</span>
+      <?php elseif ($turnoAbierto): ?>
+        <span class="tc-estado abierto"><svg class="i"><use href="#i-reloj"/></svg>Turno abierto<span class="tc-quien">, <?= $e($turno->nombre_apertura ?? '') ?>,</span> desde <?= $e($horaCorta($turnoDesde)) ?></span>
+      <?php else: ?>
+        <span class="tc-estado sin"><svg class="i"><use href="#i-candado"/></svg>Sin turno</span>
+      <?php endif; ?>
+    </div></div>
     <span class="tasa">Tasa BCV <b><?= number_format($tasa, 2, ',', '.') ?> Bs/$</b></span>
     <?php if ($turnoAbierto): ?>
-      <button type="button" class="pv-top-btn" data-abrir-modal="modal-turno-cerrar"><svg class="i"><use href="#i-candado"/></svg><span class="txt">Cerrar turno</span></button>
+      <button type="button" class="pv-top-btn<?= $turnoViejo ? ' tc-urge' : '' ?>" data-abrir-modal="modal-turno-cerrar" aria-label="Cerrar turno"><svg class="i"><use href="#i-arqueo"/></svg><span class="txt">Cerrar turno</span></button>
     <?php else: ?>
-      <button type="button" class="pv-top-btn" data-abrir-modal="modal-turno-abrir"><svg class="i"><use href="#i-caja"/></svg><span class="txt">Iniciar turno</span></button>
+      <button type="button" class="pv-top-btn tc-urge" data-abrir-modal="modal-turno-abrir" aria-label="Iniciar turno"><svg class="i"><use href="#i-caja"/></svg><span class="txt">Iniciar turno</span></button>
     <?php endif; ?>
     <button type="button" class="pv-top-btn" id="pv-ver-espera"><svg class="i"><use href="#i-recibo"/></svg><span class="txt">En espera</span><span class="cuenta" id="pv-cuenta-espera" hidden>0</span></button>
     <a href="index.php?action=ventas" class="pv-top-btn"><svg class="i"><use href="#i-lista"/></svg><span class="txt">Ventas del día</span></a>
     <a href="index.php?action=dashboard" class="pv-top-btn salir"><svg class="i"><use href="#i-salir"/></svg><span class="txt">Salir de la caja</span></a>
   </header>
+
+  <?php if ($turnoViejo): ?>
+    <p class="tc-franja" role="status"><svg class="i"><use href="#i-alerta"/></svg><span>Este turno se abrió el <?= $e(date('d/m/Y', strtotime($turnoDesde))) ?> a las <?= $e($horaCorta($turnoDesde)) ?> Ciérralo y abre uno nuevo para poder cobrar.</span></p>
+  <?php endif; ?>
+
+  <?php if ($cierre): $ct = $cierre->t; $difUsd = (float) $ct->cierre_usd - $cierre->esp_usd; $difBs = (float) $ct->cierre_bs - $cierre->esp_bs; ?>
+  <section class="tc-cerrado" aria-labelledby="tcc-titulo">
+    <header class="tcc-cab">
+      <span class="pl-ok-ic"><svg class="i"><use href="#i-check"/></svg></span>
+      <div><h2 id="tcc-titulo">Turno #<?= (int) $ct->numero_turno ?> cerrado</h2><p><?= $e($cierre->nombre) ?>, de <?= $e($horaCorta($ct->fecha_apertura)) ?> a <?= $e($horaCorta($ct->fecha_cierre)) ?><?= date('Y-m-d', strtotime($ct->fecha_apertura)) !== date('Y-m-d') ? ' del ' . $e(date('d/m/Y', strtotime($ct->fecha_apertura))) : '' ?></p></div>
+    </header>
+    <div class="tcc-filas">
+      <?php foreach ([['Caja en dólares', $usd($ct->fondo_usd), $usd($cierre->esp_usd), $usd($ct->cierre_usd), $difUsd, $usd(abs($difUsd))], ['Caja en bolívares', $bsFmt($ct->fondo_bs), $bsFmt($cierre->esp_bs), $bsFmt($ct->cierre_bs), $difBs, $bsFmt(abs($difBs))]] as [$tit, $fondo, $esp, $cont, $dif, $difTxt]): [$cq, $cc] = $cuadre($dif); ?>
+        <article class="tcc-fila">
+          <h3><?= $tit ?></h3>
+          <dl>
+            <div><dt>Fondo</dt><dd><?= $fondo ?></dd></div>
+            <div><dt>Esperado</dt><dd><?= $esp ?></dd></div>
+            <div><dt>Contado</dt><dd><?= $cont ?></dd></div>
+            <div class="tcc-dif"><dt>Diferencia</dt><dd><?= $cc === 'ok' ? '' : ($cc === 'sobra' ? '+' : '−') . $difTxt ?> <span class="chip tc-chip <?= $cc ?>"><?= $cq ?></span></dd></div>
+          </dl>
+        </article>
+      <?php endforeach; ?>
+    </div>
+    <section class="tcc-cobros" aria-labelledby="tcc-cobros-t">
+      <h3 id="tcc-cobros-t">Cobros del turno</h3>
+      <?php if (!$cierre->cobros): ?>
+        <p class="tcc-vacio">No hubo cobros en este turno.</p>
+      <?php else: $totUsd = 0; $totN = 0; ?>
+        <ul>
+          <?php foreach ($cierre->cobros as $c): $esBs = in_array(strtoupper(trim((string) $c->moneda)), ['BS', 'VES'], true); $totUsd += (float) $c->total_usd; $totN += (int) $c->cantidad_transacciones; ?>
+            <li><span><b><?= $e($c->metodo_nombre ?: $c->codigo_metodo) ?></b><small><?= (int) $c->cantidad_transacciones ?> <?= (int) $c->cantidad_transacciones === 1 ? 'pago' : 'pagos' ?></small></span><span class="tcc-monto"><b><?= $esBs ? $bsFmt($c->total_monto) : $usd($c->total_monto) ?></b><small><?= $esBs ? $usd($c->total_usd) : $bsFmt($c->total_bs) ?></small></span></li>
+          <?php endforeach; ?>
+        </ul>
+        <p class="tcc-total"><span>Total cobrado <small><?= $totN ?> <?= $totN === 1 ? 'pago' : 'pagos' ?></small></span><b><?= $usd($totUsd) ?></b></p>
+      <?php endif; ?>
+    </section>
+    <?php if (trim((string) $ct->nota_cierre) !== ''): ?>
+      <p class="tcc-nota"><b>Nota del cierre</b><?= $e($ct->nota_cierre) ?></p>
+    <?php endif; ?>
+    <footer class="tcc-acc">
+      <div class="tcc-rep"><span>Comprobante del cierre</span><?php $exportar = ['tipo' => 'cierre_caja', 'filtros' => ['cedula' => (string) $ct->cedula_cajero, 'turno' => (int) $ct->numero_turno]]; include __DIR__ . '/../admin/_exportar.php'; ?></div>
+      <button type="button" class="btn btn-pri" data-abrir-modal="modal-turno-abrir"><svg class="i"><use href="#i-caja"/></svg>Iniciar nuevo turno</button>
+    </footer>
+  </section>
+  <?php endif; ?>
 
   <div class="seg pv-tabs" role="group" aria-label="Vista">
     <button type="button" data-pv-vista="productos" aria-pressed="true">Productos</button>
@@ -128,14 +209,14 @@ $categorias = array_values(array_unique(array_filter(array_map(fn($p) => categor
 
 <dialog class="modal chico" id="modal-turno-abrir" aria-labelledby="mta-titulo">
   <form method="POST" action="index.php?action=abrir_turno">
-    <header class="modal-cab"><span class="modal-ic"><svg class="i"><use href="#i-caja"/></svg></span><div><h3 id="mta-titulo">Iniciar turno</h3><p>Escribe con cuánto efectivo arranca la caja.</p></div><button type="button" class="ic-btn" data-cerrar aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button></header>
-    <div class="modal-cuerpo">
-      <div class="form-grid">
-        <div class="campo"><label for="mta-usd">Fondo en efectivo $</label><input id="mta-usd" name="fondo_usd" type="number" min="0" step="0.01" inputmode="decimal" value="0" required></div>
-        <div class="campo"><label for="mta-bs">Fondo en efectivo Bs</label><input id="mta-bs" name="fondo_bs" type="number" min="0" step="0.01" inputmode="decimal" value="0" required></div>
+    <header class="modal-cab"><span class="modal-ic"><svg class="i"><use href="#i-caja"/></svg></span><div><h3 id="mta-titulo">Iniciar turno</h3><p>Cuenta el efectivo con el que arranca la caja.</p></div><button type="button" class="ic-btn" data-cerrar aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button></header>
+    <div class="modal-cuerpo tc-form">
+      <div class="tc-fondos">
+        <div class="campo"><label for="mta-usd">Fondo en dólares</label><span class="tc-monto"><span class="tc-unidad" aria-hidden="true">$</span><input id="mta-usd" name="fondo_usd" type="number" min="0" step="0.01" inputmode="decimal" value="0" required></span></div>
+        <div class="campo"><label for="mta-bs">Fondo en bolívares</label><span class="tc-monto"><span class="tc-unidad" aria-hidden="true">Bs</span><input id="mta-bs" name="fondo_bs" type="number" min="0" step="0.01" inputmode="decimal" value="0" required></span></div>
       </div>
-      <p class="ayuda">Tasa del turno: <?= number_format($tasa, 2, ',', '.') ?> Bs/$</p>
-      <div class="campo"><label for="mta-nota">Nota (opcional)</label><textarea id="mta-nota" name="nota_apertura" maxlength="255"></textarea></div>
+      <p class="tc-tasa"><svg class="i"><use href="#i-dolar"/></svg><span>Tasa del día</span><b><?= number_format($tasa, 2, ',', '.') ?> Bs/$</b></p>
+      <div class="campo"><label for="mta-nota">Nota <span class="tc-opc">(opcional)</span></label><textarea id="mta-nota" name="nota_apertura" maxlength="255" rows="2"></textarea></div>
     </div>
     <footer class="modal-pie">
       <button type="button" class="btn btn-sec" data-cerrar>Cancelar</button>
@@ -145,16 +226,20 @@ $categorias = array_values(array_unique(array_filter(array_map(fn($p) => categor
 </dialog>
 
 <?php if ($turnoAbierto): ?>
-<dialog class="modal chico" id="modal-turno-cerrar" aria-labelledby="mtc-titulo">
-  <form method="POST" action="index.php?action=cerrar_turno">
+<dialog class="modal chico tc-modal-cierre" id="modal-turno-cerrar" aria-labelledby="mtc-titulo">
+  <form method="POST" action="index.php?action=cerrar_turno" id="mtc-form">
     <input type="hidden" name="codigo_turno" value="<?= $e($turno->codigo_turno ?? '') ?>">
-    <header class="modal-cab"><span class="modal-ic"><svg class="i"><use href="#i-candado"/></svg></span><div><h3 id="mtc-titulo">Cerrar turno</h3><p>Cuenta el efectivo de la caja y escríbelo.</p></div><button type="button" class="ic-btn" data-cerrar aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button></header>
-    <div class="modal-cuerpo">
-      <div class="form-grid">
-        <div class="campo"><label for="mtc-usd">Contado en efectivo $</label><input id="mtc-usd" name="contado_usd" type="number" min="0" step="0.01" inputmode="decimal" required><span class="ayuda">Esperado: <?= isset($arqueo->esperado_usd) ? '$' . number_format((float) $arqueo->esperado_usd, 2, ',', '.') : 'sin calcular' ?></span></div>
-        <div class="campo"><label for="mtc-bs">Contado en efectivo Bs</label><input id="mtc-bs" name="contado_bs" type="number" min="0" step="0.01" inputmode="decimal" required><span class="ayuda">Esperado: <?= isset($arqueo->esperado_bs) ? number_format((float) $arqueo->esperado_bs, 2, ',', '.') . ' Bs' : 'sin calcular' ?></span></div>
-      </div>
-      <div class="campo"><label for="mtc-nota">Nota (obligatoria si no cuadra)</label><textarea id="mtc-nota" name="nota_cierre" maxlength="255"></textarea></div>
+    <header class="modal-cab"><span class="modal-ic"><svg class="i"><use href="#i-arqueo"/></svg></span><div><h3 id="mtc-titulo">Cerrar turno #<?= $e($turno->codigo_turno ?? '') ?></h3><p>Cuenta el efectivo de la caja y escribe cuánto hay.</p></div><button type="button" class="ic-btn" data-cerrar aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button></header>
+    <div class="tc-parcial"><p><b>Arqueo parcial</b><span>Imprímelo para contar sin cerrar el turno.</span></p><div class="tc-parcial-btn"><?php $exportar = ['tipo' => 'cierre_caja', 'filtros' => ['cedula' => (string) ($turno->cedula_cajero ?? ''), 'turno' => (int) ($turno->codigo_turno ?? 0)]]; include __DIR__ . '/../admin/_exportar.php'; ?></div></div>
+    <div class="modal-cuerpo tc-form">
+      <?php foreach ([['usd', 'Efectivo en dólares', 'Contado en dólares', '$', 'contado_usd', (float) ($arqueo->esperado_usd ?? 0), $usd($arqueo->esperado_usd ?? 0)], ['bs', 'Efectivo en bolívares', 'Contado en bolívares', 'Bs', 'contado_bs', (float) ($arqueo->esperado_bs ?? 0), $bsFmt($arqueo->esperado_bs ?? 0)]] as [$k, $tit, $lbl, $uni, $name, $espNum, $espTxt]): ?>
+        <section class="tc-arq" aria-labelledby="mtc-t-<?= $k ?>">
+          <header><h4 id="mtc-t-<?= $k ?>"><?= $tit ?></h4><span>Esperado <b><?= $espTxt ?></b></span></header>
+          <div class="campo"><label for="mtc-<?= $k ?>"><?= $lbl ?></label><span class="tc-monto"><span class="tc-unidad" aria-hidden="true"><?= $uni ?></span><input id="mtc-<?= $k ?>" name="<?= $name ?>" type="number" min="0" step="0.01" inputmode="decimal" required data-esperado="<?= number_format($espNum, 2, '.', '') ?>" data-moneda="<?= $k ?>"></span></div>
+          <p class="tc-dif"><span>Diferencia</span><output for="mtc-<?= $k ?>" id="mtc-dif-<?= $k ?>" aria-live="polite"><b>Por contar</b></output></p>
+        </section>
+      <?php endforeach; ?>
+      <div class="campo"><label for="mtc-nota">Nota <span class="tc-opc" id="mtc-nota-req">(obligatoria si no cuadra)</span></label><textarea id="mtc-nota" name="nota_cierre" maxlength="255" rows="2"></textarea></div>
     </div>
     <footer class="modal-pie">
       <button type="button" class="btn btn-sec" data-cerrar>Cancelar</button>
@@ -238,6 +323,7 @@ document.addEventListener('change', function(e) {
     'venta' => $ventaRegistrada ?? null,
     'puedeDescuento' => $puede('descuentos_pos'),
     'cajero' => $_SESSION['nombre'] ?? '',
+    'turno' => $turnoEstado,
     'tienda' => [
         'nombre' => $config->nombre_empresa ?? $nombreTienda,
         'rif' => $config->rif ?? '',

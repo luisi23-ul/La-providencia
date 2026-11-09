@@ -69,6 +69,9 @@ function reporte_excel(array $r): Spreadsheet
     if (!empty($r['subtitulo'])) {
         $h->setCellValue('A6', $r['subtitulo']);
         $h->getStyle('A6')->getFont()->getColor()->setRGB('5B5148');
+        if ($n > 1) $h->mergeCells("A6:{$ult}6");
+        $h->getStyle('A6')->getAlignment()->setWrapText(true)->setVertical(Alignment::VERTICAL_TOP);
+        $h->getRowDimension(6)->setRowHeight(15 * max(1, (int) ceil(mb_strlen($r['subtitulo']) / 105)));
     }
 
     $f = 8;
@@ -126,7 +129,7 @@ function reporte_excel(array $r): Spreadsheet
     };
     $sumas = function (array $valores, int $fila, int $desde, array $cs) use ($h, $L, $nums) {
         foreach ($nums($cs) as $i) {
-            if (($valores[$i] ?? '') === '' || $fila <= $desde) continue;
+            if (!is_numeric($valores[$i] ?? '') || $fila <= $desde) continue;
             $h->setCellValue($L($i) . $fila, '=SUBTOTAL(9,' . $L($i) . $desde . ':' . $L($i) . ($fila - 1) . ')');
         }
     };

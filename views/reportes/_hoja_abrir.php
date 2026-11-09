@@ -63,6 +63,7 @@ main > .datos:first-of-type .grupo th, section + .datos .grupo th { padding-top:
 .datos .sub td { border-bottom: 0; padding-top: 1.8mm; padding-bottom: 3mm; font-weight: 600; color: #2a2420; border-top: 1px solid #cfc2b2; }
 .datos .sub td:first-child { font-weight: 500; color: #5b5148; }
 .datos .total td { padding: 3mm 2.5mm; border-top: 2px solid #2a2420; border-bottom: 0; font-size: 10pt; font-weight: 600; }
+.datos .total td:first-child, .datos .sub td:first-child { overflow-wrap: normal; white-space: nowrap; overflow: visible; }
 .datos .total td:first-child { color: #8c4a2f; letter-spacing: .08em; text-transform: uppercase; font-size: 8.5pt; }
 .resumen { width: 100%; table-layout: fixed; border-collapse: collapse; margin-bottom: 6mm; border: 1px solid #e3d8ca; }
 .resumen td { padding: 4.2mm 4.5mm 4mm; border-left: 1px solid #e3d8ca; vertical-align: top; }
@@ -121,6 +122,21 @@ main > .datos:first-of-type .grupo th, section + .datos .grupo th { padding-top:
   .cab td { display: block; width: auto; }
   .cab-emp { padding: 3mm 0 0 !important; border-left: 0; }
   .cab-fecha { padding-top: 3mm !important; text-align: left; }
+  .resumen tr { display: flex; flex-wrap: wrap; }
+  .resumen td { flex: 1 1 50%; width: auto !important; padding: 3.5mm 3.5mm 3.2mm; border-top: 1px solid #e3d8ca; }
+  .resumen td:nth-child(odd) { border-left: 0; }
+  .resumen td:nth-child(-n+2) { border-top: 0; }
+  .resumen b { font-size: 13pt; }
+  .resumen small { font-size: 8.5pt; }
+  .datos { font-size: 7.6pt; }
+  .datos th { padding: 1.8mm 1.2mm; font-size: 6.4pt; letter-spacing: .03em; }
+  .datos td { padding: 1.8mm 1.2mm; }
+  .datos .grupo th { padding-left: 1.2mm; padding-right: 1.2mm; font-size: 9pt; }
+  .datos .total td { padding: 2.4mm 1.2mm; font-size: 8.4pt; }
+  .datos .total td:first-child { font-size: 7pt; letter-spacing: .04em; }
+  .datos th.num { white-space: normal; }
+  .datos .num { padding-left: .5mm; }
+  .datos .sub .num, .datos .total .num { font-size: 7.1pt; letter-spacing: -.01em; }
   .ficha td { display: block; width: auto; border-left: 0; border-top: 1px solid #e3d8ca; }
   .ficha td:first-child { border-top: 0; }
   .lineas .c-det, .lineas .c-banco, .lineas .c-ref { width: 0; }

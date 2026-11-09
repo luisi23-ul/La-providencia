@@ -7,6 +7,7 @@ $grupos = $panelMaster ? [
     ]],
     'Control' => ['icono' => 'escudo', 'items' => [
         ['auditoria', 'Auditoría', null, 'lista'],
+        ['turnos_caja', 'Cierres de caja', null, 'arqueo'],
         ['configuracion_sistema', 'Configuración', null, 'ajuste'],
     ]],
 ] : [
@@ -16,6 +17,7 @@ $grupos = $panelMaster ? [
         ['verificar_pagos', 'Verificar pagos', 'pagos', 'check'],
         ['retiro_pedidos', 'Retiro de pedidos', 'retiros', 'bolsa'],
         ['pagos_banco', 'Pagos por banco', 'pagos', 'tarjeta'],
+        ['turnos_caja', 'Cierres de caja', null, 'arqueo'],
     ]],
     'Inventario' => ['icono' => 'caja', 'items' => [
         ['listado_productos', 'Productos', 'gestionar_productos', 'caja'],
