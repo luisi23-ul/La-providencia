@@ -15,8 +15,9 @@ $turnoEstado = $turnoViejo ? 'viejo' : ($turnoAbierto ? 'abierto' : 'sin');
 $horaCorta = fn($f) => str_replace(['am', 'pm'], ['a. m.', 'p. m.'], date('g:i a', strtotime($f)));
 $bsFmt = fn($v) => number_format((float) $v, 2, ',', '.') . ' Bs';
 $cuadre = function ($d) { $d = round((float) $d, 2); return $d == 0 ? ['Cuadra', 'ok'] : ($d > 0 ? ['Sobra', 'sobra'] : ['Falta', 'falta']); };
-$cierre = null;
-if (!$turnoAbierto && !empty($_GET['comprobante_turno']) && !empty($_GET['cajero'])) {
+$cierre = !empty($cierre) ? (object) $cierre : null;
+if ($cierre) $cierre->t = (object) ($cierre->t ?? []);
+if (!$cierre && !$turnoAbierto && !empty($_GET['comprobante_turno']) && !empty($_GET['cajero'])) {
     $conexion = isset($this) && isset($this->db) ? $this->db : ($db ?? null);
     if ($conexion) {
         require_once __DIR__ . '/../../models/TurnoCajaModel.php';
