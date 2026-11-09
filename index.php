@@ -47,7 +47,8 @@ $acciones_admin = [
     'eliminar_categoria', 'ajustes_inventario', 'guardar_ajuste', 'kardex',
     'proveedores', 'guardar_proveedor', 'cambiar_estado_proveedor',
     'compras', 'nueva_compra', 'guardar_compra', 'detalle_compra', 'anular_compra',
-    'lista_clientes', 'guardar_cliente', 'cambiarEstadoCliente'
+    'lista_clientes', 'guardar_cliente', 'cliente_detalle', 'cambiarEstadoCliente',
+    'turnos_caja', 'cierres_caja', 'abrir_turno', 'iniciar_turno', 'cerrar_turno'
 ];
 
 // -----------------------------------------------------------------------------
@@ -80,7 +81,6 @@ if ($action == 'crear_pedido') {
     }
 
     try {
-        // Verificar usuario existente en la BD para evitar fallo de FK
         $stmtCli = $db->prepare("SELECT id, nombre, telefono FROM usuarios WHERE id = ? LIMIT 1");
         $stmtCli->execute([$idCliente]);
         $cliente = $stmtCli->fetch(PDO::FETCH_OBJ);
@@ -93,7 +93,6 @@ if ($action == 'crear_pedido') {
 
         $db->beginTransaction();
 
-        // 1. Obtener precio real de cada producto desde la BD
         $totalUsd = 0;
         $itemsProcesados = [];
         $stmtP = $db->prepare("SELECT id, precio FROM productos WHERE id = ? LIMIT 1");
@@ -117,7 +116,6 @@ if ($action == 'crear_pedido') {
             ];
         }
 
-        // 2. Tasa activa BCV
         $tasaActual = 875.65;
         if (class_exists('BcvService')) {
             try {
@@ -129,7 +127,6 @@ if ($action == 'crear_pedido') {
         }
         $totalBs = round($totalUsd * $tasaActual, 2);
 
-        // 3. ID de Método de pago
         $stmtMP = $db->prepare("SELECT id FROM metodos_pago WHERE nombre LIKE ? LIMIT 1");
         $stmtMP->execute(['%' . $nombreMetodo . '%']);
         $idMetodoPago = $stmtMP->fetchColumn();
@@ -137,7 +134,6 @@ if ($action == 'crear_pedido') {
             $idMetodoPago = $db->query("SELECT id FROM metodos_pago LIMIT 1")->fetchColumn() ?: 1;
         }
 
-        // 4. Inserción en ventas
         $stmtV = $db->prepare("
             INSERT INTO ventas (id_usuario, total, fecha, estado) 
             VALUES (?, ?, NOW(), 'pendiente')
@@ -145,7 +141,6 @@ if ($action == 'crear_pedido') {
         $stmtV->execute([$idCliente, $totalUsd]);
         $idVenta = $db->lastInsertId();
 
-        // 5. Inserción en detalle_ventas
         $stmtD = $db->prepare("
             INSERT INTO detalle_ventas (id_venta, id_producto, cantidad, precio_unitario, subtotal) 
             VALUES (?, ?, ?, ?, ?)
@@ -154,7 +149,6 @@ if ($action == 'crear_pedido') {
             $stmtD->execute([$idVenta, $it['id'], $it['cantidad'], $it['precio'], $it['subtotal']]);
         }
 
-        // 6. Inserción en pagos_registro
         $esEfectivo = stripos($nombreMetodo, 'efectivo') !== false;
         $moneda = ($esEfectivo && stripos($nombreMetodo, '$') !== false) ? 'USD' : 'VES';
         $montoPago = ($moneda === 'USD') ? $totalUsd : $totalBs;
@@ -229,10 +223,6 @@ if (in_array($action, $acciones_master)) {
             case 'guardar_permisos':         $masterC->guardarPermisos(); break;
             case 'guardar_rol':              $masterC->guardarRol(); break;
             case 'auditoria':                $masterC->auditoria(); break;
-            case 'turnos_caja':
-    case 'cierres_caja':
-        $masterC->listarCierresCaja();
-        break;
         }
         ob_end_flush();
         exit();
@@ -307,7 +297,6 @@ switch ($action) {
     case 'ajustes_inventario':  $adminC->ajustesInventario(); break;
     case 'guardar_ajuste':      $adminC->guardarAjuste(); break;
     case 'kardex':              $adminC->kardex(); break;
-    
 
     // Gráficos y Estadísticas
     case 'seccion_graficos':    $adminC->mostrarEstadisticas(); break;
@@ -329,6 +318,13 @@ switch ($action) {
     case 'confirmar_pago':           $ventaC->confirmarPago($_GET['id'] ?? null); break;
     case 'procesar_retiro':          $ventaC->procesarRetiro($_GET['id'] ?? null); break;
     case 'detalle_venta':            $ventaC->verDetalle($_GET['id'] ?? null); break;
+    
+    // Control de Turnos de Caja (Accesible para Master y Admin)
+    case 'turnos_caja':
+    case 'cierres_caja':
+        $ventaC->listarCierresCaja();
+        break;
+
     case 'abrir_turno':
     case 'iniciar_turno':
         $ventaC->abrirTurno();
@@ -337,6 +333,7 @@ switch ($action) {
     case 'cerrar_turno':
         $ventaC->cerrarTurno();
         break;
+
     case 'ver_reporte':              $adminC->verReporte(); break;
 
     // Panel Admin: Compras y Proveedores
@@ -348,14 +345,14 @@ switch ($action) {
     case 'guardar_compra':           $compraC->guardar(); break;
     case 'detalle_compra':           $compraC->detalle(); break;
     case 'anular_compra':            $compraC->anular(); break;
+
     // Panel Admin: Clientes y Métodos de Pago
     case 'metodos_pago':         $adminC->metodosPago(); break;
     case 'guardar_metodo_pago':  $adminC->guardarMetodoPago(); break;
     case 'cambiar_estado_metodo': $adminC->cambiarEstadoMetodo(); break;
     case 'lista_clientes':       $usuarioC->listarClientes(); break;
     case 'cambiarEstadoCliente': $usuarioC->cambiarEstadoCliente(); break;
-    case 'cliente_detalle':       $usuarioC->detalleCliente();
-        break;
+    case 'cliente_detalle':      $usuarioC->detalleCliente(); break;
 
     // Reportes de Exportación
     case 'exportar_excel':
