@@ -282,9 +282,22 @@ class ProductoModel {
     public function sincronizarVariantes($codigoProducto, array $variantes) {
         $codigoProducto = (string)$codigoProducto;
 
-        $stmtPrev = $this->db->prepare("SELECT codigo_variante, stock FROM producto_variantes WHERE codigo_producto = ?");
+        // 1. Obtener todas las variantes existentes del producto en BD
+        $stmtPrev = $this->db->prepare("SELECT codigo_variante FROM producto_variantes WHERE codigo_producto = ?");
         $stmtPrev->execute([$codigoProducto]);
-        $previas = $stmtPrev->fetchAll(PDO::FETCH_KEY_PAIR);
+        $previas = $stmtPrev->fetchAll(PDO::FETCH_COLUMN);
+
+        // 2. Extraer el correlativo numérico más alto para evitar colisión con claves existentes
+        $maxNum = 0;
+        foreach ($previas as $codVar) {
+            if (preg_match('/(\d+)$/', $codVar, $m)) {
+                $num = (int)$m[1];
+                if ($num > $maxNum) {
+                    $maxNum = $num;
+                }
+            }
+        }
+        $vIdx = $maxNum + 1;
 
         $idsMantener = [];
         $totalStock = 0;
@@ -292,6 +305,14 @@ class ProductoModel {
         $stmtIns = $this->db->prepare("
             INSERT INTO producto_variantes (codigo_variante, codigo_producto, id_talla, id_color, talla, color, modelo, stock, precio)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+                id_talla = VALUES(id_talla),
+                id_color = VALUES(id_color),
+                talla    = VALUES(talla),
+                color    = VALUES(color),
+                modelo   = VALUES(modelo),
+                stock    = VALUES(stock),
+                precio   = VALUES(precio)
         ");
 
         $stmtUpd = $this->db->prepare("
@@ -300,11 +321,10 @@ class ProductoModel {
             WHERE codigo_variante = ? AND codigo_producto = ?
         ");
 
-        $vIdx = 1;
         foreach ($variantes as $v) {
-            $talla   = trim($v['talla'] ?? '');
-            $color   = trim($v['color'] ?? '');
-            $modelo  = trim($v['modelo'] ?? '');
+            $talla   = trim((string)($v['talla'] ?? ''));
+            $color   = trim((string)($v['color'] ?? ''));
+            $modelo  = trim((string)($v['modelo'] ?? ''));
             $idTalla = !empty($v['id_talla']) ? (int)$v['id_talla'] : 999;
             $idColor = !empty($v['id_color']) ? (int)$v['id_color'] : 999;
             $stk     = max(0, (int)($v['stock'] ?? 0));
@@ -315,28 +335,36 @@ class ProductoModel {
                 continue;
             }
 
-            if (!empty($varCod) && isset($previas[$varCod])) {
+            // Si ya existe en la base de datos, se actualiza
+            if (!empty($varCod) && in_array($varCod, $previas, true)) {
                 $stmtUpd->execute([$idTalla, $idColor, $talla, $color, $modelo, $stk, $precio, $varCod, $codigoProducto]);
                 $idsMantener[] = $varCod;
             } else {
-                $nuevoCodVar = $codigoProducto . '-V' . str_pad($vIdx, 2, '0', STR_PAD_LEFT);
+                // Si es nueva, genera un código garantizando que no choque con los existentes
+                do {
+                    $nuevoCodVar = $codigoProducto . '-V' . str_pad($vIdx, 2, '0', STR_PAD_LEFT);
+                    $vIdx++;
+                } while (in_array($nuevoCodVar, $previas, true));
+
                 $stmtIns->execute([$nuevoCodVar, $codigoProducto, $idTalla, $idColor, $talla, $color, $modelo, $stk, $precio]);
                 $idsMantener[] = $nuevoCodVar;
-                $vIdx++;
             }
 
             $totalStock += $stk;
         }
 
+        // 3. Eliminar variantes removidas del formulario
         if (!empty($idsMantener)) {
             $placeholders = implode(',', array_fill(0, count($idsMantener), '?'));
             $stmtDel = $this->db->prepare("DELETE FROM producto_variantes WHERE codigo_producto = ? AND codigo_variante NOT IN ($placeholders)");
             $stmtDel->execute(array_merge([$codigoProducto], $idsMantener));
-
-            $this->db->prepare("UPDATE productos SET stock = ? WHERE codigo = ?")->execute([$totalStock, $codigoProducto]);
+        } else {
+            $this->db->prepare("DELETE FROM producto_variantes WHERE codigo_producto = ?")->execute([$codigoProducto]);
         }
-    }
 
+        // 4. Sincronizar el stock total acumulado en la tabla productos
+        $this->db->prepare("UPDATE productos SET stock = ? WHERE codigo = ?")->execute([$totalStock, $codigoProducto]);
+    }
     public function borrarProducto($codigo) {
         $stmt = $this->db->prepare("UPDATE productos SET deleted_at = NOW(), estado = 0 WHERE codigo = ?");
         return $stmt->execute([(string)$codigo]);

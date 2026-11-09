@@ -36,7 +36,7 @@ class ReporteController {
             ];
         } elseif ($tipo === 'pendientes') {
             require_once "models/VentaModel.php";
-            $modelo = new VentaModel($this->db);
+            $modelo = new VentaModel($this->db); 
             return [
                 'titulo' => 'REPORTE DE VENTAS: PAGOS PENDIENTES',
                 'datos'  => $modelo->obtenerPorEstado('pendiente') 
@@ -54,6 +54,133 @@ class ReporteController {
             return [
                 'titulo' => 'ANÁLISIS ESTADÍSTICO DE INVENTARIO - LA PROVIDENCIA',
                 'datos'  => $modelo->obtenerTodos()
+            ];
+        } elseif ($tipo === 'ventas') {
+            $desde = trim((string)($_GET['desde'] ?? ''));
+            $hasta = trim((string)($_GET['hasta'] ?? ''));
+            
+            $where = ["(v.deleted_at = '2000-01-01 00:00:00' OR v.deleted_at IS NULL)"];
+            $params = [];
+
+            if (!empty($desde)) {
+                $where[] = "DATE(v.fecha) >= ?";
+                $params[] = $desde;
+            }
+            if (!empty($hasta)) {
+                $where[] = "DATE(v.fecha) <= ?";
+                $params[] = $hasta;
+            }
+
+            $sql = "SELECT v.numero_orden, 
+                           v.fecha, 
+                           COALESCE(c.nombre_razon_social, 'Consumidor Final') AS cliente, 
+                           COALESCE(u.nombre, 'Cajero') AS cajero, 
+                           v.total, 
+                           v.tasa_cambio, 
+                           v.estado, 
+                           v.origen_venta
+                    FROM ventas v
+                    LEFT JOIN clientes c ON v.cedula_cliente = c.cedula
+                    LEFT JOIN usuarios u ON v.cedula_usuario = u.cedula
+                    WHERE " . implode(' AND ', $where) . "
+                    ORDER BY v.fecha DESC";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            $datos = $stmt->fetchAll(PDO::FETCH_OBJ);
+
+            $titulo = 'REPORTE GENERAL DE VENTAS';
+            if ($desde && $hasta) {
+                $titulo .= " (" . date('d/m/Y', strtotime($desde)) . " AL " . date('d/m/Y', strtotime($hasta)) . ")";
+            }
+
+            return [
+                'titulo' => $titulo,
+                'datos'  => $datos
+            ];
+        } elseif ($tipo === 'pagos_banco') {
+            $desde = trim((string)($_GET['desde'] ?? ''));
+            $hasta = trim((string)($_GET['hasta'] ?? ''));
+
+            $where = ["1=1"];
+            $params = [];
+
+            if (!empty($desde)) {
+                $where[] = "DATE(p.fecha_pago) >= ?";
+                $params[] = $desde;
+            }
+            if (!empty($hasta)) {
+                $where[] = "DATE(p.fecha_pago) <= ?";
+                $params[] = $hasta;
+            }
+
+            $sql = "SELECT p.numero_orden, 
+                           p.fecha_pago, 
+                           p.banco, 
+                           p.codigo_metodo, 
+                           p.referencia, 
+                           p.moneda, 
+                           p.monto, 
+                           p.tasa_cambio, 
+                           p.estado, 
+                           COALESCE(u.nombre, 'Sistema') AS cajero
+                    FROM pagos p
+                    LEFT JOIN usuarios u ON p.cedula_cajero = u.cedula
+                    WHERE " . implode(' AND ', $where) . "
+                    ORDER BY p.fecha_pago DESC";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            $datos = $stmt->fetchAll(PDO::FETCH_OBJ);
+
+            $titulo = 'REPORTE DE PAGOS POR BANCO (CONCILIACIÓN)';
+            if ($desde && $hasta) {
+                $titulo .= " (" . date('d/m/Y', strtotime($desde)) . " AL " . date('d/m/Y', strtotime($hasta)) . ")";
+            }
+
+            return [
+                'titulo' => $titulo,
+                'datos'  => $datos
+            ];
+        } elseif ($tipo === 'auditoria') {
+            $desde = trim((string)($_GET['desde'] ?? ''));
+            $hasta = trim((string)($_GET['hasta'] ?? ''));
+
+            $where = ["1=1"];
+            $params = [];
+
+            if (!empty($desde)) {
+                $where[] = "DATE(a.fecha_hora) >= ?";
+                $params[] = $desde;
+            }
+            if (!empty($hasta)) {
+                $where[] = "DATE(a.fecha_hora) <= ?";
+                $params[] = $hasta;
+            }
+
+            $sql = "SELECT a.fecha_hora, 
+                           COALESCE(u.nombre, a.cedula) AS usuario, 
+                           a.modulo, 
+                           a.accion, 
+                           a.detalle_cambio, 
+                           a.ip_terminal
+                    FROM auditoria_logs a
+                    LEFT JOIN usuarios u ON a.cedula = u.cedula
+                    WHERE " . implode(' AND ', $where) . "
+                    ORDER BY a.fecha_hora DESC";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            $datos = $stmt->fetchAll(PDO::FETCH_OBJ);
+
+            $titulo = 'REPORTE DE AUDITORÍA DEL SISTEMA';
+            if ($desde && $hasta) {
+                $titulo .= " (" . date('d/m/Y', strtotime($desde)) . " AL " . date('d/m/Y', strtotime($hasta)) . ")";
+            }
+
+            return [
+                'titulo' => $titulo,
+                'datos'  => $datos
             ];
         } elseif ($tipo === 'kardex' || $tipo === 'movimientos') {
             $tipoMov = trim((string)($_GET['tipo_movimiento'] ?? $_GET['movimiento'] ?? ''));
@@ -139,7 +266,6 @@ class ReporteController {
                 $params[] = $banco;
             }
 
-            // Conversión estricta según pr.moneda para evitar multiplicar dos veces en bolívares
             $sql = "SELECT v.numero_orden AS id, 
                            COALESCE(c.nombre_razon_social, u.nombre, 'Consumidor Final') AS nombre, 
                            pr.fecha_pago AS fecha, 
@@ -229,7 +355,6 @@ class ReporteController {
                 $params[] = (int)$estado;
             }
 
-            // Consulta directa sobre la tabla proveedores con p.* para evitar errores de columnas
             $sql = "SELECT p.* FROM proveedores p WHERE " . implode(' AND ', $where);
 
             $stmt = $this->db->prepare($sql);
@@ -241,7 +366,6 @@ class ReporteController {
                 $rifProv = $f->rif ?? $f->rif_cedula ?? $f->id_proveedor ?? '';
                 $nombreRazon = $f->razon_social ?? $f->nombre ?? 'Sin nombre';
 
-                // Filtro de búsqueda por texto ($q)
                 if (!empty($q)) {
                     $coincide = (stripos($rifProv, $q) !== false) 
                              || (stripos($nombreRazon, $q) !== false)
@@ -250,7 +374,6 @@ class ReporteController {
                     if (!$coincide) continue;
                 }
 
-                // Total de compras asociadas (opcional/seguro)
                 $totalCompras = 0;
                 if (!empty($rifProv)) {
                     try {
@@ -260,7 +383,6 @@ class ReporteController {
                     } catch (Exception $e) {}
                 }
 
-                // Objeto limpio con las columnas exactas para la plantilla
                 $item = new stdClass();
                 $item->rif_cedula   = $rifProv;
                 $item->razon_social = $nombreRazon;
@@ -295,28 +417,24 @@ class ReporteController {
                 $params[] = $estado;
             }
 
-            // Consulta directa sobre compras sin JOINs que puedan fallar por nombres de columna
             $sql = "SELECT c.* FROM compras c WHERE " . implode(' AND ', $where);
 
             $stmt = $this->db->prepare($sql);
             $stmt->execute($params);
             $filas = $stmt->fetchAll(PDO::FETCH_OBJ);
 
-            // Consultas auxiliares preparadas
             $stmtArt = $this->db->prepare("SELECT COALESCE(SUM(cantidad), 0) FROM detalle_compras WHERE numero_factura = ?");
             $stmtProv = $this->db->prepare("SELECT razon_social FROM proveedores WHERE rif = ? OR rif_cedula = ? OR id_proveedor = ? LIMIT 1");
             $stmtUser = $this->db->prepare("SELECT nombre FROM usuarios WHERE cedula = ? LIMIT 1");
 
             $datos = [];
             foreach ($filas as $f) {
-                // 1. Resolver fecha dinámicamente
                 $fechaVal = $f->fecha_compra ?? $f->fecha ?? $f->created_at ?? $f->fecha_registro ?? date('Y-m-d');
                 $fechaCorta = date('Y-m-d', strtotime($fechaVal));
 
                 if (!empty($desde) && $fechaCorta < $desde) continue;
                 if (!empty($hasta) && $fechaCorta > $hasta) continue;
 
-                // 2. Resolver proveedor
                 $rifProv = $f->rif_proveedor ?? $f->rif ?? $f->id_proveedor ?? '';
                 $nombreProv = 'Proveedor General';
                 if (!empty($rifProv)) {
@@ -326,7 +444,6 @@ class ReporteController {
                     } catch (Exception $e) {}
                 }
 
-                // 3. Resolver usuario
                 $cedUser = $f->cedula_usuario ?? $f->cedula ?? '';
                 $nombreUser = 'Admin';
                 if (!empty($cedUser)) {
@@ -336,7 +453,6 @@ class ReporteController {
                     } catch (Exception $e) {}
                 }
 
-                // 4. Total artículos
                 $numFact = $f->numero_factura ?? $f->id ?? '';
                 $totalArts = 0;
                 if (!empty($numFact)) {
@@ -346,17 +462,14 @@ class ReporteController {
                     } catch (Exception $e) {}
                 }
 
-                // 5. Total en Bs
                 $tasaC = (float)($f->tasa_cambio ?? 0) > 0 ? (float)$f->tasa_cambio : 881.07;
                 $totalBs = !empty($f->total_bs) ? (float)$f->total_bs : ((float)$f->total * $tasaC);
 
-                // Filtro de búsqueda por texto ($q)
                 if (!empty($q)) {
                     $coincide = (stripos($numFact, $q) !== false) || (stripos($nombreProv, $q) !== false);
                     if (!$coincide) continue;
                 }
 
-                // Crear un objeto limpio únicamente con las 6 columnas visibles necesarias
                 $item = new stdClass();
                 $item->fecha          = date('d/m/Y', strtotime($fechaVal));
                 $item->numero_factura = $numFact;
@@ -369,7 +482,6 @@ class ReporteController {
                 $datos[] = $item;
             }
 
-            // Ordenar de más reciente a más antiguo
             usort($datos, function($a, $b) {
                 return strtotime($b->fecha) <=> strtotime($a->fecha);
             });
@@ -389,7 +501,6 @@ class ReporteController {
             $hasta  = trim($_GET['hasta'] ?? '');
             $estado = trim($_GET['estado'] ?? '');
 
-            // 1. Buscar cliente por cédula o cédula_usuario
             $st = $this->db->prepare("SELECT cedula, nombre_razon_social, telefono, correo, direccion
                                       FROM clientes 
                                       WHERE cedula = ? OR cedula_usuario = ? 
@@ -410,7 +521,6 @@ class ReporteController {
                 ];
             }
 
-            // 2. Consultar compras del cliente
             $sql = "SELECT v.numero_orden, v.fecha, v.origen_venta, v.estado, v.total,
                            COALESCE(SUM(CASE WHEN p.estado = 'aprobado'
                                THEN IF(p.moneda = 'USD', p.monto, p.monto / NULLIF(p.tasa_cambio, 0)) END), 0) AS pagado,
@@ -446,7 +556,6 @@ class ReporteController {
             $st->execute($args);
             $compras = $st->fetchAll(PDO::FETCH_OBJ);
 
-            // 3. Consultar productos por orden con variantes completas
             $sd = $this->db->prepare("SELECT dv.cantidad, dv.precio_unitario, dv.subtotal,
                                              p.nombre_producto AS producto_nombre, 
                                              pv.talla, pv.color, pv.modelo
@@ -462,108 +571,152 @@ class ReporteController {
                 $c->productos = $sd->fetchAll(PDO::FETCH_OBJ); 
             }
 
-return [
+            return [
                 'titulo'  => 'Historial de compras del cliente',
                 'cliente' => $cliente,
                 'datos'   => $compras
             ];
         } elseif ($tipo === 'cierre_caja' || $tipo === 'cierre') {
-            require_once "models/TurnoCajaModel.php";
-            $mTurno = new TurnoCajaModel($this->db);
-
-            $cedula = trim((string)($_GET['cedula'] ?? ''));
+            $cedula = trim((string)($_GET['cajero'] ?? $_GET['cedula'] ?? ''));
             $turno  = (int)($_GET['turno'] ?? 0);
+            $fecha  = trim((string)($_GET['fecha'] ?? ''));
+            $desde  = trim((string)($_GET['desde'] ?? ''));
+            $hasta  = trim((string)($_GET['hasta'] ?? ''));
 
-            // Obtener el registro del turno y el desglose de cobros
-            $resumen  = $mTurno->obtenerResumenTurno($cedula, $turno);
-            $turnoObj = $resumen['turno'] ?? null;
-            $desglose = $resumen['desglose'] ?? [];
+            // Caso A: Arqueo individual de un turno concreto
+            if (!empty($cedula) && $turno > 0) {
+                require_once "models/TurnoCajaModel.php";
+                $mTurno = new TurnoCajaModel($this->db);
 
-            // Obtener nombre del cajero
-            $nombreCajero = 'Cajero';
-            if ($turnoObj && !empty($turnoObj->cedula_cajero)) {
-                $stCaj = $this->db->prepare("SELECT nombre FROM usuarios WHERE cedula = ? LIMIT 1");
-                $stCaj->execute([$turnoObj->cedula_cajero]);
-                $nombreCajero = $stCaj->fetchColumn() ?: 'Cajero';
+                $resumen  = $mTurno->obtenerResumenTurno($cedula, $turno);
+                $turnoObj = $resumen['turno'] ?? null;
+                $desglose = $resumen['desglose'] ?? [];
+
+                $nombreCajero = 'Cajero';
+                if ($turnoObj && !empty($turnoObj->cedula_cajero)) {
+                    $stCaj = $this->db->prepare("SELECT CONCAT(nombre, ' ', apellido) FROM usuarios WHERE cedula = ? LIMIT 1");
+                    $stCaj->execute([$turnoObj->cedula_cajero]);
+                    $nombreCajero = trim((string)$stCaj->fetchColumn()) ?: 'Cajero';
+                }
+
+                $datos = [];
+                foreach ($desglose as $d) {
+                    $fila = new stdClass();
+                    $fila->metodo_nombre          = $d->metodo_nombre ?? $d->codigo_metodo;
+                    $fila->cantidad_transacciones = (int)$d->cantidad_transacciones;
+                    $fila->total_monto            = (float)$d->total_monto;
+                    $fila->moneda                 = $d->moneda;
+                    $fila->total_usd              = (float)$d->total_usd;
+                    $fila->total_bs               = (float)$d->total_bs;
+                    $datos[] = $fila;
+                }
+
+                return [
+                    'titulo' => 'COMPROBANTE DE CIERRE Y ARQUEO DE CAJA',
+                    'cajero' => $nombreCajero,
+                    'turno'  => $turnoObj,
+                    'datos'  => $datos
+                ];
             }
 
-            // Mapear filas limpias para la plantilla
-            $datos = [];
-            foreach ($desglose as $d) {
-                $fila = new stdClass();
-                $fila->metodo_nombre           = $d->metodo_nombre ?? $d->codigo_metodo;
-                $fila->cantidad_transacciones = (int)$d->cantidad_transacciones;
-                $fila->total_monto             = (float)$d->total_monto;
-                $fila->moneda                  = $d->moneda;
-                $fila->total_usd               = (float)$d->total_usd;
-                $fila->total_bs                = (float)$d->total_bs;
-                $datos[] = $fila;
+            // Caso B: Cierre de un día completo (tipo=cierre&fecha=...)
+            if (!empty($fecha)) {
+                $stmtTurnos = $this->db->prepare("
+                    SELECT tc.cedula_cajero,
+                           tc.numero_turno,
+                           CONCAT(COALESCE(u.nombre, ''), ' ', COALESCE(u.apellido, '')) AS cajero,
+                           DATE_FORMAT(tc.fecha_apertura, '%Y-%m-%d %H:%i:%s') AS fecha_apertura,
+                           IF(tc.fecha_cierre IS NOT NULL, DATE_FORMAT(tc.fecha_cierre, '%Y-%m-%d %H:%i:%s'), NULL) AS fecha_cierre,
+                           tc.estado,
+                           COALESCE(tc.fondo_usd, 0) AS fondo_usd,
+                           COALESCE(tc.fondo_bs, 0) AS fondo_bs,
+                           IF(tc.estado = 'cerrado', COALESCE(tc.cierre_usd, 0), 0) AS cierre_usd,
+                           IF(tc.estado = 'cerrado', COALESCE(tc.cierre_bs, 0), 0) AS cierre_bs
+                    FROM turnos_caja tc
+                    LEFT JOIN usuarios u ON tc.cedula_cajero = u.cedula
+                    WHERE DATE(tc.fecha_apertura) = ?
+                    ORDER BY tc.fecha_apertura ASC
+                ");
+                $stmtTurnos->execute([$fecha]);
+                $listaTurnos = $stmtTurnos->fetchAll(PDO::FETCH_ASSOC);
+
+                $stmtPagos = $this->db->prepare("
+                    SELECT v.numero_orden,
+                           DATE_FORMAT(p.fecha_pago, '%Y-%m-%d %H:%i:%s') AS fecha_pago,
+                           COALESCE(c.nombre_razon_social, u.nombre, 'Consumidor Final') AS cliente,
+                           p.codigo_metodo,
+                           COALESCE(mp.nombre, p.codigo_metodo) AS metodo_nombre,
+                           p.moneda,
+                           p.monto,
+                           p.tasa_cambio,
+                           COALESCE(p.banco, '') AS banco,
+                           COALESCE(p.referencia, '') AS referencia,
+                           v.estado AS estado_venta
+                    FROM pagos p
+                    INNER JOIN ventas v ON p.numero_orden = v.numero_orden
+                    LEFT JOIN metodos_pago mp ON p.codigo_metodo = mp.codigo_metodo
+                    LEFT JOIN clientes c ON v.cedula_cliente = c.cedula
+                    LEFT JOIN usuarios u ON v.cedula_usuario = u.cedula
+                    WHERE DATE(p.fecha_pago) = ?
+                      AND v.origen_venta IN ('tienda', 'tienda_fisica')
+                    ORDER BY p.fecha_pago ASC
+                ");
+                $stmtPagos->execute([$fecha]);
+                $listaPagos = $stmtPagos->fetchAll(PDO::FETCH_ASSOC);
+
+                return [
+                    'titulo' => 'REPORTE DE CIERRE DIARIO (' . date('d/m/Y', strtotime($fecha)) . ')',
+                    'fecha'  => $fecha,
+                    'turnos' => $listaTurnos,
+                    'datos'  => $listaPagos
+                ];
+            }
+
+            // Caso C: Cierres de caja por período (desde/hasta)
+            $where = ["tc.estado = 'cerrado'"];
+            $params = [];
+
+            if (!empty($desde)) {
+                $where[] = "DATE(tc.fecha_apertura) >= ?";
+                $params[] = $desde;
+            }
+            if (!empty($hasta)) {
+                $where[] = "DATE(tc.fecha_apertura) <= ?";
+                $params[] = $hasta;
+            }
+
+            $sql = "SELECT tc.cedula_cajero, 
+                           tc.numero_turno, 
+                           tc.fecha_apertura, 
+                           tc.fecha_cierre, 
+                           tc.fondo_usd, 
+                           tc.fondo_bs, 
+                           tc.cierre_usd, 
+                           tc.cierre_bs, 
+                           tc.tasa_apertura, 
+                           tc.nota_cierre,
+                           CONCAT(COALESCE(u.nombre, ''), ' ', COALESCE(u.apellido, '')) AS cajero
+                    FROM turnos_caja tc
+                    LEFT JOIN usuarios u ON tc.cedula_cajero = u.cedula
+                    WHERE " . implode(' AND ', $where) . "
+                    ORDER BY tc.fecha_apertura DESC, tc.numero_turno DESC";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            $turnos = $stmt->fetchAll(PDO::FETCH_OBJ);
+
+            $titulo = 'REPORTE DE CIERRES DE CAJA POR PERÍODO';
+            if ($desde && $hasta) {
+                $titulo .= " (" . date('d/m/Y', strtotime($desde)) . " AL " . date('d/m/Y', strtotime($hasta)) . ")";
             }
 
             return [
-                'titulo' => 'COMPROBANTE DE CIERRE Y ARQUEO DE CAJA',
-                'cajero' => $nombreCajero,
-                'turno'  => $turnoObj,
-                'datos'  => $datos
+                'titulo' => $titulo,
+                'datos'  => $turnos
             ];
         }
 
         exit("Tipo de reporte no válido.");
-
-        if ($tipo === 'cierre') {
-            $fecha = !empty($_GET['fecha']) ? trim($_GET['fecha']) : date('Y-m-d');
-
-            // 1. Turnos de ese día
-            $stmtTurnos = $this->db->prepare("
-                SELECT tc.cedula_cajero,
-                       tc.numero_turno,
-                       CONCAT(COALESCE(u.nombre, ''), ' ', COALESCE(u.apellido, '')) AS cajero,
-                       DATE_FORMAT(tc.fecha_apertura, '%Y-%m-%d %H:%i:%s') AS fecha_apertura,
-                       IF(tc.fecha_cierre IS NOT NULL, DATE_FORMAT(tc.fecha_cierre, '%Y-%m-%d %H:%i:%s'), NULL) AS fecha_cierre,
-                       tc.estado,
-                       COALESCE(tc.fondo_usd, 0) AS fondo_usd,
-                       COALESCE(tc.fondo_bs, 0) AS fondo_bs,
-                       IF(tc.estado = 'cerrado', COALESCE(tc.cierre_usd, 0), 0) AS cierre_usd,
-                       IF(tc.estado = 'cerrado', COALESCE(tc.cierre_bs, 0), 0) AS cierre_bs
-                FROM turnos_caja tc
-                LEFT JOIN usuarios u ON tc.cedula_cajero = u.cedula
-                WHERE DATE(tc.fecha_apertura) = ?
-                ORDER BY tc.fecha_apertura ASC
-            ");
-            $stmtTurnos->execute([$fecha]);
-            $listaTurnos = $stmtTurnos->fetchAll(PDO::FETCH_ASSOC);
-
-            // 2. Pagos de tienda de ese día (incluyendo anuladas con estado 'cancelado')
-            $stmtPagos = $this->db->prepare("
-                SELECT v.numero_orden,
-                       DATE_FORMAT(p.fecha_pago, '%Y-%m-%d %H:%i:%s') AS fecha_pago,
-                       COALESCE(c.nombre_razon_social, u.nombre, 'Consumidor Final') AS cliente,
-                       p.codigo_metodo,
-                       COALESCE(mp.nombre, p.codigo_metodo) AS metodo_nombre,
-                       p.moneda,
-                       p.monto,
-                       p.tasa_cambio,
-                       COALESCE(p.banco, '') AS banco,
-                       COALESCE(p.referencia, '') AS referencia,
-                       v.estado AS estado_venta
-                FROM pagos p
-                INNER JOIN ventas v ON p.numero_orden = v.numero_orden
-                LEFT JOIN metodos_pago mp ON p.codigo_metodo = mp.codigo_metodo
-                LEFT JOIN clientes c ON v.cedula_cliente = c.cedula
-                LEFT JOIN usuarios u ON v.cedula_usuario = u.cedula
-                WHERE DATE(p.fecha_pago) = ?
-                  AND v.origen_venta IN ('tienda', 'tienda_fisica')
-                ORDER BY p.fecha_pago ASC
-            ");
-            $stmtPagos->execute([$fecha]);
-            $listaPagos = $stmtPagos->fetchAll(PDO::FETCH_ASSOC);
-
-            return [
-                'fecha'  => $fecha,
-                'turnos' => $listaTurnos,
-                'datos'  => $listaPagos
-            ];
-        }
     }
 
     // Consultas específicas para el análisis estadístico
