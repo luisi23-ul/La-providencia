@@ -3,7 +3,7 @@ require_once __DIR__ . '/admin/_claves.php';
 $menu = 'listado_productos';
 $editando = isset($p) && $p;
 $tituloPagina = $editando ? 'Editar producto' : 'Nuevo producto';
-$scripts = ['inventario'];
+$scripts = ['subcategoria', 'inventario'];
 $categorias = sin_relleno($categorias ?? [], 'categoria');
 include __DIR__ . '/admin/_abrir.php';
 
@@ -12,12 +12,18 @@ $codigo = $editando ? ($p->codigo ?? ('P-' . str_pad(clave('producto', $p), 4, '
 $campo = fn($crear, $editar) => $editando ? $editar : $crear;
 $visible = (int) ($p->estado ?? 1) === 1;
 $variantesGuardadas = $editando ? ($p->variantes ?? []) : [];
-$principales = array_filter($categorias, fn($c) => empty(ref('categoria.padre', $c)));
-$hijas = [];
-foreach ($categorias as $c) if (!empty(ref('categoria.padre', $c))) $hijas[ref('categoria.padre', $c)][] = $c;
+$padreDe = [];
+foreach ($categorias as $c) $padreDe[clave('categoria', $c)] = ref('categoria.padre', $c);
+$esHija = fn($c) => isset($padreDe[ref('categoria.padre', $c)]) && ref('categoria.padre', $c) !== clave('categoria', $c);
+$principales = array_filter($categorias, fn($c) => !$esHija($c));
+$hijas = array_filter($categorias, $esHija);
+$sinTilde = fn($s) => strtr(mb_strtolower((string) $s, 'UTF-8'), ['á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ü' => 'u', 'ñ' => 'n']);
+$catGuardada = $editando ? ref('producto.categoria', $p) : '';
+foreach ($padreDe as $slug => $_) if ($catGuardada !== '' && $sinTilde($slug) === $sinTilde($catGuardada)) $catGuardada = (string) $slug;
+$padreElegido = $catGuardada !== '' && isset($padreDe[$catGuardada]) && $padreDe[$catGuardada] !== '' && isset($padreDe[$padreDe[$catGuardada]]) ? $padreDe[$catGuardada] : $catGuardada;
+$subElegida = $padreElegido !== $catGuardada ? $catGuardada : '';
 $nombreCategoria = '';
-foreach ($categorias as $c) if ($editando && clave('categoria', $c) === ($editando ? ref('producto.categoria', $p) : '')) $nombreCategoria = $c->nombre_categoria;
-$opcionCat = fn($c, $prefijo = '') => '<option value="' . htmlspecialchars(clave('categoria', $c), ENT_QUOTES, 'UTF-8') . '"' . (($editando ? ref('producto.categoria', $p) : '') === clave('categoria', $c) ? ' selected' : '') . '>' . $prefijo . htmlspecialchars($c->nombre_categoria, ENT_QUOTES, 'UTF-8') . '</option>';
+foreach ($categorias as $c) if ($editando && clave('categoria', $c) === $catGuardada) $nombreCategoria = $c->nombre_categoria;
 ?>
 <section class="contenido">
 
@@ -40,16 +46,21 @@ $opcionCat = fn($c, $prefijo = '') => '<option value="' . htmlspecialchars(clave
       <section class="fpx-sec" aria-labelledby="fp-t-info">
         <header><span class="fpx-ic"><svg class="i"><use href="#i-caja"/></svg></span><div><h3 id="fp-t-info">Información</h3><p>Lo que ve el cliente en la tienda online.</p></div></header>
         <div class="fpx-cuerpo">
-          <div class="campo ancho"><label for="fp-nombre">Nombre <span class="ob">*</span></label><input id="fp-nombre" name="<?= $campo('nombre_producto', 'nombre') ?>" value="<?= $e($p->nombre_producto ?? '') ?>" required placeholder="Ej.: Blusa de lino manga corta"></div>
+          <div class="campo"><label for="fp-nombre">Nombre <span class="ob">*</span></label><input id="fp-nombre" name="<?= $campo('nombre_producto', 'nombre') ?>" value="<?= $e($p->nombre_producto ?? '') ?>" required placeholder="Ej.: Blusa de lino manga corta"></div>
           <div class="campo"><label for="fp-codigo">Código</label><input id="fp-codigo" name="codigo" value="<?= $e($codigo) ?>" autocomplete="off" placeholder="P-0013"<?= $editando ? ' readonly' : '' ?>><span class="ayuda">Si lo dejas vacío se asigna uno solo.</span></div>
-          <div class="campo"><label for="fp-cat">Categoría <span class="ob">*</span></label>
-            <select id="fp-cat" name="<?= campo('categoria.ref') ?>" required>
+          <div class="campo"><label for="fp-cat-padre">Categoría <span class="ob">*</span></label>
+            <select id="fp-cat-padre" required>
               <option value="">Elige una categoría</option>
-              <?php foreach ($principales as $padre): ?>
-                <?= $opcionCat($padre) ?>
-                <?php foreach ($hijas[clave('categoria', $padre)] ?? [] as $sub) echo $opcionCat($sub, '↳ '); ?>
+              <?php foreach ($principales as $c): ?>
+                <option value="<?= $e(clave('categoria', $c)) ?>"<?= clave('categoria', $c) === $padreElegido ? ' selected' : '' ?>><?= $e($c->nombre_categoria) ?></option>
               <?php endforeach; ?>
             </select>
+            <input type="hidden" id="fp-cat" name="<?= campo('categoria.ref') ?>" value="<?= $e($catGuardada) ?>">
+          </div>
+          <div class="campo"><label for="fp-subcat">Subcategoría</label>
+            <select id="fp-subcat" data-elegida="<?= $e($subElegida) ?>" disabled><option value="">Elige primero una categoría</option></select>
+            <span class="ayuda" id="fp-subcat-ayuda" hidden></span>
+            <template id="fp-subcats"><?php foreach ($hijas as $c): ?><option value="<?= $e(clave('categoria', $c)) ?>" data-padre="<?= $e(ref('categoria.padre', $c)) ?>"><?= $e($c->nombre_categoria) ?></option><?php endforeach; ?></template>
           </div>
           <div class="campo ancho"><label for="fp-desc">Descripción</label><textarea id="fp-desc" name="<?= $campo('descripcion', 'desc') ?>" rows="3" placeholder="Tela, corte, medidas. Es lo que lee el cliente en la tienda online."><?= $e($p->descripcion ?? '') ?></textarea></div>
         </div>

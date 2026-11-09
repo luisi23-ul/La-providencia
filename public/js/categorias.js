@@ -36,7 +36,20 @@
     return fila;
   }
 
+  function plegar(boton, abrir) {
+    boton.setAttribute('aria-expanded', abrir ? 'true' : 'false');
+    boton.closest('tr').classList.toggle('abierta', abrir);
+    document.querySelectorAll('tr[data-padre="' + boton.getAttribute('data-abrir-subs') + '"]').forEach(function (f) { f.hidden = !abrir; });
+  }
+
   document.addEventListener('click', function (e) {
+    var grupo = e.target.closest('[data-abrir-subs]');
+    if (grupo) {
+      var abrirla = grupo.getAttribute('aria-expanded') !== 'true';
+      document.querySelectorAll('[data-abrir-subs][aria-expanded="true"]').forEach(function (b) { plegar(b, false); });
+      plegar(grupo, abrirla);
+      return;
+    }
     var abrir = e.target.closest('[data-categoria]');
     if (abrir) {
       var c = abrir.getAttribute('data-categoria') ? JSON.parse(abrir.getAttribute('data-categoria')) : null;

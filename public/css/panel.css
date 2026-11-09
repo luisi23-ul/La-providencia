@@ -284,6 +284,7 @@ th.num { text-align: right; }
 .campo textarea { min-height: 72px; resize: vertical; }
 .campo input:focus, .campo select:focus, .campo textarea:focus { outline: 0; border-color: var(--marca); box-shadow: 0 0 0 3px var(--marca-suave); }
 .ayuda { font-size: 13.5px; color: var(--texto-3); }
+.campo select:disabled { opacity: .55; cursor: not-allowed; background: var(--fondo); }
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; }
 .opciones { display: flex; gap: 8px; flex-wrap: wrap; }
 .opcion { flex: 1 1 140px; border: 1px solid var(--linea); border-radius: 9px; padding: 9px 12px; display: flex; gap: 10px; align-items: center; cursor: pointer; background: var(--tarjeta); font-size: 15px; }
@@ -2234,6 +2235,18 @@ body:has(.panel.modo-pos) .avisos { top: 76px; }
   .tabla-cat tr.cat-sub { padding-left: 14px; background: #f1f8f4; }
   .tabla-cat tr.cat-sub .cat-nom { padding-left: 10px; }
 }
+.tabla-cat tr.cat-sub[hidden] { display: none; }
+.cat-abrir { width: 100%; padding: 0; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; border-radius: 10px; }
+.cat-abrir:focus-visible { outline: 2px solid var(--marca); outline-offset: 4px; }
+.cat-txt { display: block; min-width: 0; }
+.cat-ver { color: var(--marca) !important; font-weight: 600; }
+.cat-ver-c, .cat-abrir[aria-expanded="true"] .cat-ver-a { display: none; }
+.cat-abrir[aria-expanded="true"] .cat-ver-c { display: inline; }
+.cat-flecha { width: 18px; height: 18px; flex: none; margin-left: auto; color: var(--marca); transition: transform .2s ease; }
+.cat-abrir[aria-expanded="true"] .cat-flecha { transform: rotate(90deg); }
+.cat-abrir:hover b { color: var(--marca); }
+.panel .tabla-cat tbody tr.cat-padre.abierta td { background: var(--marca-tenue); }
+@media (prefers-reduced-motion: reduce) { .cat-flecha { transition: none; } }
 .cat-mas { font-weight: 700; color: var(--marca); background: var(--marca-tenue); border-color: var(--marca-borde); cursor: default; }
 .mv-cuerpo { display: flex; flex-direction: column; gap: 18px; }
 .mv-grupo { border: 0; margin: 0; padding: 0; min-width: 0; }

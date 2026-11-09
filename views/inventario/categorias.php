@@ -41,16 +41,29 @@ foreach ($categorias as $c) if (!empty(ref('categoria.padre', $c)) && !in_array(
             $unidades = (int) ($c->total_unidades ?? 0);
             $subs = $esSub ? [] : ($hijas[clave('categoria', $c)] ?? []);
             $prodTotal = $productos + array_sum(array_map(fn($h) => (int) ($h->total_productos ?? 0), $subs));
-            $uniTotal = $unidades + array_sum(array_map(fn($h) => (int) ($h->total_unidades ?? 0), $subs)); ?>
-          <tr class="<?= $esSub ? 'cat-sub' : 'cat-padre' ?>">
+            $uniTotal = $unidades + array_sum(array_map(fn($h) => (int) ($h->total_unidades ?? 0), $subs));
+            $slug = clave('categoria', $c);
+            $plegada = $esSub && in_array(ref('categoria.padre', $c), $idsPadre, true); ?>
+          <tr class="<?= $esSub ? 'cat-sub' : 'cat-padre' ?>"<?php if ($plegada): ?> id="sub-<?= $e($slug) ?>" data-padre="<?= $e(ref('categoria.padre', $c)) ?>" hidden<?php endif; ?>>
             <td class="t-tit">
+              <?php if ($subs): ?>
+              <button type="button" class="cat-nom cat-abrir" aria-expanded="false" aria-controls="<?= $e(implode(' ', array_map(fn($h) => 'sub-' . clave('categoria', $h), $subs))) ?>" data-abrir-subs="<?= $e($slug) ?>">
+                <span class="cat-ic"><svg class="i"><use href="#i-lista"/></svg></span>
+                <span class="cat-txt">
+                  <b><?= $e($c->nombre_categoria) ?></b>
+                  <small class="cat-ver"><span class="cat-ver-a">Ver <?= count($subs) === 1 ? '1 subcategoría' : count($subs) . ' subcategorías' ?></span><span class="cat-ver-c">Ocultar subcategorías</span></small>
+                </span>
+                <svg class="i cat-flecha" aria-hidden="true"><use href="#i-chevron"/></svg>
+              </button>
+              <?php else: ?>
               <div class="cat-nom">
-                <?php if ($esSub): ?><span class="cat-rama" aria-hidden="true"></span><?php else: ?><span class="cat-ic"><svg class="i"><use href="#i-<?= $subs ? 'lista' : 'etiqueta' ?>"/></svg></span><?php endif; ?>
+                <?php if ($esSub): ?><span class="cat-rama" aria-hidden="true"></span><?php else: ?><span class="cat-ic"><svg class="i"><use href="#i-etiqueta"/></svg></span><?php endif; ?>
                 <div>
                   <b><?= $e($c->nombre_categoria) ?></b>
-                  <?php if ($subs): ?><small><?= count($subs) === 1 ? '1 subcategoría' : count($subs) . ' subcategorías' ?></small><?php elseif ($esSub): ?><small class="cat-de">Subcategoría de <?= $e($c->nombre_padre ?? '') ?></small><?php endif; ?>
+                  <?php if ($esSub): ?><small class="cat-de">Subcategoría de <?= $e($c->nombre_padre ?? '') ?></small><?php endif; ?>
                 </div>
               </div>
+              <?php endif; ?>
             </td>
             <td data-label="Atributos"><?php if ($atr): ?><span class="atr-chips"><?php foreach (array_slice($atr, 0, 4) as $a): ?><span class="chip" title="<?= $e($a['opciones'] ?: 'Texto libre') ?>"><?= $e($a['nombre']) ?></span><?php endforeach; ?><?php if (count($atr) > 4): $resto = array_column(array_slice($atr, 4), 'nombre'); ?><span class="chip cat-mas" title="<?= $e(implode(', ', $resto)) ?>" aria-label="<?= count($resto) ?> más: <?= $e(implode(', ', $resto)) ?>">+<?= count($resto) ?></span><?php endif; ?></span><?php else: ?><span class="muted">Sin atributos</span><?php endif; ?></td>
             <td class="num" data-label="Productos"><?= $prodTotal ?><?php if ($subs && $prodTotal !== $productos): ?><small class="cat-incl">con subcategorías</small><?php endif; ?></td>
