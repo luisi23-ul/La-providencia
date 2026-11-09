@@ -18,7 +18,8 @@ $celdas = function (array $fila, string $etiqueta = 'td', ?array $cols = null) u
     foreach (array_values($fila) as $i => $v) {
         $num = !empty($cols[$i]['numero']);
         if ($num && $etiqueta === 'td' && is_numeric($v)) $v = number_format((float) $v, (int) $cols[$i]['decimales'], ',', '.');
-        $html .= "<$etiqueta" . ($num ? ' class="num"' : '') . '>' . $h($v) . "</$etiqueta>";
+        $clase = trim(($num ? 'num' : '') . (!empty($cols[$i]['fijo']) ? ' fijo' : ''));
+        $html .= "<$etiqueta" . ($clase !== '' ? ' class="' . $clase . '"' : '') . '>' . $h($v) . "</$etiqueta>";
     }
     return $html;
 };

@@ -79,7 +79,7 @@ function paquete_reporte(string $tipo, array $reporte, float $tasa, PDO $db, arr
             $cat !== '' && $lista ? 'Categoría: ' . ($lista[0]->nombre_categoria ?? $cat) : '',
         ]));
         $p['columnas'] = [
-            ['texto' => 'Código', 'ancho' => 14], ['texto' => 'Producto', 'ancho' => 25], ['texto' => 'Categoría', 'ancho' => 15],
+            ['texto' => 'Código', 'fijo' => true, 'ancho' => 14], ['texto' => 'Producto', 'ancho' => 25], ['texto' => 'Categoría', 'ancho' => 15],
             ['texto' => 'Stock', 'numero' => true, 'decimales' => 0, 'ancho' => 9],
             ['texto' => 'Costo $', 'numero' => true, 'ancho' => 11], ['texto' => 'Precio $', 'numero' => true, 'ancho' => 11],
             ['texto' => 'Valor a costo $', 'numero' => true, 'ancho' => 15],
@@ -203,7 +203,7 @@ function paquete_reporte(string $tipo, array $reporte, float $tasa, PDO $db, arr
         $espU = $fondoU + $cobU; $espB = $fondoB + $cobB;
 
         $p['columnas'] = [
-            ['texto' => 'Hora', 'ancho' => 20], ['texto' => 'N.º venta', 'ancho' => 20], ['texto' => 'Cliente', 'ancho' => 22],
+            ['texto' => 'Hora', 'fijo' => true, 'ancho' => 20], ['texto' => 'N.º venta', 'fijo' => true, 'ancho' => 20], ['texto' => 'Cliente', 'ancho' => 22],
             ['texto' => 'Referencia', 'ancho' => 26], ['texto' => 'Monto $', 'numero' => true, 'ancho' => 16], ['texto' => 'Monto Bs', 'numero' => true, 'ancho' => 20],
         ];
         if ($turnos) {
@@ -306,7 +306,7 @@ function paquete_reporte(string $tipo, array $reporte, float $tasa, PDO $db, arr
         $p['titulo'] = $tipo === 'retiros' ? 'Reporte de retiros' : 'Reporte de pagos pendientes';
         $p['subtitulo'] = $tipo === 'retiros' ? ($g('estado') === 'entregado' ? 'Pedidos entregados' : 'Pedidos listos para retirar') : 'Ventas con pago pendiente o por verificar';
         $p['columnas'] = [
-            ['texto' => 'N.º venta', 'ancho' => 14], ['texto' => 'Cliente', 'ancho' => 24], ['texto' => 'Hora', 'ancho' => 10], ['texto' => 'Estado', 'ancho' => 16],
+            ['texto' => 'N.º venta', 'fijo' => true, 'ancho' => 14], ['texto' => 'Cliente', 'ancho' => 24], ['texto' => 'Hora', 'fijo' => true, 'ancho' => 10], ['texto' => 'Estado', 'ancho' => 16],
             ['texto' => 'Total $', 'numero' => true, 'ancho' => 12], ['texto' => 'Total Bs', 'numero' => true, 'ancho' => 16],
         ];
         $t = 0;
@@ -378,7 +378,7 @@ function paquete_reporte(string $tipo, array $reporte, float $tasa, PDO $db, arr
         $p['titulo'] = 'Lo cobrado' . ($nombreMetodo !== '' ? ' con ' . $nombreMetodo : ' por método de pago');
         $p['subtitulo'] = rp_periodo($desde, $hasta) . ($g('banco') !== '' ? ' · ' . $g('banco') : '');
         $p['columnas'] = [
-            ['texto' => 'N.º venta', 'ancho' => 15], ['texto' => 'Hora', 'ancho' => 9], ['texto' => 'Cliente', 'ancho' => 14], ['texto' => 'Método', 'ancho' => 14],
+            ['texto' => 'N.º venta', 'fijo' => true, 'ancho' => 15], ['texto' => 'Hora', 'fijo' => true, 'ancho' => 9], ['texto' => 'Cliente', 'ancho' => 14], ['texto' => 'Método', 'ancho' => 14],
             ['texto' => 'Banco y referencia', 'ancho' => 19], ['texto' => 'Monto', 'numero' => true, 'ancho' => 12], ['texto' => 'Monto Bs', 'numero' => true, 'ancho' => 17],
         ];
         $t = 0; $tBs = 0;
@@ -444,7 +444,7 @@ function paquete_reporte(string $tipo, array $reporte, float $tasa, PDO $db, arr
         $p['titulo'] = 'Directorio de clientes';
         $p['subtitulo'] = $est === '1' || $est === 'activo' ? 'Clientes activos' : ($est === '0' || $est === 'inactivo' ? 'Clientes inactivos' : 'Todos los clientes');
         $p['columnas'] = [
-            ['texto' => 'Cédula', 'ancho' => 15], ['texto' => 'Nombre', 'ancho' => 22], ['texto' => 'Teléfono', 'ancho' => 15], ['texto' => 'Correo', 'ancho' => 26],
+            ['texto' => 'Cédula', 'fijo' => true, 'ancho' => 15], ['texto' => 'Nombre', 'ancho' => 22], ['texto' => 'Teléfono', 'fijo' => true, 'ancho' => 15], ['texto' => 'Correo', 'ancho' => 26],
             ['texto' => 'Compras', 'numero' => true, 'decimales' => 0, 'ancho' => 10], ['texto' => 'Gastado $', 'numero' => true, 'ancho' => 12],
         ];
         $correo = fn($c) => str_ends_with((string) $c, '@providencia.local') ? '' : (string) $c;
@@ -470,7 +470,7 @@ function paquete_reporte(string $tipo, array $reporte, float $tasa, PDO $db, arr
             ['texto' => 'Clientes', 'valor' => (string) count($datos), 'nota' => count($porEstado['Activo'] ?? []) . ' activos'],
             ['texto' => 'Compras', 'valor' => (string) $n, 'nota' => 'promedio ' . rp_dinero($n ? $gas / $n : 0)],
             ['texto' => 'Total gastado', 'valor' => rp_dinero($gas), 'nota' => rp_bs($gas * $tasa)],
-            ['texto' => 'Mejor cliente', 'valor' => $top ? (string) $top->nombre : 'Sin compras', 'nota' => $top ? rp_dinero($top->total_gastado) : ''],
+            ['texto' => 'Mejor cliente', 'valor' => $top ? rp_dinero($top->total_gastado) : 'Sin compras', 'nota' => $top ? (string) $top->nombre : ''],
         ];
         return $p;
     }
@@ -480,7 +480,7 @@ function paquete_reporte(string $tipo, array $reporte, float $tasa, PDO $db, arr
         $p['titulo'] = 'Directorio de proveedores';
         $p['subtitulo'] = $est === '1' || $est === 'activo' ? 'Proveedores activos' : ($est === '0' || $est === 'inactivo' ? 'Proveedores inactivos' : 'Todos los proveedores');
         $p['columnas'] = [
-            ['texto' => 'RIF / Cédula', 'ancho' => 16], ['texto' => 'Razón social', 'ancho' => 24], ['texto' => 'Teléfono', 'ancho' => 17], ['texto' => 'Correo', 'ancho' => 31],
+            ['texto' => 'RIF / Cédula', 'fijo' => true, 'ancho' => 16], ['texto' => 'Razón social', 'ancho' => 24], ['texto' => 'Teléfono', 'fijo' => true, 'ancho' => 17], ['texto' => 'Correo', 'ancho' => 31],
             ['texto' => 'Compras', 'numero' => true, 'decimales' => 0, 'ancho' => 12],
         ];
         $n = 0; $conCompras = 0;
@@ -510,7 +510,7 @@ function paquete_reporte(string $tipo, array $reporte, float $tasa, PDO $db, arr
         $p['titulo'] = 'Reporte de compras';
         $p['subtitulo'] = rp_periodo($desde, $hasta);
         $p['columnas'] = [
-            ['texto' => 'Factura', 'ancho' => 14], ['texto' => 'Proveedor', 'ancho' => 26], ['texto' => 'Artículos', 'numero' => true, 'decimales' => 0, 'ancho' => 11],
+            ['texto' => 'Factura', 'fijo' => true, 'ancho' => 14], ['texto' => 'Proveedor', 'ancho' => 26], ['texto' => 'Artículos', 'numero' => true, 'decimales' => 0, 'ancho' => 11],
             ['texto' => 'Estado', 'ancho' => 13], ['texto' => 'Total $', 'numero' => true, 'ancho' => 13], ['texto' => 'Total Bs', 'numero' => true, 'ancho' => 17],
         ];
         $dia = function ($d) {

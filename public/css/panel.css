@@ -1295,10 +1295,17 @@ body:has(.panel.modo-pos) .avisos { top: 76px; }
 .rp-tabla td.t-tit b { font-weight: 600; }
 .rp-hoy { display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 999px; background: var(--fondo); font-size: 12.5px; font-weight: 600; color: var(--texto-3); white-space: nowrap; }
 .rp-tabla .acc { flex-wrap: nowrap; }
+.rp-tabla td.rp-que:has(.rp-filtro) { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.rp-tabla td.rp-que:has(.rp-filtro) > span { flex: 1 1 200px; }
+.rp-filtro select { min-height: 44px; min-width: 220px; }
+.rp-espera .btn-rep { opacity: .45; pointer-events: none; }
 @container tabla (max-width: 760px) {
   .rp-tabla tbody th { display: block; }
   .rp-tabla td.rp-que { display: block; text-align: left; color: var(--texto-2); }
   .rp-tabla td.rp-que::before { content: none; }
+  .rp-tabla td.rp-que:has(.rp-filtro) { display: block; }
+  .rp-filtro { margin-top: 8px; }
+  .rp-filtro select { width: 100%; }
   .rp-tabla td.t-acc .acc { width: 100%; }
   .rp-tabla td.t-acc .btn-rep { flex: 1; justify-content: center; min-height: 44px; }
 }

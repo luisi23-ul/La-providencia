@@ -64,6 +64,8 @@ main > .datos:first-of-type .grupo th, section + .datos .grupo th { padding-top:
 .datos .sub td:first-child { font-weight: 500; color: #5b5148; }
 .datos .total td { padding: 3mm 2.5mm; border-top: 2px solid #2a2420; border-bottom: 0; font-size: 10pt; font-weight: 600; }
 .datos .total td:first-child, .datos .sub td:first-child { overflow-wrap: normal; white-space: nowrap; overflow: visible; }
+.datos .fijo { white-space: nowrap; overflow-wrap: normal; }
+.datos th.num { white-space: normal; overflow-wrap: normal; }
 .datos .total td:first-child { color: #8c4a2f; letter-spacing: .08em; text-transform: uppercase; font-size: 8.5pt; }
 .resumen { width: 100%; table-layout: fixed; border-collapse: collapse; margin-bottom: 6mm; border: 1px solid #e3d8ca; }
 .resumen td { padding: 4.2mm 4.5mm 4mm; border-left: 1px solid #e3d8ca; vertical-align: top; }
@@ -115,8 +117,19 @@ main > .datos:first-of-type .grupo th, section + .datos .grupo th { padding-top:
 .pie-dompdf { position: fixed; left: 0; right: 0; bottom: -11mm; font-size: 8pt; color: #5b5148; }
 .pie-dompdf td { padding: 0; }
 .pie-dompdf .pag:after { content: "Página " counter(page) " de " counter(pages); }
-@media screen { body { background: #ede1d3; padding: 24px 16px; } .hoja { background: #fff; padding: 16mm 14mm; box-shadow: 0 18px 40px -24px rgba(110, 70, 45, .45); } }
+@media screen { body { background: #ede1d3; padding: 24px 16px; } .hoja { max-width: 216mm; box-sizing: border-box; background: #fff; padding: 16mm 14mm; box-shadow: 0 18px 40px -24px rgba(110, 70, 45, .45); } }
+@media screen and (min-width: 641px) and (max-width: 900px) {
+  .hoja { padding: 10mm 7mm; }
+  .resumen b { font-size: 13pt; }
+  .resumen small { font-size: 8.5pt; }
+  .datos { font-size: 8.4pt; }
+  .datos th { padding: 2mm 1.6mm; font-size: 6.8pt; letter-spacing: .04em; }
+  .datos td { padding: 2mm 1.6mm; }
+  .datos .grupo th { padding-left: 1.6mm; padding-right: 1.6mm; }
+  .datos .total td { padding: 2.6mm 1.6mm; font-size: 9pt; }
+}
 @media screen and (max-width: 640px) {
+  .datos .fijo { white-space: normal; overflow-wrap: anywhere; }
   body { padding: 0; }
   .hoja { padding: 20px 16px 28px; box-shadow: none; }
   .cab td { display: block; width: auto; }
