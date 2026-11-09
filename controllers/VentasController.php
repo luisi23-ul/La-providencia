@@ -312,7 +312,7 @@ public function abrirTurno() {
     // =========================================================================
     // 2. GUARDAR VENTA EN TIENDA (POS)
     // =========================================================================
-   public function guardarVentaTienda() {
+ public function guardarVentaTienda() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header("Location: index.php?action=punto_venta");
             exit();
@@ -363,15 +363,26 @@ public function abrirTurno() {
                 throw new Exception("No hay productos en la orden de venta.");
             }
 
+            // 1. Tasa activa del sistema (BCV o manual)
             $stmtSis = $this->db->query("SELECT tasa_bcv, tasa_manual, tasa_modo FROM sistema LIMIT 1");
             $sis = $stmtSis->fetch(PDO::FETCH_OBJ);
-            $tasaCambio = ($sis && $sis->tasa_modo === 'manual') ? (float)$sis->tasa_manual : (float)($sis->tasa_bcv ?? 1.0000);
+            $tasaCambio = ($sis && $sis->tasa_modo === 'manual' && (float)$sis->tasa_manual > 0) 
+                ? (float)$sis->tasa_manual 
+                : (float)($sis->tasa_bcv ?? 1.0000);
             if ($tasaCambio <= 0) $tasaCambio = 1.0000;
 
-            // Obtener el id_tasa vigente de la tabla tasas_dolar
-            $idTasaActual = (int)$this->db->query("SELECT id_tasa FROM tasas_dolar ORDER BY fecha DESC, id_tasa DESC LIMIT 1")->fetchColumn();
-            if ($idTasaActual <= 0) {
-                $idTasaActual = 1;
+            // 2. Sincronizar con tasas_dolar para que el id_tasa coincida exactamente con la tasa usada
+            $stmtCheckTasa = $this->db->prepare("SELECT id_tasa, valor FROM tasas_dolar ORDER BY fecha DESC, id_tasa DESC LIMIT 1");
+            $stmtCheckTasa->execute();
+            $ultimaTasa = $stmtCheckTasa->fetch(PDO::FETCH_OBJ);
+
+            if ($ultimaTasa && abs((float)$ultimaTasa->valor - $tasaCambio) < 0.0001) {
+                $idTasaActual = (int)$ultimaTasa->id_tasa;
+            } else {
+                $fuenteTasa = ($sis && $sis->tasa_modo === 'manual') ? 'manual' : 'bcv';
+                $stmtInsTasa = $this->db->prepare("INSERT INTO tasas_dolar (valor, fecha, fuente) VALUES (?, NOW(), ?)");
+                $stmtInsTasa->execute([$tasaCambio, $fuenteTasa]);
+                $idTasaActual = (int)$this->db->lastInsertId();
             }
 
             $totalUsd = (float)($_POST['total'] ?? 0);
@@ -554,9 +565,8 @@ public function abrirTurno() {
 
                 $monedaP = (stripos($metodoId, 'usd') !== false) ? 'USD' : 'Bs';
 
-                // CORRECCIÓN DE VUELTO:
                 // Si el método es en efectivo y hubo vuelto en esa misma moneda,
-                // registrar en la tabla pagos el ingreso neto real para que el arqueo no infle el dinero físico.
+                // registrar en pagos el monto neto real que ingresa a caja
                 $montoNetoGuardar = $montoP;
                 if ($vuelto > 0) {
                     $esVueltoUsd = in_array(strtoupper($vueltoMoneda), ['USD', '$'], true);
