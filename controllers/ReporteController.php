@@ -99,10 +99,13 @@ class ReporteController {
                 'datos'  => $datos
             ];
         } elseif ($tipo === 'pagos_banco') {
-            $desde = trim((string)($_GET['desde'] ?? ''));
-            $hasta = trim((string)($_GET['hasta'] ?? ''));
+            $desde  = trim((string)($_GET['desde'] ?? ''));
+            $hasta  = trim((string)($_GET['hasta'] ?? ''));
+            $banco  = trim((string)($_GET['banco'] ?? ''));
+            $metodo = trim((string)($_GET['metodo'] ?? $_GET['codigo_metodo'] ?? ''));
 
-            $where = ["1=1"];
+            // Excluir efectivo para conciliación bancaria
+            $where  = ["p.codigo_metodo NOT IN ('efectivo_usd', 'efectivo_bs')"];
             $params = [];
 
             if (!empty($desde)) {
@@ -112,6 +115,16 @@ class ReporteController {
             if (!empty($hasta)) {
                 $where[] = "DATE(p.fecha_pago) <= ?";
                 $params[] = $hasta;
+            }
+            // Filtro por Banco
+            if (!empty($banco) && $banco !== 'todos' && $banco !== 'Todos los bancos') {
+                $where[] = "p.banco = ?";
+                $params[] = $banco;
+            }
+            // Filtro por Método (Pago Móvil / Transferencia)
+            if (!empty($metodo) && $metodo !== 'todos' && $metodo !== 'Todos los métodos') {
+                $where[] = "p.codigo_metodo = ?";
+                $params[] = $metodo;
             }
 
             $sql = "SELECT p.numero_orden, 
@@ -134,8 +147,13 @@ class ReporteController {
             $datos = $stmt->fetchAll(PDO::FETCH_OBJ);
 
             $titulo = 'REPORTE DE PAGOS POR BANCO (CONCILIACIÓN)';
-            if ($desde && $hasta) {
-                $titulo .= " (" . date('d/m/Y', strtotime($desde)) . " AL " . date('d/m/Y', strtotime($hasta)) . ")";
+            $detallesFiltro = [];
+            if (!empty($banco) && $banco !== 'todos') $detallesFiltro[] = "Banco: " . $banco;
+            if (!empty($metodo) && $metodo !== 'todos') $detallesFiltro[] = "Método: " . $metodo;
+            if ($desde && $hasta) $detallesFiltro[] = date('d/m/Y', strtotime($desde)) . " AL " . date('d/m/Y', strtotime($hasta));
+
+            if (!empty($detallesFiltro)) {
+                $titulo .= " (" . implode(' - ', $detallesFiltro) . ")";
             }
 
             return [
@@ -357,8 +375,9 @@ class ReporteController {
 
             $sql = "SELECT p.* FROM proveedores p WHERE " . implode(' AND ', $where);
 
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute($params);
+           // AHORA:
+$stmtC = $this->db->prepare("SELECT COUNT(*) FROM compras WHERE rif_proveedor = ? AND estado != 'anulado'");
+$stmtC->execute([$rifProv]);
             $filas = $stmt->fetchAll(PDO::FETCH_OBJ);
 
             $datos = [];
@@ -424,7 +443,7 @@ class ReporteController {
             $filas = $stmt->fetchAll(PDO::FETCH_OBJ);
 
             $stmtArt = $this->db->prepare("SELECT COALESCE(SUM(cantidad), 0) FROM detalle_compras WHERE numero_factura = ?");
-            $stmtProv = $this->db->prepare("SELECT razon_social FROM proveedores WHERE rif = ? OR rif_cedula = ? OR id_proveedor = ? LIMIT 1");
+           $stmtProv = $this->db->prepare("SELECT razon_social FROM proveedores WHERE rif = ? LIMIT 1");
             $stmtUser = $this->db->prepare("SELECT nombre FROM usuarios WHERE cedula = ? LIMIT 1");
 
             $datos = [];
@@ -439,7 +458,7 @@ class ReporteController {
                 $nombreProv = 'Proveedor General';
                 if (!empty($rifProv)) {
                     try {
-                        $stmtProv->execute([$rifProv, $rifProv, $rifProv]);
+                      $stmtProv->execute([$rifProv]);
                         $nombreProv = $stmtProv->fetchColumn() ?: 'Proveedor General';
                     } catch (Exception $e) {}
                 }
@@ -583,7 +602,7 @@ class ReporteController {
             $desde  = trim((string)($_GET['desde'] ?? ''));
             $hasta  = trim((string)($_GET['hasta'] ?? ''));
 
-            // Caso A: Arqueo individual de un turno concreto
+            // Caso 1: Arqueo individual de un turno concreto
             if (!empty($cedula) && $turno > 0) {
                 require_once "models/TurnoCajaModel.php";
                 $mTurno = new TurnoCajaModel($this->db);
@@ -594,7 +613,7 @@ class ReporteController {
 
                 $nombreCajero = 'Cajero';
                 if ($turnoObj && !empty($turnoObj->cedula_cajero)) {
-                    $stCaj = $this->db->prepare("SELECT CONCAT(nombre, ' ', apellido) FROM usuarios WHERE cedula = ? LIMIT 1");
+                    $stCaj = $this->db->prepare("SELECT CONCAT(COALESCE(nombre, ''), ' ', COALESCE(apellido, '')) FROM usuarios WHERE cedula = ? LIMIT 1");
                     $stCaj->execute([$turnoObj->cedula_cajero]);
                     $nombreCajero = trim((string)$stCaj->fetchColumn()) ?: 'Cajero';
                 }
@@ -619,27 +638,32 @@ class ReporteController {
                 ];
             }
 
-            // Caso B: Cierre de un día completo (tipo=cierre&fecha=...)
-            if (!empty($fecha)) {
+            // Caso 2: Cierre del día específico (tipo=cierre)
+            if ($tipo === 'cierre' || (!empty($fecha) && empty($desde))) {
+                $fechaConsulta = !empty($fecha) ? $fecha : date('Y-m-d');
+
+                // Turnos cerrados y abiertos de esa fecha
                 $stmtTurnos = $this->db->prepare("
                     SELECT tc.cedula_cajero,
                            tc.numero_turno,
                            CONCAT(COALESCE(u.nombre, ''), ' ', COALESCE(u.apellido, '')) AS cajero,
                            DATE_FORMAT(tc.fecha_apertura, '%Y-%m-%d %H:%i:%s') AS fecha_apertura,
-                           IF(tc.fecha_cierre IS NOT NULL, DATE_FORMAT(tc.fecha_cierre, '%Y-%m-%d %H:%i:%s'), NULL) AS fecha_cierre,
+                           IF(tc.fecha_cierre IS NOT NULL AND tc.fecha_cierre != '2000-01-01 00:00:00', DATE_FORMAT(tc.fecha_cierre, '%Y-%m-%d %H:%i:%s'), NULL) AS fecha_cierre,
                            tc.estado,
                            COALESCE(tc.fondo_usd, 0) AS fondo_usd,
                            COALESCE(tc.fondo_bs, 0) AS fondo_bs,
                            IF(tc.estado = 'cerrado', COALESCE(tc.cierre_usd, 0), 0) AS cierre_usd,
-                           IF(tc.estado = 'cerrado', COALESCE(tc.cierre_bs, 0), 0) AS cierre_bs
+                           IF(tc.estado = 'cerrado', COALESCE(tc.cierre_bs, 0), 0) AS cierre_bs,
+                           COALESCE(tc.nota_cierre, '') AS nota_cierre
                     FROM turnos_caja tc
                     LEFT JOIN usuarios u ON tc.cedula_cajero = u.cedula
                     WHERE DATE(tc.fecha_apertura) = ?
-                    ORDER BY tc.fecha_apertura ASC
+                    ORDER BY tc.fecha_apertura ASC, tc.numero_turno ASC
                 ");
-                $stmtTurnos->execute([$fecha]);
+                $stmtTurnos->execute([$fechaConsulta]);
                 $listaTurnos = $stmtTurnos->fetchAll(PDO::FETCH_ASSOC);
 
+                // Pagos cobrados en esa fecha
                 $stmtPagos = $this->db->prepare("
                     SELECT v.numero_orden,
                            DATE_FORMAT(p.fecha_pago, '%Y-%m-%d %H:%i:%s') AS fecha_pago,
@@ -661,18 +685,18 @@ class ReporteController {
                       AND v.origen_venta IN ('tienda', 'tienda_fisica')
                     ORDER BY p.fecha_pago ASC
                 ");
-                $stmtPagos->execute([$fecha]);
+                $stmtPagos->execute([$fechaConsulta]);
                 $listaPagos = $stmtPagos->fetchAll(PDO::FETCH_ASSOC);
 
                 return [
-                    'titulo' => 'REPORTE DE CIERRE DIARIO (' . date('d/m/Y', strtotime($fecha)) . ')',
-                    'fecha'  => $fecha,
+                    'titulo' => 'REPORTE DE CIERRE DIARIO (' . date('d/m/Y', strtotime($fechaConsulta)) . ')',
+                    'fecha'  => $fechaConsulta,
                     'turnos' => $listaTurnos,
                     'datos'  => $listaPagos
                 ];
             }
 
-            // Caso C: Cierres de caja por período (desde/hasta)
+            // Caso 3: Cierres de caja por período (tipo=cierre_caja con rango desde/hasta)
             $where = ["tc.estado = 'cerrado'"];
             $params = [];
 
@@ -687,14 +711,14 @@ class ReporteController {
 
             $sql = "SELECT tc.cedula_cajero, 
                            tc.numero_turno, 
-                           tc.fecha_apertura, 
-                           tc.fecha_cierre, 
+                           DATE_FORMAT(tc.fecha_apertura, '%d/%m/%Y %H:%i') AS fecha_apertura, 
+                           DATE_FORMAT(tc.fecha_cierre, '%d/%m/%Y %H:%i') AS fecha_cierre, 
                            tc.fondo_usd, 
                            tc.fondo_bs, 
                            tc.cierre_usd, 
                            tc.cierre_bs, 
                            tc.tasa_apertura, 
-                           tc.nota_cierre,
+                           COALESCE(tc.nota_cierre, '') AS nota_cierre,
                            CONCAT(COALESCE(u.nombre, ''), ' ', COALESCE(u.apellido, '')) AS cajero
                     FROM turnos_caja tc
                     LEFT JOIN usuarios u ON tc.cedula_cajero = u.cedula
@@ -712,6 +736,7 @@ class ReporteController {
 
             return [
                 'titulo' => $titulo,
+                'turnos' => $turnos,
                 'datos'  => $turnos
             ];
         }
