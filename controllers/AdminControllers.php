@@ -559,26 +559,49 @@ class AdminControllers {
     // CATEGORÍAS Y ATRIBUTOS
     // -------------------------------------------------------------------------
 
+   // -------------------------------------------------------------------------
+    // MÓDULO DE CATEGORÍAS
+    // -------------------------------------------------------------------------
+
     public function categorias() {
+        // 1. Consulta con slug_padre y nombre_padre exactos para que la vista anide las subcategorías
         $sql = "SELECT c.slug, 
-                       c.slug AS id, 
+                       c.slug AS id,
+                       COALESCE(c.slug_padre, 'raiz') AS slug_padre,
                        c.nombre_categoria,
-                       '' AS nombre_padre,
-                       COUNT(pr.codigo) AS total_productos,
+                       CASE 
+                           WHEN c.slug_padre IS NULL OR c.slug_padre = 'raiz' OR c.slug_padre = '' THEN ''
+                           ELSE COALESCE(cp.nombre_categoria, '')
+                       END AS nombre_padre,
+                       COUNT(DISTINCT pr.codigo) AS total_productos,
                        COALESCE(SUM(pr.stock), 0) AS total_unidades
                 FROM categorias c
+                LEFT JOIN categorias cp ON c.slug_padre = cp.slug
                 LEFT JOIN productos pr ON pr.slug_categoria = c.slug 
                      AND (pr.deleted_at IS NULL OR pr.deleted_at = '2000-01-01 00:00:00' OR pr.deleted_at = '0000-00-00 00:00:00')
                 WHERE c.slug != 'raiz'
-                GROUP BY c.slug, c.nombre_categoria
-                ORDER BY c.nombre_categoria ASC";
+                GROUP BY c.slug, c.slug_padre, c.nombre_categoria, cp.nombre_categoria
+                ORDER BY 
+                    CASE WHEN c.slug_padre = 'raiz' OR c.slug_padre IS NULL OR c.slug_padre = '' THEN 0 ELSE 1 END ASC,
+                    nombre_padre ASC,
+                    c.nombre_categoria ASC";
 
         $stmt = $this->db->query($sql);
         $categorias = $stmt->fetchAll(PDO::FETCH_OBJ);
 
-        // Atributos de cada categoría si existen en la tabla auxiliar
+        // 2. Obtener categorías principales para los selectores del modal de creación
+        $stmtPadres = $this->db->query("
+            SELECT slug, nombre_categoria 
+            FROM categorias 
+            WHERE (slug_padre = 'raiz' OR slug_padre IS NULL OR slug_padre = '') 
+              AND slug != 'raiz'
+            ORDER BY nombre_categoria ASC
+        ");
+        $categoriasPadre = $stmtPadres->fetchAll(PDO::FETCH_OBJ);
+
+        // 3. Atributos vinculados por slug_categoria (usando las columnas reales de la BD)
         try {
-            $stmtAtr = $this->db->prepare("SELECT id, nombre FROM categoria_atributos WHERE id_categoria = ?");
+            $stmtAtr = $this->db->prepare("SELECT codigo_atributo, nombre FROM categoria_atributos WHERE slug_categoria = ?");
             foreach ($categorias as $cat) {
                 $stmtAtr->execute([$cat->slug]);
                 $cat->atributos = $stmtAtr->fetchAll(PDO::FETCH_OBJ);
@@ -589,17 +612,26 @@ class AdminControllers {
             }
         }
 
-        if (file_exists('views/categorias.php')) {
-            require_once 'views/categorias.php';
-        } elseif (file_exists('views/inventario/categorias.php')) {
-            require_once 'views/inventario/categorias.php';
+        // 4. Búsqueda de la vista en todas las rutas posibles del panel
+        $rutas = [
+            'views/admin/categorias.php',
+            'views/categorias.php',
+            'views/inventario/categorias.php'
+        ];
+        foreach ($rutas as $vista) {
+            if (file_exists($vista)) {
+                require_once $vista;
+                return;
+            }
         }
     }
 
-   public function guardarCategoria() {
+    public function guardarCategoria() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $slugOriginal = trim((string)($_POST['slug'] ?? $_POST['id'] ?? ''));
-            $nombre = trim((string)($_POST['nombre_categoria'] ?? $_POST['nombre'] ?? ''));
+            $slugOriginal  = trim((string)($_POST['slug'] ?? $_POST['id'] ?? ''));
+            $nombre        = trim((string)($_POST['nombre_categoria'] ?? $_POST['nombre'] ?? ''));
+            $slugPadre     = trim((string)($_POST['slug_padre'] ?? 'raiz'));
+            $nuevaPadreNom = trim((string)($_POST['nueva_categoria_padre'] ?? ''));
 
             if (empty($nombre)) {
                 $_SESSION['aviso_error'] = "El nombre de la categoría es obligatorio.";
@@ -607,29 +639,89 @@ class AdminControllers {
                 exit();
             }
 
-            // Generar slug limpio si es nueva
-            $slug = !empty($slugOriginal) ? $slugOriginal : preg_replace('/[^a-z0-9]+/i', '-', strtolower(trim($nombre)));
-
             try {
                 $this->db->beginTransaction();
 
+                // 1. Si eligió crear una categoría padre al vuelo
+                if (!empty($nuevaPadreNom)) {
+                    $slugPadreGenerado = $this->generarSlugLimpio($nuevaPadreNom);
+                    $stmtCheckP = $this->db->prepare("SELECT slug FROM categorias WHERE slug = ? LIMIT 1");
+                    $stmtCheckP->execute([$slugPadreGenerado]);
+                    if (!$stmtCheckP->fetchColumn()) {
+                        $stmtInsP = $this->db->prepare("
+                            INSERT INTO categorias (slug, slug_padre, nombre_categoria) 
+                            VALUES (?, 'raiz', ?)
+                        ");
+                        $stmtInsP->execute([$slugPadreGenerado, $nuevaPadreNom]);
+                    }
+                    $slugPadre = $slugPadreGenerado;
+                }
+
+                if (empty($slugPadre)) {
+                    $slugPadre = 'raiz';
+                }
+
                 if (!empty($slugOriginal)) {
                     // Editar categoría existente
-                    $stmt = $this->db->prepare("UPDATE categorias SET nombre_categoria = ? WHERE slug = ?");
-                    $stmt->execute([$nombre, $slugOriginal]);
+                    $stmt = $this->db->prepare("UPDATE categorias SET nombre_categoria = ?, slug_padre = ? WHERE slug = ?");
+                    $stmt->execute([$nombre, $slugPadre, $slugOriginal]);
+                    $slugFinal = $slugOriginal;
                     $this->log('Inventario', 'UPDATE', "Editó categoría: {$nombre} ({$slugOriginal})");
                 } else {
-                    // Crear categoría nueva
-                    // Verificar si el slug ya existe para evitar duplicado
+                    // Crear categoría nueva con prefijo del padre si es subcategoría
+                    $slugBase = $this->generarSlugLimpio($nombre);
+                    $slugFinal = ($slugPadre !== 'raiz') ? ($slugPadre . '-' . $slugBase) : $slugBase;
+
                     $stmtCheck = $this->db->prepare("SELECT COUNT(*) FROM categorias WHERE slug = ?");
-                    $stmtCheck->execute([$slug]);
+                    $stmtCheck->execute([$slugFinal]);
                     if ((int)$stmtCheck->fetchColumn() > 0) {
-                        $slug .= '-' . time();
+                        $slugFinal .= '-' . substr(uniqid(), -3);
                     }
 
-                    $stmt = $this->db->prepare("INSERT INTO categorias (slug, nombre_categoria) VALUES (?, ?)");
-                    $stmt->execute([$slug, $nombre]);
-                    $this->log('Inventario', 'INSERT', "Creó categoría: {$nombre} ({$slug})");
+                    $stmt = $this->db->prepare("INSERT INTO categorias (slug, slug_padre, nombre_categoria) VALUES (?, ?, ?)");
+                    $stmt->execute([$slugFinal, $slugPadre, $nombre]);
+                    $this->log('Inventario', 'INSERT', "Creó categoría: {$nombre} ({$slugFinal})");
+                }
+
+                // 2. Guardar atributos y sus opciones si se enviaron desde el formulario
+                $codigosAtrib  = (array)($_POST['codigo_atributo'] ?? []);
+                $nombresAtrib  = (array)($_POST['atributo_nombre'] ?? []);
+                $opcionesAtrib = (array)($_POST['atributo_opciones'] ?? []);
+
+                if (!empty($nombresAtrib)) {
+                    $stAtrib = $this->db->prepare("
+                        INSERT INTO categoria_atributos (codigo_atributo, slug_categoria, nombre)
+                        VALUES (?, ?, ?)
+                        ON DUPLICATE KEY UPDATE nombre = VALUES(nombre)
+                    ");
+
+                    $stOpc = $this->db->prepare("
+                        INSERT INTO categoria_atributo_opciones (codigo_atributo, valor)
+                        VALUES (?, ?)
+                        ON DUPLICATE KEY UPDATE valor = VALUES(valor)
+                    ");
+
+                    for ($i = 0; $i < count($nombresAtrib); $i++) {
+                        $nomAt = trim((string)($nombresAtrib[$i] ?? ''));
+                        if (empty($nomAt)) continue;
+
+                        $codAt = trim((string)($codigosAtrib[$i] ?? ''));
+                        if (empty($codAt)) {
+                            $codAt = $slugFinal . '-' . $this->generarSlugLimpio($nomAt) . '-' . ($i + 1);
+                        }
+
+                        $stAtrib->execute([$codAt, $slugFinal, $nomAt]);
+
+                        $opcRaw = trim((string)($opcionesAtrib[$i] ?? ''));
+                        if (!empty($opcRaw)) {
+                            $valores = array_map('trim', explode(',', $opcRaw));
+                            foreach ($valores as $val) {
+                                if (!empty($val)) {
+                                    $stOpc->execute([$codAt, $val]);
+                                }
+                            }
+                        }
+                    }
                 }
 
                 $this->db->commit();
@@ -652,7 +744,11 @@ class AdminControllers {
             $slug = trim((string)($_POST['slug'] ?? $_POST['id'] ?? ''));
 
             if (!empty($slug)) {
-                // Verificar si tiene productos asignados
+                // Verificar si tiene subcategorías hijas o productos asignados
+                $stmtHijas = $this->db->prepare("SELECT COUNT(*) FROM categorias WHERE slug_padre = ?");
+                $stmtHijas->execute([$slug]);
+                $totalHijas = (int)$stmtHijas->fetchColumn();
+
                 $stmtCheck = $this->db->prepare("
                     SELECT COUNT(*) 
                     FROM productos 
@@ -662,7 +758,9 @@ class AdminControllers {
                 $stmtCheck->execute([$slug]);
                 $totalAsociados = (int)$stmtCheck->fetchColumn();
 
-                if ($totalAsociados > 0) {
+                if ($totalHijas > 0) {
+                    $_SESSION['aviso_error'] = "No se puede eliminar porque tiene {$totalHijas} subcategoría(s) hija(s) asociada(s).";
+                } elseif ($totalAsociados > 0) {
                     $_SESSION['aviso_error'] = "No se puede eliminar la categoría porque tiene {$totalAsociados} producto(s) asociado(s).";
                 } else {
                     $this->db->prepare("DELETE FROM categorias WHERE slug = ?")->execute([$slug]);
@@ -675,9 +773,6 @@ class AdminControllers {
             exit();
         }
     }
-// -------------------------------------------------------------------------
-    // AJUSTES DE STOCK Y KARDEX
-    // -------------------------------------------------------------------------
 
     // -------------------------------------------------------------------------
     // AJUSTES DE STOCK Y KARDEX
@@ -708,6 +803,7 @@ class AdminControllers {
         $ultimosAjustes = $stmtAjustes ? $stmtAjustes->fetchAll(PDO::FETCH_OBJ) : [];
 
         $rutas = [
+            'views/admin/ajustes_inventario.php',
             'views/inventario/ajustes.php',
             'views/ajustes_inventario.php',
             'views/ajustes.php'
@@ -731,7 +827,7 @@ class AdminControllers {
         $tipo           = trim((string)($_POST['tipo_movimiento'] ?? 'ajuste'));
         $cantidad       = (int)($_POST['cantidad'] ?? 0);
         $observacion    = trim((string)($_POST['observacion'] ?? 'Ajuste manual de inventario'));
-        $cedulaUsuario  = $_SESSION['cedula'] ?? $_SESSION['id_usuario'] ?? 'SIN_USUARIO';
+        $cedulaUsuario  = $_SESSION['usuario']['cedula'] ?? $_SESSION['cedula'] ?? $_SESSION['id_usuario'] ?? 'SIN_USUARIO';
 
         if (empty($codigoProducto) || $cantidad <= 0) {
             header("Location: index.php?action=ajustes_inventario");
@@ -745,7 +841,7 @@ class AdminControllers {
             $stmtP->execute([$codigoProducto]);
             $stockActual = (int)$stmtP->fetchColumn();
 
-            // Determinar si descuenta (merma) o suma (ajuste de entrada)
+            // Operación aritmética correcta de merma o entrada
             if ($tipo === 'merma') {
                 $nuevoStock = max(0, $stockActual - $cantidad);
                 $cantKardex = -$cantidad;
@@ -758,7 +854,7 @@ class AdminControllers {
             $stmtUpd = $this->db->prepare("UPDATE productos SET stock = ? WHERE codigo = ?");
             $stmtUpd->execute([$nuevoStock, $codigoProducto]);
 
-            // Obtener siguiente movimiento para este producto
+            // Obtener correlativo de movimiento
             $stmtSec = $this->db->prepare("SELECT COALESCE(MAX(numero_movimiento), 0) + 1 FROM kardex_inventario WHERE codigo_producto = ?");
             $stmtSec->execute([$codigoProducto]);
             $numMov = (int)$stmtSec->fetchColumn();
@@ -782,6 +878,7 @@ class AdminControllers {
             die("Error al guardar ajuste: " . $e->getMessage());
         }
     }
+
     public function kardex() {
         $tipo  = $_GET['tipo'] ?? '';
         $desde = $_GET['desde'] ?? '';
@@ -833,9 +930,9 @@ class AdminControllers {
         $movimientos = $stmt->fetchAll(PDO::FETCH_OBJ);
 
         $rutas = [
+            'views/admin/kardex.php',
             'views/inventario/kardex.php',
-            'views/kardex.php',
-            'views/admin/kardex.php'
+            'views/kardex.php'
         ];
 
         foreach ($rutas as $vista) {
@@ -844,6 +941,19 @@ class AdminControllers {
                 return;
             }
         }
+    }
+
+    private function generarSlugLimpio($texto) {
+        $texto = mb_strtolower(trim($texto), 'UTF-8');
+        $texto = preg_replace('/[áàäâ]/u', 'a', $texto);
+        $texto = preg_replace('/[éèëê]/u', 'e', $texto);
+        $texto = preg_replace('/[íìïî]/u', 'i', $texto);
+        $texto = preg_replace('/[óòöô]/u', 'o', $texto);
+        $texto = preg_replace('/[úùüû]/u', 'u', $texto);
+        $texto = preg_replace('/[ñ]/u', 'n', $texto);
+        $texto = preg_replace('/[^a-z0-9\-]/', '-', $texto);
+        $texto = preg_replace('/-+/', '-', $texto);
+        return trim($texto, '-');
     }
     // -------------------------------------------------------------------------
     // GRÁFICOS ANTIGUOS
