@@ -172,30 +172,34 @@ function paquete_reporte(string $tipo, array $reporte, float $tasa, PDO $db, arr
         $p['titulo'] = 'Reporte de cierres de caja';
         $p['subtitulo'] = rp_periodo($desde, $hasta);
         $p['columnas'] = [
-            ['texto' => 'Turno', 'fijo' => true, 'ancho' => 12],
-            ['texto' => 'Cajero', 'ancho' => 22],
-            ['texto' => 'Apertura', 'ancho' => 18],
-            ['texto' => 'Cierre', 'ancho' => 18],
-            ['texto' => 'Fondo $', 'numero' => true, 'ancho' => 12],
-            ['texto' => 'Cierre $', 'numero' => true, 'ancho' => 12],
-            ['texto' => 'Cierre Bs', 'numero' => true, 'ancho' => 16],
+            ['texto' => 'Turno', 'fijo' => true, 'ancho' => 10],
+            ['texto' => 'Cajero', 'ancho' => 20],
+            ['texto' => 'Apertura', 'ancho' => 16],
+            ['texto' => 'Cierre', 'ancho' => 16],
+            ['texto' => 'Fondo $', 'numero' => true, 'ancho' => 10],
+            ['texto' => 'Fondo Bs', 'numero' => true, 'ancho' => 14],
+            ['texto' => 'Cierre $', 'numero' => true, 'ancho' => 10],
+            ['texto' => 'Cierre Bs', 'numero' => true, 'ancho' => 14],
         ];
 
         $filas = [];
         $totFondoU = 0;
+        $totFondoB = 0;
         $totCierreU = 0;
         $totCierreB = 0;
 
         foreach ($turnos as $t) {
             $numT   = (int) ($t->numero_turno ?? 0);
-            $cajero = (string) ($t->cajero ?? 'Cajero');
+            $cajero = trim(ucwords(mb_strtolower((string) ($t->cajero ?? '')))) ?: (string) ($t->cedula_cajero ?? 'Cajero');
             $fAp    = (string) ($t->fecha_apertura ?? '');
             $fCi    = (string) ($t->fecha_cierre ?? 'Sin cierre');
             $fU     = (float) ($t->fondo_usd ?? 0);
+            $fB     = (float) ($t->fondo_bs ?? 0);
             $cU     = (float) ($t->cierre_usd ?? 0);
             $cB     = (float) ($t->cierre_bs ?? 0);
 
             $totFondoU  += $fU;
+            $totFondoB  += $fB;
             $totCierreU += $cU;
             $totCierreB += $cB;
 
@@ -205,6 +209,7 @@ function paquete_reporte(string $tipo, array $reporte, float $tasa, PDO $db, arr
                 $fAp,
                 $fCi,
                 $fU,
+                $fB,
                 $cU,
                 $cB
             ];
@@ -213,10 +218,9 @@ function paquete_reporte(string $tipo, array $reporte, float $tasa, PDO $db, arr
         $p['grupos'][] = [
             'titulo'   => 'Historial de turnos cerrados · ' . count($turnos) . (count($turnos) === 1 ? ' turno' : ' turnos'),
             'filas'    => $filas,
-            'subtotal' => ['Subtotal', '', '', '', $totFondoU, $totCierreU, $totCierreB],
         ];
 
-        $p['totales'] = ['Total general', '', '', '', $totFondoU, $totCierreU, $totCierreB];
+        $p['totales'] = ['Total general', '', '', '', $totFondoU, $totFondoB, $totCierreU, $totCierreB];
         $p['resumen'] = [
             ['texto' => 'Turnos cerrados', 'valor' => (string) count($turnos), 'nota' => 'en el período'],
             ['texto' => 'Total $ contado', 'valor' => rp_dinero($totCierreU), 'nota' => 'al cierre'],
