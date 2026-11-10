@@ -98,7 +98,7 @@ if (es_rol('master', $rol)) $secciones['Gestión'][] = ['Auditoría', 'Cambios h
               </label>
               <?php endforeach; ?>
             </td>
-            <td class="t-acc"><div class="acc"><?php $exportar = ['tipo' => $tipo, 'filtros' => $filtros ?? [], 'ver' => true]; include __DIR__ . '/_exportar.php'; ?></div></td>
+            <td class="t-acc"><div class="acc"><?php $exportar = ['tipo' => $tipo, 'filtros' => $filtros ?? []]; include __DIR__ . '/_exportar.php'; ?></div></td>
           </tr>
           <?php endforeach; ?>
         </tbody>

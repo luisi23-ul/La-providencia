@@ -100,6 +100,7 @@ $cifras[] = ['Saldo', $saldo, 'cu-saldo'];
     <div class="cab-acc dv-chips">
       <div class="dv-botones">
         <a href="index.php?action=cliente_detalle&amp;<?= url_valor('cliente', !empty($venta->cedula) ? $venta->cedula : 'SIN_USUARIO') ?>" class="btn btn-sec btn-ir"><svg class="i"><use href="#i-historial"/></svg>Compras del cliente</a>
+        <a href="index.php?action=detalle_venta&amp;<?= url_clave('venta', $venta) ?>&amp;vista=nota&amp;ver=1" target="_blank" class="btn btn-sec btn-rep ver"><svg class="i"><use href="#i-ojo"/></svg>Ver</a>
         <a href="index.php?action=detalle_venta&amp;<?= url_clave('venta', $venta) ?>&amp;vista=nota" target="_blank" class="btn btn-sec btn-rep pdf"><svg class="i"><use href="#i-pdf"/></svg>Nota de entrega</a>
       </div>
     </div>
