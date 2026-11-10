@@ -701,7 +701,8 @@ function paquete_reporte(string $tipo, array $reporte, float $tasa, PDO $db, arr
                 $est = (string) ($d->estado ?? '');
                 $cli = $persona($d->cliente ?? '', $d->cedula_cliente ?? '');
                 $tit = $persona($d->titular ?? '', $d->cedula_titular ?? '');
-                $otro = mb_strtolower($tit[0]) !== mb_strtolower($cli[0]) || preg_replace('/\D/', '', $tit[1]) !== preg_replace('/\D/', '', $cli[1]);
+                $dTit = preg_replace('/\D/', '', $tit[1]); $dCli = preg_replace('/\D/', '', $cli[1]);
+                $otro = $tit[0] !== '' && (mb_strtolower($tit[0]) !== mb_strtolower($cli[0]) || ($dTit !== '' && $dCli !== '' && $dTit !== $dCli));
                 $quien = $otro ? [$cli[0], 'Pagó ' . $tit[0] . ($tit[1] !== '' ? ', ' . $tit[1] : '')] : $cli;
                 $bm = [$banco($d->banco ?? ''), $metodo($d->codigo_metodo ?? '')];
                 $ref = $sinDato($d->referencia ?? '') ? 'Sin referencia' : (string) $d->referencia;
