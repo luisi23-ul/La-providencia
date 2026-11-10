@@ -17,6 +17,7 @@ $equivalencias = [
     'compras'             => ['compras', 'gestionar_compras'],
     'clientes'            => ['clientes', 'gestionar_clientes'],
     'metodos_pago'        => ['metodos_pago', 'gestionar_metodos_pago'],
+    'reportes'            => ['reportes', 'ver_reportes'],
     'graficos'            => ['graficos', 'ver_estadisticas']
 ];
 
