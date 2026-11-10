@@ -138,6 +138,8 @@ svg.i { width: 18px; height: 18px; flex: none; stroke: currentColor; fill: none;
 .btn-rep.xls svg.i { color: var(--verde); }
 .btn-rep.pdf:hover, .btn-rep.pdf:focus-visible { background: #fdf3f2; border-color: #f3c5c0; color: var(--rojo); }
 .btn-rep.xls:hover, .btn-rep.xls:focus-visible { background: #eaf6f0; border-color: #a7d9c0; color: var(--verde); }
+.btn-rep.ver svg.i { color: var(--marca); }
+.btn-rep.ver:hover, .btn-rep.ver:focus-visible { background: var(--marca-suave); border-color: var(--marca-borde); color: var(--marca); }
 .btn-peq { padding: 5px 11px; min-height: 32px; font-size: 14.5px; }
 
 .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
