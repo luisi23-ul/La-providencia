@@ -125,7 +125,7 @@ class ReporteController {
                 $params[] = $metodo;
             }
 
-           $sql = "SELECT p.numero_orden, 
+          $sql = "SELECT p.numero_orden, 
                            p.fecha_pago, 
                            COALESCE(p.banco, 'Sin banco') AS banco, 
                            p.codigo_metodo, 
@@ -135,10 +135,10 @@ class ReporteController {
                            p.monto, 
                            p.tasa_cambio, 
                            p.estado, 
-                           COALESCE(c.nombre_razon_social, u.nombre, 'Consumidor Final') AS titular,
-                           COALESCE(c.cedula, 'S/C') AS cedula_titular,
+                           COALESCE(NULLIF(TRIM(p.titular_nombre), ''), '') AS titular,
+                           COALESCE(NULLIF(TRIM(p.titular_cedula), ''), '') AS cedula_titular,
                            COALESCE(c.nombre_razon_social, 'Consumidor Final') AS cliente,
-                           COALESCE(c.cedula, 'S/C') AS cedula_cliente,
+                           COALESCE(c.cedula, '') AS cedula_cliente,
                            CASE 
                                WHEN UPPER(TRIM(p.moneda)) IN ('BS', 'VES') THEN ROUND(p.monto / NULLIF(p.tasa_cambio, 0), 2)
                                ELSE p.monto
@@ -155,7 +155,6 @@ class ReporteController {
                     LEFT JOIN metodos_pago mp ON p.codigo_metodo = mp.codigo_metodo
                     WHERE " . implode(' AND ', $where) . "
                     ORDER BY p.fecha_pago DESC";
-
             $stmt = $this->db->prepare($sql);
             $stmt->execute($params);
             $datos = $stmt->fetchAll(PDO::FETCH_OBJ);
@@ -626,7 +625,6 @@ class ReporteController {
                 $params[] = $hasta;
             }
 
-            // Subconsultas para sumar el efectivo cobrado en el rango del turno
             $sql = "SELECT tc.cedula_cajero, 
                            tc.numero_turno, 
                            DATE_FORMAT(tc.fecha_apertura, '%d/%m/%Y %H:%i') AS fecha_apertura, 
@@ -638,24 +636,50 @@ class ReporteController {
                            tc.tasa_apertura, 
                            COALESCE(tc.nota_cierre, '') AS nota_cierre,
                            CONCAT(COALESCE(u.nombre, ''), ' ', COALESCE(u.apellido, '')) AS cajero,
-                           COALESCE((
-                               SELECT SUM(p.monto) 
-                               FROM pagos p
-                               WHERE p.cedula_cajero = tc.cedula_cajero 
-                                 AND p.codigo_metodo = 'efectivo_usd'
-                                 AND p.estado IN ('aprobado', 'verificado')
-                                 AND p.fecha_pago >= tc.fecha_apertura 
-                                 AND p.fecha_pago <= COALESCE(tc.fecha_cierre, NOW())
-                           ), 0) AS cobrado_efectivo_usd,
-                           COALESCE((
-                               SELECT SUM(p.monto) 
-                               FROM pagos p
-                               WHERE p.cedula_cajero = tc.cedula_cajero 
-                                 AND p.codigo_metodo = 'efectivo_bs'
-                                 AND p.estado IN ('aprobado', 'verificado')
-                                 AND p.fecha_pago >= tc.fecha_apertura 
-                                 AND p.fecha_pago <= COALESCE(tc.fecha_cierre, NOW())
-                           ), 0) AS cobrado_efectivo_bs
+                           -- Cobros en efectivo USD menos vueltos en USD entregados
+                           (
+                               COALESCE((
+                                   SELECT SUM(p.monto) 
+                                   FROM pagos p
+                                   WHERE p.cedula_cajero = tc.cedula_cajero 
+                                     AND p.codigo_metodo = 'efectivo_usd'
+                                     AND p.estado IN ('aprobado', 'verificado', 'completado')
+                                     AND p.fecha_pago >= tc.fecha_apertura 
+                                     AND p.fecha_pago <= COALESCE(tc.fecha_cierre, NOW())
+                               ), 0)
+                               -
+                               COALESCE((
+                                   SELECT SUM(v.vuelto)
+                                   FROM ventas v
+                                   WHERE v.cedula_usuario = tc.cedula_cajero
+                                     AND v.vuelto_moneda = 'USD'
+                                     AND v.fecha >= tc.fecha_apertura
+                                     AND v.fecha <= COALESCE(tc.fecha_cierre, NOW())
+                                     AND v.estado NOT IN ('cancelado', 'anulado')
+                               ), 0)
+                           ) AS cobrado_efectivo_usd,
+                           -- Cobros en efectivo Bs menos vueltos en Bs entregados
+                           (
+                               COALESCE((
+                                   SELECT SUM(p.monto) 
+                                   FROM pagos p
+                                   WHERE p.cedula_cajero = tc.cedula_cajero 
+                                     AND p.codigo_metodo = 'efectivo_bs'
+                                     AND p.estado IN ('aprobado', 'verificado', 'completado')
+                                     AND p.fecha_pago >= tc.fecha_apertura 
+                                     AND p.fecha_pago <= COALESCE(tc.fecha_cierre, NOW())
+                               ), 0)
+                               -
+                               COALESCE((
+                                   SELECT SUM(v.vuelto)
+                                   FROM ventas v
+                                   WHERE v.cedula_usuario = tc.cedula_cajero
+                                     AND v.vuelto_moneda = 'Bs'
+                                     AND v.fecha >= tc.fecha_apertura
+                                     AND v.fecha <= COALESCE(tc.fecha_cierre, NOW())
+                                     AND v.estado NOT IN ('cancelado', 'anulado')
+                               ), 0)
+                           ) AS cobrado_efectivo_bs
                     FROM turnos_caja tc
                     LEFT JOIN usuarios u ON tc.cedula_cajero = u.cedula
                     WHERE " . implode(' AND ', $where) . "
@@ -721,6 +745,7 @@ class ReporteController {
             }
 
             // Caso 2: Cierre diario completo
+            // Caso 2: Cierre diario completo
             $fechaConsulta = !empty($fecha) ? $fecha : date('Y-m-d');
 
             $stmtTurnos = $this->db->prepare("
@@ -743,29 +768,48 @@ class ReporteController {
             $stmtTurnos->execute([$fechaConsulta, $fechaConsulta]);
             $listaTurnos = $stmtTurnos->fetchAll(PDO::FETCH_ASSOC);
 
-            $stmtPagos = $this->db->prepare("
-                SELECT v.numero_orden,
-                       DATE_FORMAT(p.fecha_pago, '%Y-%m-%d %H:%i:%s') AS fecha_pago,
-                       COALESCE(c.nombre_razon_social, u.nombre, 'Consumidor Final') AS cliente,
-                       p.codigo_metodo,
-                       COALESCE(mp.nombre, p.codigo_metodo) AS metodo_nombre,
-                       p.moneda,
-                       p.monto,
-                       p.tasa_cambio,
-                       COALESCE(p.banco, '') AS banco,
-                       COALESCE(p.referencia, '') AS referencia,
-                       v.estado AS estado_venta
-                FROM pagos p
-                INNER JOIN ventas v ON p.numero_orden = v.numero_orden
-                LEFT JOIN metodos_pago mp ON p.codigo_metodo = mp.codigo_metodo
-                LEFT JOIN clientes c ON v.cedula_cliente = c.cedula
-                LEFT JOIN usuarios u ON v.cedula_usuario = u.cedula
-                WHERE DATE(p.fecha_pago) = ?
-                  AND v.origen_venta IN ('tienda', 'tienda_fisica')
-                ORDER BY p.fecha_pago ASC
-            ");
-            $stmtPagos->execute([$fechaConsulta]);
-            $listaPagos = $stmtPagos->fetchAll(PDO::FETCH_ASSOC);
+            // Buscar los pagos efectuados dentro del intervalo de los turnos obtenidos
+            $listaPagos = [];
+            if (!empty($listaTurnos)) {
+                $condicionesTurnos = [];
+                $paramsPagos = [];
+
+                foreach ($listaTurnos as $t) {
+                    $apertura = $t['fecha_apertura'];
+                    $cierre   = !empty($t['fecha_cierre']) ? $t['fecha_cierre'] : date('Y-m-d H:i:s');
+                    
+                    $condicionesTurnos[] = "(p.cedula_cajero = ? AND p.fecha_pago >= ? AND p.fecha_pago <= ?)";
+                    $paramsPagos[] = $t['cedula_cajero'];
+                    $paramsPagos[] = $apertura;
+                    $paramsPagos[] = $cierre;
+                }
+
+                $sqlPagos = "
+                    SELECT v.numero_orden,
+                           DATE_FORMAT(p.fecha_pago, '%Y-%m-%d %H:%i:%s') AS fecha_pago,
+                           COALESCE(c.nombre_razon_social, u.nombre, 'Consumidor Final') AS cliente,
+                           p.codigo_metodo,
+                           COALESCE(mp.nombre, p.codigo_metodo) AS metodo_nombre,
+                           p.moneda,
+                           p.monto,
+                           p.tasa_cambio,
+                           COALESCE(p.banco, '') AS banco,
+                           COALESCE(p.referencia, '') AS referencia,
+                           v.estado AS estado_venta
+                    FROM pagos p
+                    INNER JOIN ventas v ON p.numero_orden = v.numero_orden
+                    LEFT JOIN metodos_pago mp ON p.codigo_metodo = mp.codigo_metodo
+                    LEFT JOIN clientes c ON v.cedula_cliente = c.cedula
+                    LEFT JOIN usuarios u ON v.cedula_usuario = u.cedula
+                    WHERE v.origen_venta IN ('tienda', 'tienda_fisica')
+                      AND (" . implode(' OR ', $condicionesTurnos) . ")
+                    ORDER BY p.fecha_pago ASC
+                ";
+
+                $stmtPagos = $this->db->prepare($sqlPagos);
+                $stmtPagos->execute($paramsPagos);
+                $listaPagos = $stmtPagos->fetchAll(PDO::FETCH_ASSOC);
+            }
 
             return [
                 'titulo' => 'REPORTE DE CIERRE DIARIO (' . date('d/m/Y', strtotime($fechaConsulta)) . ')',
@@ -773,8 +817,7 @@ class ReporteController {
                 'turnos' => $listaTurnos,
                 'datos'  => $listaPagos
             ];
-             }
-
+}
 
         exit("Tipo de reporte no válido.");
     }
@@ -873,5 +916,24 @@ class ReporteController {
         $extra = $tipo === 'estadisticas' ? $this->datosEstadisticas() : [];
         $p = paquete_reporte($tipo, $reporte, $tasa, $this->db, $extra);
         reporte_excel_descargar($p, 'reporte-' . $tipo . '-' . date('Y-m-d'));
+    }
+
+    private function verificarPermisoReportes() {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        $permisos = $_SESSION['usuario']['permisos'] ?? $_SESSION['permisos'] ?? [];
+        $rol = strtolower($_SESSION['usuario']['codigo_rol'] ?? $_SESSION['usuario']['rol'] ?? $_SESSION['rol'] ?? '');
+
+        // Master y Administrador pasan directo; los demás requieren el permiso explícito
+        if (in_array($rol, ['master', 'administrador'], true) || in_array('ver_reportes', $permisos, true)) {
+            return true;
+        }
+
+        http_response_code(403);
+        die("Acceso denegado: No cuenta con el permiso 'ver_reportes' para acceder a este módulo.");
+    $this->verificarPermisoReportes();
+
     }
 }

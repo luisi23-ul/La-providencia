@@ -171,6 +171,7 @@ function paquete_reporte(string $tipo, array $reporte, float $tasa, PDO $db, arr
     }
 
     // -------------------------------------------------------------
+   // -------------------------------------------------------------
     // CIERRES DE CAJA POR PERÍODO (HISTORIAL)
     // -------------------------------------------------------------
     if ($tipo === 'cierre_caja') {
@@ -178,35 +179,54 @@ function paquete_reporte(string $tipo, array $reporte, float $tasa, PDO $db, arr
         $p['titulo'] = 'Reporte de cierres de caja';
         $p['subtitulo'] = rp_periodo($desde, $hasta);
         $p['columnas'] = [
-            ['texto' => 'Turno', 'fijo' => true, 'ancho' => 10],
-            ['texto' => 'Cajero', 'ancho' => 20],
-            ['texto' => 'Apertura', 'ancho' => 16],
-            ['texto' => 'Cierre', 'ancho' => 16],
-            ['texto' => 'Fondo $', 'numero' => true, 'ancho' => 10],
-            ['texto' => 'Fondo Bs', 'numero' => true, 'ancho' => 14],
-            ['texto' => 'Cierre $', 'numero' => true, 'ancho' => 10],
-            ['texto' => 'Cierre Bs', 'numero' => true, 'ancho' => 14],
+            ['texto' => 'Turno', 'fijo' => true, 'ancho' => 9],
+            ['texto' => 'Cajero', 'ancho' => 15],
+            ['texto' => 'Apertura', 'ancho' => 14],
+            ['texto' => 'Cierre', 'ancho' => 14],
+            ['texto' => 'Fondo $', 'numero' => true, 'ancho' => 8],
+            ['texto' => 'Cobrado $', 'numero' => true, 'ancho' => 9],
+            ['texto' => 'Contado $', 'numero' => true, 'ancho' => 9],
+            ['texto' => 'Cuadre $', 'ancho' => 10],
+            ['texto' => 'Fondo Bs', 'numero' => true, 'ancho' => 11],
+            ['texto' => 'Cobrado Bs', 'numero' => true, 'ancho' => 11],
+            ['texto' => 'Contado Bs', 'numero' => true, 'ancho' => 11],
+            ['texto' => 'Cuadre Bs', 'ancho' => 10],
         ];
 
         $filas = [];
-        $totFondoU = 0;
-        $totFondoB = 0;
-        $totCierreU = 0;
-        $totCierreB = 0;
+        $totFondoU = 0; $totCobU = 0; $totCierreU = 0;
+        $totFondoB = 0; $totCobB = 0; $totCierreB = 0;
 
         foreach ($turnos as $t) {
             $numT   = (int) ($t->numero_turno ?? 0);
             $cajero = trim(ucwords(mb_strtolower((string) ($t->cajero ?? '')))) ?: (string) ($t->cedula_cajero ?? 'Cajero');
             $fAp    = (string) ($t->fecha_apertura ?? '');
             $fCi    = (string) ($t->fecha_cierre ?? 'Sin cierre');
+            
             $fU     = (float) ($t->fondo_usd ?? 0);
-            $fB     = (float) ($t->fondo_bs ?? 0);
+            $cobU   = (float) ($t->cobrado_efectivo_usd ?? 0);
             $cU     = (float) ($t->cierre_usd ?? 0);
+            
+            $fB     = (float) ($t->fondo_bs ?? 0);
+            $cobB   = (float) ($t->cobrado_efectivo_bs ?? 0);
             $cB     = (float) ($t->cierre_bs ?? 0);
 
+            // Cálculo de cuadre en dólares
+            $espU   = $fU + $cobU;
+            $difU   = $cU - $espU;
+            $cuadreU = abs($difU) < 0.005 ? 'Cuadra' : ($difU > 0 ? 'Sob. ' . number_format($difU, 2) . '$' : 'Fal. ' . number_format(abs($difU), 2) . '$');
+
+            // Cálculo de cuadre en bolívares
+            $espB   = $fB + $cobB;
+            $difB   = $cB - $espB;
+            $cuadreB = abs($difB) < 0.005 ? 'Cuadra' : ($difB > 0 ? 'Sob. ' . number_format($difB, 2, ',', '.') . ' Bs' : 'Fal. ' . number_format(abs($difB), 2, ',', '.') . ' Bs');
+
             $totFondoU  += $fU;
-            $totFondoB  += $fB;
+            $totCobU    += $cobU;
             $totCierreU += $cU;
+
+            $totFondoB  += $fB;
+            $totCobB    += $cobB;
             $totCierreB += $cB;
 
             $filas[] = [
@@ -215,18 +235,23 @@ function paquete_reporte(string $tipo, array $reporte, float $tasa, PDO $db, arr
                 $fAp,
                 $fCi,
                 $fU,
-                $fB,
+                $cobU,
                 $cU,
-                $cB
+                $cuadreU,
+                $fB,
+                $cobB,
+                $cB,
+                $cuadreB
             ];
         }
 
         $p['grupos'][] = [
             'titulo'   => 'Historial de turnos cerrados · ' . count($turnos) . (count($turnos) === 1 ? ' turno' : ' turnos'),
             'filas'    => $filas,
+            'subtotal' => ['Subtotal', '', '', '', $totFondoU, $totCobU, $totCierreU, '', $totFondoB, $totCobB, $totCierreB, ''],
         ];
 
-        $p['totales'] = ['Total general', '', '', '', $totFondoU, $totFondoB, $totCierreU, $totCierreB];
+        $p['totales'] = ['Total general', '', '', '', $totFondoU, $totCobU, $totCierreU, '', $totFondoB, $totCobB, $totCierreB, ''];
         $p['resumen'] = [
             ['texto' => 'Turnos cerrados', 'valor' => (string) count($turnos), 'nota' => 'en el período'],
             ['texto' => 'Total $ contado', 'valor' => rp_dinero($totCierreU), 'nota' => 'al cierre'],
@@ -702,34 +727,77 @@ function paquete_reporte(string $tipo, array $reporte, float $tasa, PDO $db, arr
             $fBanco !== '' && $fBanco !== 'todos' ? $banco($fBanco) : '',
             $fMetodo !== '' && $fMetodo !== 'todos' ? $metodo($fMetodo) : '',
         ]));
+
+        // Columnas incluyendo Cliente / Titular
         $p['columnas'] = [
-            ['texto' => 'Hora', 'fijo' => true, 'ancho' => 10], ['texto' => 'N.º venta', 'fijo' => true, 'ancho' => 13], ['texto' => 'Banco', 'ancho' => 13], ['texto' => 'Método', 'ancho' => 13],
-            ['texto' => 'Referencia', 'fijo' => true, 'ancho' => 15], ['texto' => 'Estado', 'ancho' => 11], ['texto' => 'Monto $', 'numero' => true, 'ancho' => 10], ['texto' => 'Monto Bs', 'numero' => true, 'ancho' => 15],
+            ['texto' => 'Hora', 'fijo' => true, 'ancho' => 8],
+            ['texto' => 'N.º venta', 'fijo' => true, 'ancho' => 11],
+            ['texto' => 'Cliente / Titular', 'ancho' => 25],
+            ['texto' => 'Banco y referencia', 'ancho' => 20],
+            ['texto' => 'Método', 'ancho' => 12],
+            ['texto' => 'Estado', 'ancho' => 11],
+            ['texto' => 'Monto $', 'numero' => true, 'ancho' => 10],
+            ['texto' => 'Monto Bs', 'numero' => true, 'ancho' => 14],
         ];
+
         $t = 0; $tb = 0; $nAprob = 0; $nPend = 0;
         $porDia = rp_agrupar($datos, fn($d) => date('Y-m-d', strtotime((string) $d->fecha_pago)));
         krsort($porDia);
+
         foreach ($porDia as $dia => $items) {
             $filas = []; $s = 0; $sb = 0; $sumaFija = false;
             foreach ($items as $d) {
                 $monto = (float) ($d->monto ?? 0);
                 $tasaP = (float) ($d->tasa_cambio ?? 0);
-                if (trim((string) ($d->moneda ?? '')) === '$') {
+
+                // Montos simultáneos $ y Bs
+                if (trim((string) ($d->moneda ?? '')) === '$' || trim((string) ($d->moneda ?? '')) === 'USD') {
                     $usd = $monto;
-                    $bs = $monto * $tasaP;
+                    $bs  = (float) ($d->monto_bs ?? ($monto * ($tasaP ?: $tasa)));
                 } else {
-                    $bs = $monto;
-                    $usd = $tasaP > 0 ? $monto / $tasaP : 0;
+                    $bs  = $monto;
+                    $usd = (float) ($d->monto_usd ?? ($tasaP > 0 ? $monto / $tasaP : 0));
                 }
+
                 $est = (string) ($d->estado ?? '');
-                $filas[] = [rp_hora((string) $d->fecha_pago), (string) ($d->numero_orden ?? ''), $banco($d->banco ?? ''), $metodo($d->codigo_metodo ?? ''), (string) ($d->referencia ?? ''), $estados[$est] ?? ucfirst(str_replace('_', ' ', $est)), $usd, $bs];
+
+                // Regla del titular vs cliente
+                $cliNom = trim((string) ($d->cliente ?? 'Consumidor Final'));
+                $cliCed = trim((string) ($d->cedula_cliente ?? ''));
+                $titNom = trim((string) ($d->titular ?? ''));
+                $titCed = trim((string) ($d->cedula_titular ?? ''));
+
+                $textoCliente = $cliNom . ($cliCed !== '' && $cliCed !== 'SIN_USUARIO' ? ' (' . $cliCed . ')' : '');
+                if ($titNom !== '' && (mb_strtolower($titNom) !== mb_strtolower($cliNom) || ($titCed !== '' && $titCed !== $cliCed))) {
+                    $textoCliente .= "\nPagó " . ucwords(mb_strtolower($titNom)) . ($titCed !== '' ? ', C.I. ' . $titCed : '');
+                }
+
+                $bancoRef = implode(' · ', array_filter([$banco($d->banco ?? ''), (string) ($d->referencia ?? '')]));
+
+                $filas[] = [
+                    rp_hora((string) $d->fecha_pago),
+                    (string) ($d->numero_orden ?? ''),
+                    $textoCliente,
+                    $bancoRef,
+                    $metodo($d->codigo_metodo ?? ''),
+                    $estados[$est] ?? ucfirst(str_replace('_', ' ', $est)),
+                    $usd,
+                    $bs
+                ];
+
                 if ($est === 'pendiente') $nPend++;
                 if ($est !== 'aprobado') { $sumaFija = true; continue; }
                 $nAprob++; $s += $usd; $sb += $bs;
             }
             $t += $s; $tb += $sb;
-            $p['grupos'][] = ['titulo' => rp_fecha_larga($dia) . ' · ' . count($items) . (count($items) === 1 ? ' pago' : ' pagos'), 'filas' => $filas, 'subtotal' => ['Subtotal aprobado', '', '', '', '', '', $s, $sb], 'suma_fija' => $sumaFija];
+            $p['grupos'][] = [
+                'titulo'   => rp_fecha_larga($dia) . ' · ' . count($items) . (count($items) === 1 ? ' pago' : ' pagos'),
+                'filas'    => $filas,
+                'subtotal' => ['Subtotal aprobado', '', '', '', '', '', $s, $sb],
+                'suma_fija'=> $sumaFija
+            ];
         }
+
         $p['totales'] = ['Total aprobado', '', '', '', '', '', $t, $tb];
         $otros = count($datos) - $nAprob;
         $p['resumen'] = [
@@ -737,9 +805,9 @@ function paquete_reporte(string $tipo, array $reporte, float $tasa, PDO $db, arr
             ['texto' => 'Total aprobado', 'valor' => rp_dinero($t), 'nota' => rp_bs($tb)],
             ['texto' => 'Por verificar', 'valor' => (string) $nPend, 'nota' => $nPend ? ($nPend === 1 ? 'pago pendiente' : 'pagos pendientes') : 'nada pendiente'],
         ];
+
         return $p;
     }
-
     if ($tipo === 'auditoria') {
         $acciones = ['INSERT' => 'Creó', 'UPDATE' => 'Modificó', 'DELETE' => 'Eliminó', 'VERIFICACION' => 'Verificó'];
         $p['titulo'] = 'Reporte de auditoría';
