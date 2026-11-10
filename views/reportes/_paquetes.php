@@ -26,6 +26,12 @@ function rp_bs($v): string
     return 'Bs ' . number_format((float) $v, 2, ',', '.');
 }
 
+function rp_hora(string $fecha): string
+{
+    $t = strtotime($fecha);
+    return date('g:i', $t) . (date('G', $t) < 12 ? " a.\u{a0}m." : " p.\u{a0}m.");
+}
+
 function rp_agrupar(array $filas, callable $clave): array
 {
     $grupos = [];
@@ -280,7 +286,7 @@ function paquete_reporte(string $tipo, array $reporte, float $tasa, PDO $db, arr
             if (stripos((string) ($d->codigo_metodo ?? '') . ' ' . $nombreM, 'efectivo') !== false) {
                 if ($esBs) $cobB += $monto; else $cobU += $monto;
             }
-            $porMetodo[$nombreM][] = [strtotime((string) ($d->fecha_pago ?? '')), $orden, (string) ($d->cliente ?? ''), implode(' · ', array_filter([(string) ($d->banco ?? ''), (string) ($d->referencia ?? '')])), $u, $b];
+            $porMetodo[$nombreM][] = [strtotime((string) ($d->fecha_pago ?? '')), $orden, trim(ucwords(mb_strtolower((string) ($d->cliente ?? '')))), implode(' · ', array_filter([(string) ($d->banco ?? ''), (string) ($d->referencia ?? '')])), $u, $b];
         }
         $espU = $fondoU + $cobU; $espB = $fondoB + $cobB;
 
@@ -628,24 +634,141 @@ function paquete_reporte(string $tipo, array $reporte, float $tasa, PDO $db, arr
         $porDia = rp_agrupar($datos, $dia);
         krsort($porDia);
         foreach ($porDia as $fecha => $items) {
-            $filas = []; $s = 0; $sb = 0;
+            $filas = []; $s = 0; $sb = 0; $sumaFija = false;
             foreach ($items as $d) {
                 $u = (int) preg_replace('/\D/', '', (string) ($d->articulos ?? '0'));
                 $filas[] = [(string) ($d->numero_factura ?? ''), (string) ($d->proveedor ?? ''), $u, (string) ($d->estado ?? ''), (float) $d->total, (float) ($d->total_bs ?? 0)];
-                if ($anulada($d)) { $nAnul++; continue; }
+                if ($anulada($d)) { $nAnul++; $sumaFija = true; continue; }
                 $s += (float) $d->total;
                 $sb += (float) ($d->total_bs ?? 0);
                 $uds += $u;
             }
             $t += $s;
             $tb += $sb;
-            $p['grupos'][] = ['titulo' => rp_fecha_larga($fecha) . ' · ' . count($items) . (count($items) === 1 ? ' compra' : ' compras'), 'filas' => $filas, 'subtotal' => ['Subtotal del día', '', '', '', $s, $sb]];
+            $p['grupos'][] = ['titulo' => rp_fecha_larga($fecha) . ' · ' . count($items) . (count($items) === 1 ? ' compra' : ' compras'), 'filas' => $filas, 'subtotal' => ['Subtotal del día', '', '', '', $s, $sb], 'suma_fija' => $sumaFija];
         }
         $p['totales'] = ['Total general', '', '', '', $t, $tb];
         $p['resumen'] = [
             ['texto' => 'Compras', 'valor' => (string) count($datos), 'nota' => $nAnul ? $nAnul . ($nAnul === 1 ? ' anulada, no suma' : ' anuladas, no suman') : 'en ' . count($porDia) . (count($porDia) === 1 ? ' día' : ' días')],
             ['texto' => 'Total comprado', 'valor' => rp_dinero($t), 'nota' => rp_bs($tb)],
             ['texto' => 'Artículos', 'valor' => (string) $uds, 'nota' => 'unidades recibidas'],
+        ];
+        return $p;
+    }
+
+    if ($tipo === 'ventas') {
+        $estados = ['pendiente' => 'Pendiente', 'por_verificar' => 'Por verificar', 'pagado' => 'Por retirar', 'retirado' => 'Retirada', 'entregado' => 'Retirada', 'completado' => 'Completada', 'cancelado' => 'Anulada', 'anulado' => 'Anulada'];
+        $p['titulo'] = 'Reporte de ventas';
+        $p['subtitulo'] = rp_periodo($desde, $hasta);
+        $p['columnas'] = [
+            ['texto' => 'N.º venta', 'fijo' => true, 'ancho' => 13], ['texto' => 'Hora', 'fijo' => true, 'ancho' => 10], ['texto' => 'Cliente', 'ancho' => 17], ['texto' => 'Cajero', 'ancho' => 13],
+            ['texto' => 'Origen', 'ancho' => 11], ['texto' => 'Estado', 'ancho' => 12], ['texto' => 'Total $', 'numero' => true, 'ancho' => 10], ['texto' => 'Total Bs', 'numero' => true, 'ancho' => 14],
+        ];
+        $t = 0; $tb = 0; $n = 0; $nAnul = 0;
+        $porDia = rp_agrupar($datos, fn($d) => date('Y-m-d', strtotime((string) $d->fecha)));
+        krsort($porDia);
+        foreach ($porDia as $dia => $items) {
+            $filas = []; $s = 0; $sb = 0; $sumaFija = false;
+            foreach ($items as $d) {
+                $total = (float) ($d->total ?? 0);
+                $bs = $total * (float) ($d->tasa_cambio ?? 0);
+                $est = (string) ($d->estado ?? '');
+                $filas[] = [(string) ($d->numero_orden ?? ''), rp_hora((string) $d->fecha), trim(ucwords(mb_strtolower((string) ($d->cliente ?? '')))), trim(ucwords(mb_strtolower((string) ($d->cajero ?? '')))), ($d->origen_venta ?? '') === 'online' ? 'Online' : 'Tienda', $estados[$est] ?? ucfirst(str_replace('_', ' ', $est)), $total, $bs];
+                if (in_array($est, ['cancelado', 'anulado'], true)) { $nAnul++; $sumaFija = true; continue; }
+                $n++; $s += $total; $sb += $bs;
+            }
+            $t += $s; $tb += $sb;
+            $p['grupos'][] = ['titulo' => rp_fecha_larga($dia) . ' · ' . count($items) . (count($items) === 1 ? ' venta' : ' ventas'), 'filas' => $filas, 'subtotal' => ['Subtotal del día', '', '', '', '', '', $s, $sb], 'suma_fija' => $sumaFija];
+        }
+        $p['totales'] = ['Total general', '', '', '', '', '', $t, $tb];
+        $p['resumen'] = [
+            ['texto' => 'Ventas', 'valor' => (string) count($datos), 'nota' => $nAnul ? $nAnul . ($nAnul === 1 ? ' anulada, no suma' : ' anuladas, no suman') : 'en ' . count($porDia) . (count($porDia) === 1 ? ' día' : ' días')],
+            ['texto' => 'Total vendido', 'valor' => rp_dinero($t), 'nota' => rp_bs($tb)],
+            ['texto' => 'Ticket promedio', 'valor' => rp_dinero($n ? $t / $n : 0), 'nota' => rp_bs($n ? $tb / $n : 0)],
+        ];
+        return $p;
+    }
+
+    if ($tipo === 'pagos_banco') {
+        $metodos = ['pago_movil' => 'Pago móvil', 'transferencia' => 'Transferencia'];
+        $estados = ['aprobado' => 'Aprobado', 'pendiente' => 'Pendiente', 'rechazado' => 'Rechazado'];
+        $banco = fn($b) => ($b = trim((string) $b)) === '' ? 'Sin banco' : ($b === mb_strtolower($b) ? mb_convert_case($b, MB_CASE_TITLE) : $b);
+        $metodo = fn($m) => $metodos[$m] ?? ucfirst(str_replace('_', ' ', (string) $m));
+        $fBanco = $g('banco');
+        $fMetodo = $g('metodo') ?: $g('codigo_metodo');
+        $p['titulo'] = 'Reporte de pagos por banco';
+        $p['subtitulo'] = implode(' · ', array_filter([
+            rp_periodo($desde, $hasta),
+            $fBanco !== '' && $fBanco !== 'todos' ? $banco($fBanco) : '',
+            $fMetodo !== '' && $fMetodo !== 'todos' ? $metodo($fMetodo) : '',
+        ]));
+        $p['columnas'] = [
+            ['texto' => 'Hora', 'fijo' => true, 'ancho' => 10], ['texto' => 'N.º venta', 'fijo' => true, 'ancho' => 13], ['texto' => 'Banco', 'ancho' => 13], ['texto' => 'Método', 'ancho' => 13],
+            ['texto' => 'Referencia', 'fijo' => true, 'ancho' => 15], ['texto' => 'Estado', 'ancho' => 11], ['texto' => 'Monto $', 'numero' => true, 'ancho' => 10], ['texto' => 'Monto Bs', 'numero' => true, 'ancho' => 15],
+        ];
+        $t = 0; $tb = 0; $nAprob = 0; $nPend = 0;
+        $porDia = rp_agrupar($datos, fn($d) => date('Y-m-d', strtotime((string) $d->fecha_pago)));
+        krsort($porDia);
+        foreach ($porDia as $dia => $items) {
+            $filas = []; $s = 0; $sb = 0; $sumaFija = false;
+            foreach ($items as $d) {
+                $monto = (float) ($d->monto ?? 0);
+                $tasaP = (float) ($d->tasa_cambio ?? 0);
+                if (trim((string) ($d->moneda ?? '')) === '$') {
+                    $usd = $monto;
+                    $bs = $monto * $tasaP;
+                } else {
+                    $bs = $monto;
+                    $usd = $tasaP > 0 ? $monto / $tasaP : 0;
+                }
+                $est = (string) ($d->estado ?? '');
+                $filas[] = [rp_hora((string) $d->fecha_pago), (string) ($d->numero_orden ?? ''), $banco($d->banco ?? ''), $metodo($d->codigo_metodo ?? ''), (string) ($d->referencia ?? ''), $estados[$est] ?? ucfirst(str_replace('_', ' ', $est)), $usd, $bs];
+                if ($est === 'pendiente') $nPend++;
+                if ($est !== 'aprobado') { $sumaFija = true; continue; }
+                $nAprob++; $s += $usd; $sb += $bs;
+            }
+            $t += $s; $tb += $sb;
+            $p['grupos'][] = ['titulo' => rp_fecha_larga($dia) . ' · ' . count($items) . (count($items) === 1 ? ' pago' : ' pagos'), 'filas' => $filas, 'subtotal' => ['Subtotal aprobado', '', '', '', '', '', $s, $sb], 'suma_fija' => $sumaFija];
+        }
+        $p['totales'] = ['Total aprobado', '', '', '', '', '', $t, $tb];
+        $otros = count($datos) - $nAprob;
+        $p['resumen'] = [
+            ['texto' => 'Pagos', 'valor' => (string) count($datos), 'nota' => $otros ? $nAprob . ($nAprob === 1 ? ' aprobado' : ' aprobados') . ', solo esos suman' : 'todos aprobados'],
+            ['texto' => 'Total aprobado', 'valor' => rp_dinero($t), 'nota' => rp_bs($tb)],
+            ['texto' => 'Por verificar', 'valor' => (string) $nPend, 'nota' => $nPend ? ($nPend === 1 ? 'pago pendiente' : 'pagos pendientes') : 'nada pendiente'],
+        ];
+        return $p;
+    }
+
+    if ($tipo === 'auditoria') {
+        $acciones = ['INSERT' => 'Creó', 'UPDATE' => 'Modificó', 'DELETE' => 'Eliminó', 'VERIFICACION' => 'Verificó'];
+        $p['titulo'] = 'Reporte de auditoría';
+        $p['subtitulo'] = rp_periodo($desde, $hasta);
+        $p['columnas'] = [
+            ['texto' => 'Hora', 'fijo' => true, 'ancho' => 10], ['texto' => 'Usuario', 'ancho' => 15], ['texto' => 'Módulo', 'ancho' => 13], ['texto' => 'Acción', 'ancho' => 12],
+            ['texto' => 'Detalle', 'ancho' => 37], ['texto' => 'Equipo', 'fijo' => true, 'ancho' => 13],
+        ];
+        $usuarios = []; $modulos = [];
+        $porDia = rp_agrupar($datos, fn($d) => date('Y-m-d', strtotime((string) $d->fecha_hora)));
+        krsort($porDia);
+        foreach ($porDia as $dia => $items) {
+            $filas = [];
+            foreach ($items as $d) {
+                $acc = strtoupper(trim((string) ($d->accion ?? '')));
+                $usuario = trim(ucwords(mb_strtolower((string) ($d->usuario ?? ''))));
+                $modulo = trim((string) ($d->modulo ?? ''));
+                $filas[] = [rp_hora((string) $d->fecha_hora), $usuario, $modulo, $acciones[$acc] ?? ($acc === '' ? 'Sin dato' : ucfirst(mb_strtolower($acc))), str_replace(' | ', ' · ', trim((string) ($d->detalle_cambio ?? ''))), (string) ($d->ip_terminal ?? '')];
+                $usuarios[$usuario] = true;
+                if ($modulo !== '') $modulos[$modulo] = ($modulos[$modulo] ?? 0) + 1;
+            }
+            $p['grupos'][] = ['titulo' => rp_fecha_larga($dia) . ' · ' . count($items) . (count($items) === 1 ? ' acción' : ' acciones'), 'filas' => $filas];
+        }
+        arsort($modulos);
+        $top = array_key_first($modulos);
+        $p['resumen'] = [
+            ['texto' => 'Acciones', 'valor' => (string) count($datos), 'nota' => 'en ' . count($porDia) . (count($porDia) === 1 ? ' día' : ' días')],
+            ['texto' => 'Usuarios distintos', 'valor' => (string) count($usuarios), 'nota' => 'con actividad'],
+            ['texto' => 'Módulo con más acciones', 'valor' => $top ?? 'Ninguno', 'nota' => $top ? $modulos[$top] . ($modulos[$top] === 1 ? ' acción' : ' acciones') : ''],
         ];
         return $p;
     }

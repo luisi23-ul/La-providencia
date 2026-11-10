@@ -167,7 +167,7 @@ function reporte_excel(array $r): Spreadsheet
         }
         if (!empty($g['subtotal'])) {
             $escribir($g['subtotal'], $f, $gc);
-            $sumas(array_values($g['subtotal']), $f, $ini, $gc);
+            if (empty($g['suma_fija'])) $sumas(array_values($g['subtotal']), $f, $ini, $gc);
             $h->getStyle("A$f:$ult$f")->applyFromArray([
                 'font' => ['bold' => true],
                 'borders' => ['top' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'CFC2B2']]],
@@ -179,7 +179,7 @@ function reporte_excel(array $r): Spreadsheet
         $tot = array_values($r['totales']);
         $tot[0] = mb_strtoupper((string) $tot[0]);
         $escribir($tot, $f, $cols);
-        $sumas($tot, $f, $primera, $cols);
+        if (!array_filter(array_column($grupos, 'suma_fija'))) $sumas($tot, $f, $primera, $cols);
         $h->getStyle("A$f:$ult$f")->applyFromArray([
             'font' => ['bold' => true, 'size' => 11],
             'borders' => ['top' => ['borderStyle' => Border::BORDER_MEDIUM, 'color' => ['rgb' => '2A2420']]],
