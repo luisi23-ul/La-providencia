@@ -53,45 +53,111 @@ class TurnoCajaModel {
     }
 
     // Obtener detalle y resumen de cobros dentro del rango del turno
-    public function obtenerResumenTurno($cedulaCajero, $numeroTurno) {
-        $stmtT = $this->db->prepare("SELECT * FROM turnos_caja WHERE cedula_cajero = ? AND numero_turno = ? LIMIT 1");
-        $stmtT->execute([$cedulaCajero, $numeroTurno]);
-        $turno = $stmtT->fetch(PDO::FETCH_OBJ);
+   public function obtenerResumenTurno($cedula, $numeroTurno) {
+        $stmt = $this->db->prepare("SELECT * FROM turnos_caja WHERE cedula_cajero = ? AND numero_turno = ? LIMIT 1");
+        $stmt->execute([$cedula, $numeroTurno]);
+        $turno = $stmt->fetch(PDO::FETCH_OBJ);
+
         if (!$turno) return null;
 
         $fechaInicio = $turno->fecha_apertura;
-        $fechaFin    = $turno->fecha_cierre ?: date('Y-m-d H:i:s');
+        $fechaFin    = (!empty($turno->fecha_cierre) && $turno->fecha_cierre !== '2000-01-01 00:00:00') 
+                       ? $turno->fecha_cierre 
+                       : date('Y-m-d H:i:s');
 
-        // Totalizar pagos aprobados registrados por ese cajero en tienda física durante el turno
-        $sql = "SELECT p.codigo_metodo, 
-                       mp.nombre AS metodo_nombre,
-                       UPPER(TRIM(p.moneda)) AS moneda,
-                       COUNT(p.numero_pago) AS cantidad_transacciones,
-                       SUM(p.monto) AS total_monto,
-                       SUM(CASE 
-                           WHEN UPPER(TRIM(p.moneda)) = 'USD' THEN p.monto 
-                           ELSE (p.monto / NULLIF(p.tasa_cambio, 0)) 
-                       END) AS total_usd,
-                       SUM(CASE 
-                           WHEN UPPER(TRIM(p.moneda)) = 'USD' THEN (p.monto * COALESCE(NULLIF(p.tasa_cambio, 0), ?)) 
-                           ELSE p.monto 
-                       END) AS total_bs
-                FROM pagos p
-                INNER JOIN ventas v ON p.numero_orden = v.numero_orden
-                LEFT JOIN metodos_pago mp ON p.codigo_metodo = mp.codigo_metodo
-                WHERE p.estado = 'aprobado'
-                  AND v.origen_venta IN ('tienda', 'tienda_fisica', 'pos')
-                  AND p.fecha_pago BETWEEN ? AND ?
-                GROUP BY p.codigo_metodo, mp.nombre, UPPER(TRIM(p.moneda))";
+        // 1. Efectivo cobrado en USD
+        $stmtCobradoUsd = $this->db->prepare("
+            SELECT COALESCE(SUM(p.monto), 0)
+            FROM pagos p
+            WHERE p.cedula_cajero = ?
+              AND p.codigo_metodo = 'efectivo_usd'
+              AND p.estado IN ('aprobado', 'verificado', 'completado')
+              AND p.fecha_pago >= ?
+              AND p.fecha_pago <= ?
+        ");
+        $stmtCobradoUsd->execute([$cedula, $fechaInicio, $fechaFin]);
+        $cobradoUsd = (float)$stmtCobradoUsd->fetchColumn();
 
-        $stmtP = $this->db->prepare($sql);
-        $stmtP->execute([$turno->tasa_apertura, $fechaInicio, $fechaFin]);
-        $desglose = $stmtP->fetchAll(PDO::FETCH_OBJ);
+        // 2. Efectivo cobrado en Bs
+        $stmtCobradoBs = $this->db->prepare("
+            SELECT COALESCE(SUM(p.monto), 0)
+            FROM pagos p
+            WHERE p.cedula_cajero = ?
+              AND p.codigo_metodo = 'efectivo_bs'
+              AND p.estado IN ('aprobado', 'verificado', 'completado')
+              AND p.fecha_pago >= ?
+              AND p.fecha_pago <= ?
+        ");
+        $stmtCobradoBs->execute([$cedula, $fechaInicio, $fechaFin]);
+        $cobradoBs = (float)$stmtCobradoBs->fetchColumn();
+
+        // 3. Vueltos entregados (si existen en ventas)
+        $vueltoBs = 0;
+        $vueltoUsd = 0;
+        try {
+            $stmtVueltos = $this->db->prepare("
+                SELECT 
+                    COALESCE(SUM(CASE WHEN LOWER(COALESCE(metodo_vuelto, 'efectivo_bs')) LIKE '%bs%' THEN vuelto_bs ELSE 0 END), 0) AS total_vuelto_bs,
+                    COALESCE(SUM(CASE WHEN LOWER(COALESCE(metodo_vuelto, 'efectivo_usd')) LIKE '%usd%' THEN vuelto_usd ELSE 0 END), 0) AS total_vuelto_usd
+                FROM ventas
+                WHERE fecha >= ? AND fecha <= ? AND estado NOT IN ('cancelado', 'anulado')
+            ");
+            $stmtVueltos->execute([$fechaInicio, $fechaFin]);
+            $filaV = $stmtVueltos->fetch(PDO::FETCH_OBJ);
+            if ($filaV) {
+                $vueltoBs  = (float)$filaV->total_vuelto_bs;
+                $vueltoUsd = (float)$filaV->total_vuelto_usd;
+            }
+        } catch (Throwable $e) {
+            $vueltoBs = 0;
+            $vueltoUsd = 0;
+        }
+
+        $netoUsd = $cobradoUsd - $vueltoUsd;
+        $netoBs  = $cobradoBs  - $vueltoBs;
+
+        $esperadoUsd = (float)$turno->fondo_usd + $netoUsd;
+        $esperadoBs  = (float)$turno->fondo_bs  + $netoBs;
 
         return [
-            'turno'    => $turno,
-            'desglose' => $desglose
+            'turno'                => $turno,
+            'fondo_usd'            => (float)$turno->fondo_usd,
+            'fondo_bs'             => (float)$turno->fondo_bs,
+            'cobrado_efectivo_usd' => $netoUsd,
+            'cobrado_efectivo_bs'  => $netoBs,
+            'vuelto_usd'           => $vueltoUsd,
+            'vuelto_bs'            => $vueltoBs,
+            'esperado_usd'         => $esperadoUsd,
+            'esperado_bs'          => $esperadoBs,
+            'desglose'             => $this->obtenerDesgloseMetodos($cedula, $fechaInicio, $fechaFin)
         ];
+    }
+
+    public function obtenerDesgloseMetodos($cedula, $fechaInicio, $fechaFin) {
+        $sql = "SELECT p.codigo_metodo,
+                       COALESCE(mp.nombre, p.codigo_metodo) AS metodo_nombre,
+                       COUNT(*) AS cantidad_transacciones,
+                       SUM(p.monto) AS total_monto,
+                       p.moneda,
+                       SUM(CASE 
+                           WHEN UPPER(TRIM(p.moneda)) IN ('BS', 'VES') THEN ROUND(p.monto / NULLIF(p.tasa_cambio, 0), 2)
+                           ELSE p.monto 
+                       END) AS total_usd,
+                       SUM(CASE 
+                           WHEN UPPER(TRIM(p.moneda)) IN ('BS', 'VES') THEN p.monto
+                           ELSE ROUND(p.monto * COALESCE(NULLIF(p.tasa_cambio, 0), 1), 2) 
+                       END) AS total_bs
+                FROM pagos p
+                LEFT JOIN metodos_pago mp ON p.codigo_metodo = mp.codigo_metodo
+                WHERE p.cedula_cajero = ?
+                  AND p.estado IN ('aprobado', 'verificado', 'completado')
+                  AND p.fecha_pago >= ?
+                  AND p.fecha_pago <= ?
+                GROUP BY p.codigo_metodo, p.moneda";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$cedula, $fechaInicio, $fechaFin]);
+        return $stmt->fetchAll(PDO::FETCH_OBJ);
     }
 
     // Cerrar el turno actual

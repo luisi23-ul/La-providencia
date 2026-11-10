@@ -144,25 +144,16 @@ class VentasController {
             // Sincronizar identificador con el modal de cierre
             $turno->codigo_turno = $turno->numero_turno ?? $turno->id_turno ?? 0;
 
-            // Calcular ingresos en efectivo durante el turno
+            // Obtener el resumen con los cobros del turno desde el modelo
             $resTurno = $mTurno->obtenerResumenTurno($turno->cedula_cajero, $turno->codigo_turno);
 
-            $totalUsd = (float)($turno->fondo_usd ?? $turno->monto_inicial_usd ?? 0);
-            $totalBs  = (float)($turno->fondo_bs ?? $turno->monto_inicial_bs ?? 0);
-
-            foreach (($resTurno['desglose'] ?? []) as $d) {
-                $metodo = strtolower($d->codigo_metodo ?? '');
-                $moneda = strtoupper(trim($d->moneda ?? ''));
-
-                if ($metodo === 'efectivo_usd' || ($metodo === 'efectivo' && $moneda === 'USD')) {
-                    $totalUsd += (float)$d->total_monto;
-                } elseif ($metodo === 'efectivo_bs' || ($metodo === 'efectivo' && $moneda === 'BS')) {
-                    $totalBs += (float)$d->total_monto;
-                }
+            if ($resTurno) {
+                $arqueo['esperado_usd'] = (float)$resTurno['esperado_usd'];
+                $arqueo['esperado_bs']  = (float)$resTurno['esperado_bs'];
+            } else {
+                $arqueo['esperado_usd'] = (float)($turno->fondo_usd ?? $turno->monto_inicial_usd ?? 0);
+                $arqueo['esperado_bs']  = (float)($turno->fondo_bs ?? $turno->monto_inicial_bs ?? 0);
             }
-
-            $arqueo['esperado_usd'] = $totalUsd;
-            $arqueo['esperado_bs']  = $totalBs;
         }
 
         $ventaRegistrada = $_SESSION['venta_comprobante'] ?? null;
