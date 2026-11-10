@@ -63,6 +63,9 @@ function paquete_reporte(string $tipo, array $reporte, float $tasa, PDO $db, arr
         'totales' => [],
     ];
 
+    // -------------------------------------------------------------
+    // INVENTARIO / ESTADÍSTICAS BÁSICAS
+    // -------------------------------------------------------------
     if ($tipo === 'inventario' || ($tipo === 'estadisticas' && !$extra)) {
         $stock = $g('stock');
         $cat = $g('categoria');
@@ -92,7 +95,8 @@ function paquete_reporte(string $tipo, array $reporte, float $tasa, PDO $db, arr
             foreach ($items as $d) {
                 $valor = (float) $d->stock * (float) ($d->costo_compra ?? 0);
                 $filas[] = [$d->codigo, $d->nombre_producto, $d->nombre_categoria ?? '', (float) $d->stock, (float) ($d->costo_compra ?? 0), (float) $d->precio, $valor];
-                $sStock += (float) $d->stock; $sValor += $valor;
+                $sStock += (float) $d->stock; 
+                $sValor += $valor;
                 $tPrecio += (float) $d->stock * (float) $d->precio;
             }
             $tStock += $sStock; $tCosto += $sValor;
@@ -105,11 +109,14 @@ function paquete_reporte(string $tipo, array $reporte, float $tasa, PDO $db, arr
             ['texto' => 'Productos', 'valor' => (string) count($lista), 'nota' => 'en ' . count($porCat) . (count($porCat) === 1 ? ' categoría' : ' categorías')],
             ['texto' => 'Stock bajo', 'valor' => (string) $bajos, 'nota' => $agot . ($agot === 1 ? ' agotado' : ' agotados')],
             ['texto' => 'Valor a costo', 'valor' => rp_dinero($tCosto), 'nota' => (int) $tStock . ' unidades'],
-            ['texto' => 'Valor a precio', 'valor' => rp_dinero($tPrecio), 'nota' => 'margen ' . ($tPrecio > 0 ? round(($tPrecio - $tCosto) / $tPrecio * 100) : 0) . ' %'],
+            ['texto' => 'Valor a precio', 'valor' => rp_dinero($tPrecio), 'nota' => 'margen ' . ($tPrecio > 0 ? round((($tPrecio - $tCosto) / $tPrecio) * 100) : 0) . ' %'],
         ];
         return $p;
     }
 
+    // -------------------------------------------------------------
+    // HISTORIAL CLIENTE
+    // -------------------------------------------------------------
     if ($tipo === 'cliente') {
         $cli = (object) ($reporte['cliente'] ?? []);
         $etiquetas = ['pendiente' => 'Pendiente de pago', 'por_verificar' => 'Por verificar', 'pagado' => 'Pagada, por retirar', 'retirado' => 'Retirada', 'entregado' => 'Retirada', 'completado' => 'Completada', 'cancelado' => 'Anulada', 'anulado' => 'Anulada'];
@@ -157,7 +164,10 @@ function paquete_reporte(string $tipo, array $reporte, float $tasa, PDO $db, arr
         return $p;
     }
 
-  if ($tipo === 'cierre_caja') {
+    // -------------------------------------------------------------
+    // CIERRES DE CAJA POR PERÍODO (HISTORIAL)
+    // -------------------------------------------------------------
+    if ($tipo === 'cierre_caja') {
         $turnos = array_map(fn($t) => (object) $t, (array) ($reporte['turnos'] ?? $reporte['datos'] ?? []));
         $p['titulo'] = 'Reporte de cierres de caja';
         $p['subtitulo'] = rp_periodo($desde, $hasta);
@@ -215,7 +225,104 @@ function paquete_reporte(string $tipo, array $reporte, float $tasa, PDO $db, arr
 
         return $p;
     }
-    if ($tipo === 'cierre') {
+
+    // -------------------------------------------------------------
+    // CIERRE DEL DÍA (TODOS LOS TURNOS Y VENTAS DE LA FECHA)
+    // -------------------------------------------------------------
+    if ($tipo === 'cierre' && (isset($reporte['turnos']) || !isset($reporte['turno']))) {
+        $dia = (string) ($reporte['fecha'] ?? '') ?: ($g('fecha') ?: date('Y-m-d'));
+        $f = fn($v) => number_format((float) $v, 2, ',', '.');
+        $estado = fn($d) => abs($d) < 0.005 ? 'Cuadra' : ($d > 0 ? 'Sobra ' : 'Falta ') . $f(abs($d));
+        $hora = fn($t) => date('g:i a', $t);
+        $turnos = array_map(fn($t) => (object) $t, (array) ($reporte['turnos'] ?? []));
+        usort($turnos, fn($a, $b) => strcmp((string) ($a->fecha_apertura ?? ''), (string) ($b->fecha_apertura ?? '')));
+        
+        $fondoU = 0; $fondoB = 0; $contU = 0; $contB = 0; $enCurso = false; $partes = [];
+        foreach ($turnos as $t) {
+            $ab = ($t->estado ?? '') === 'abierto' || empty($t->fecha_cierre);
+            $ta = strtotime((string) ($t->fecha_apertura ?? ''));
+            $tc = $ab ? 0 : strtotime((string) $t->fecha_cierre);
+            $nom = trim(ucwords(mb_strtolower((string) ($t->cajero ?? '')))) ?: (string) ($t->cedula_cajero ?? '');
+            $partes[] = 'turno ' . (int) ($t->numero_turno ?? 0) . ' de ' . $nom . ', ' . ($ab
+                ? 'desde las ' . $hora($ta) . ' (en curso)'
+                : 'de ' . $hora($ta) . ' a ' . (date('Y-m-d', $tc) !== date('Y-m-d', $ta) ? date('d/m', $tc) . ' ' : '') . $hora($tc));
+            $fondoU += (float) ($t->fondo_usd ?? 0); 
+            $fondoB += (float) ($t->fondo_bs ?? 0);
+            if ($ab) {
+                $enCurso = true;
+            } else { 
+                $contU += (float) ($t->cierre_usd ?? 0); 
+                $contB += (float) ($t->cierre_bs ?? 0); 
+            }
+        }
+        $p['titulo'] = 'Cierre del día';
+        $p['subtitulo'] = rp_fecha_larga($dia) . ' · ' . ($partes ? ucfirst(implode('; ', $partes)) : 'Sin turnos de caja');
+
+        $cobU = 0; $cobB = 0; $tU = 0; $tB = 0; $ventas = []; $anuladas = []; $porMetodo = [];
+        foreach ($datos as $d) {
+            $esBs = in_array(mb_strtoupper(trim((string) ($d->moneda ?? ''))), ['BS', 'VES'], true);
+            $monto = (float) ($d->monto ?? 0);
+            $tc = (float) ($d->tasa_cambio ?? 0);
+            $u = $esBs ? ($tc > 0 ? $monto / $tc : 0) : $monto;
+            $b = $esBs ? $monto : $monto * $tc;
+            $orden = (string) ($d->numero_orden ?? '');
+            if (in_array((string) ($d->estado_venta ?? ''), ['cancelado', 'anulado'], true)) {
+                $anuladas[$orden] = ($anuladas[$orden] ?? 0) + $u;
+                continue;
+            }
+            $ventas[$orden] = true;
+            $tU += $u; $tB += $b;
+            $nombreM = (string) ($d->metodo_nombre ?? '') ?: (string) ($d->codigo_metodo ?? 'Otro');
+            if (stripos((string) ($d->codigo_metodo ?? '') . ' ' . $nombreM, 'efectivo') !== false) {
+                if ($esBs) $cobB += $monto; else $cobU += $monto;
+            }
+            $porMetodo[$nombreM][] = [strtotime((string) ($d->fecha_pago ?? '')), $orden, (string) ($d->cliente ?? ''), implode(' · ', array_filter([(string) ($d->banco ?? ''), (string) ($d->referencia ?? '')])), $u, $b];
+        }
+        $espU = $fondoU + $cobU; $espB = $fondoB + $cobB;
+
+        $p['columnas'] = [
+            ['texto' => 'Hora', 'fijo' => true, 'ancho' => 20], ['texto' => 'N.º venta', 'fijo' => true, 'ancho' => 20], ['texto' => 'Cliente', 'ancho' => 22],
+            ['texto' => 'Referencia', 'ancho' => 26], ['texto' => 'Monto $', 'numero' => true, 'ancho' => 16], ['texto' => 'Monto Bs', 'numero' => true, 'ancho' => 20],
+        ];
+        if ($turnos) {
+            $p['grupos'][] = [
+                'titulo' => 'Arqueo del día',
+                'columnas' => [['texto' => 'Concepto', 'ancho' => 50], ['texto' => '$', 'numero' => true, 'ancho' => 22], ['texto' => 'Bs', 'numero' => true, 'ancho' => 28]],
+                'filas' => [
+                    ['Fondo inicial', $fondoU, $fondoB],
+                    ['Cobrado en efectivo', $cobU, $cobB],
+                    ['Esperado en caja', $espU, $espB],
+                    $enCurso ? ['Contado al cerrar', 'En curso', 'En curso'] : ['Contado al cerrar', $contU, $contB],
+                ],
+                'subtotal' => $enCurso ? ['Diferencia', 'En curso', 'En curso'] : ['Diferencia', $estado($contU - $espU), $estado($contB - $espB)],
+            ];
+        }
+        $rango = fn($n) => stripos($n, 'efectivo') === false ? 2 : (preg_match('/bs|bol/i', $n) ? 1 : 0);
+        uksort($porMetodo, fn($a, $b) => [$rango($a), $a] <=> [$rango($b), $b]);
+        foreach ($porMetodo as $nombreM => $items) {
+            usort($items, fn($a, $b) => $a[0] <=> $b[0]);
+            $su = array_sum(array_column($items, 4)); $sb = array_sum(array_column($items, 5));
+            $p['grupos'][] = [
+                'titulo' => $nombreM . ' · ' . count($items) . (count($items) === 1 ? ' pago' : ' pagos'),
+                'filas' => array_map(fn($i) => [$i[0] ? $hora($i[0]) : '', $i[1], $i[2], $i[3], $i[4], $i[5]], $items),
+                'subtotal' => ['Subtotal', '', '', '', $su, $sb],
+            ];
+        }
+        if ($porMetodo) $p['totales'] = ['Total general', '', '', '', $tU, $tB];
+        $nV = count($ventas); $nP = array_sum(array_map('count', $porMetodo)); $nA = count($anuladas);
+        $p['resumen'] = [
+            ['texto' => 'Total del día', 'valor' => rp_dinero($tU), 'nota' => rp_bs($tB)],
+            ['texto' => 'Efectivo contado', 'valor' => $enCurso ? 'En curso' : rp_dinero($contU), 'nota' => $enCurso ? 'Esperado ' . rp_dinero($espU) : rp_bs($contB)],
+            ['texto' => 'N.º de ventas', 'valor' => (string) $nV, 'nota' => $nP . ($nP === 1 ? ' pago' : ' pagos')],
+            ['texto' => 'Ventas anuladas', 'valor' => (string) $nA, 'nota' => $nA ? rp_dinero(array_sum($anuladas)) . ', no suman' : 'Ninguna'],
+        ];
+        return $p;
+    }
+
+    // -------------------------------------------------------------
+    // ARQUEO INDIVIDUAL DE UN TURNO CONCRETO
+    // -------------------------------------------------------------
+    if ($tipo === 'cierre' && isset($reporte['turno'])) {
         $tu = (object) ($reporte['turno'] ?? []);
         $abierto = ($tu->estado ?? '') === 'abierto' || empty($tu->fecha_cierre);
         $ta = strtotime((string) ($tu->fecha_apertura ?? ''));
@@ -275,6 +382,9 @@ function paquete_reporte(string $tipo, array $reporte, float $tasa, PDO $db, arr
         return $p;
     }
 
+    // -------------------------------------------------------------
+    // RETIROS Y PENDIENTES
+    // -------------------------------------------------------------
     if ($tipo === 'retiros' || $tipo === 'pendientes') {
         $etiquetas = ['pagado' => 'Por retirar', 'por_retirar' => 'Por retirar', 'retirado' => 'Retirado', 'entregado' => 'Entregado', 'pendiente' => 'Pendiente de pago', 'por_verificar' => 'Por verificar'];
         $p['titulo'] = $tipo === 'retiros' ? 'Reporte de retiros' : 'Reporte de pagos pendientes';
@@ -305,6 +415,9 @@ function paquete_reporte(string $tipo, array $reporte, float $tasa, PDO $db, arr
         return $p;
     }
 
+    // -------------------------------------------------------------
+    // KARDEX / MOVIMIENTOS
+    // -------------------------------------------------------------
     if ($tipo === 'kardex' || $tipo === 'movimientos') {
         $nombres = ['venta_tienda' => 'Venta en tienda', 'venta_online' => 'Venta online', 'compra' => 'Compra', 'anulacion_compra' => 'Compra anulada', 'ajuste' => 'Ajuste', 'ajuste_entrada' => 'Ajuste (entrada)', 'ajuste_salida' => 'Ajuste (salida)', 'devolucion' => 'Devolución'];
         $mov = $g('movimiento') ?: $g('tipo_movimiento');
@@ -337,6 +450,9 @@ function paquete_reporte(string $tipo, array $reporte, float $tasa, PDO $db, arr
         return $p;
     }
 
+    // -------------------------------------------------------------
+    // COBRADO POR MÉTODO
+    // -------------------------------------------------------------
     if ($tipo === 'metodo' || $tipo === 'metodo_pago') {
         $metodo = $g('metodo');
         $nombreMetodo = '';
@@ -376,6 +492,9 @@ function paquete_reporte(string $tipo, array $reporte, float $tasa, PDO $db, arr
         return $p;
     }
 
+    // -------------------------------------------------------------
+    // ESTADÍSTICAS GENERALES
+    // -------------------------------------------------------------
     if ($tipo === 'estadisticas') {
         $res = (object) ($extra['resumen'] ?? []);
         $dias = array_map(fn($d) => (object) $d, (array) ($extra['dias'] ?? []));
@@ -407,12 +526,15 @@ function paquete_reporte(string $tipo, array $reporte, float $tasa, PDO $db, arr
         $p['resumen'] = [
             ['texto' => 'Vendido', 'valor' => rp_dinero($vendido), 'nota' => rp_bs($vendido * $tasa)],
             ['texto' => 'Ventas', 'valor' => (string) $ventas, 'nota' => 'promedio ' . rp_dinero($ventas ? $vendido / $ventas : 0)],
-            ['texto' => 'Ganancia', 'valor' => rp_dinero($ganancia), 'nota' => 'margen ' . ($vendido > 0 ? round($ganancia / $vendido * 100) : 0) . ' %'],
-            ['texto' => 'Tienda / online', 'valor' => ($vendido > 0 ? round($tienda / $vendido * 100) : 0) . ' % / ' . ($vendido > 0 ? 100 - round($tienda / $vendido * 100) : 0) . ' %', 'nota' => 'del total vendido'],
+            ['texto' => 'Ganancia', 'valor' => rp_dinero($ganancia), 'nota' => 'margen ' . ($vendido > 0 ? round(($ganancia / $vendido) * 100) : 0) . ' %'],
+            ['texto' => 'Tienda / online', 'valor' => ($vendido > 0 ? round(($tienda / $vendido) * 100) : 0) . ' % / ' . ($vendido > 0 ? (100 - round(($tienda / $vendido) * 100)) : 0) . ' %', 'nota' => 'del total vendido'],
         ];
         return $p;
     }
 
+    // -------------------------------------------------------------
+    // CLIENTES
+    // -------------------------------------------------------------
     if ($tipo === 'clientes') {
         $est = $g('estado');
         $p['titulo'] = 'Directorio de clientes';
@@ -449,6 +571,9 @@ function paquete_reporte(string $tipo, array $reporte, float $tasa, PDO $db, arr
         return $p;
     }
 
+    // -------------------------------------------------------------
+    // PROVEEDORES
+    // -------------------------------------------------------------
     if ($tipo === 'proveedores') {
         $est = $g('estado');
         $p['titulo'] = 'Directorio de proveedores';
@@ -480,6 +605,9 @@ function paquete_reporte(string $tipo, array $reporte, float $tasa, PDO $db, arr
         return $p;
     }
 
+    // -------------------------------------------------------------
+    // COMPRAS
+    // -------------------------------------------------------------
     if ($tipo === 'compras') {
         $p['titulo'] = 'Reporte de compras';
         $p['subtitulo'] = rp_periodo($desde, $hasta);
