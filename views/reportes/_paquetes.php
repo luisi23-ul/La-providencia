@@ -157,91 +157,65 @@ function paquete_reporte(string $tipo, array $reporte, float $tasa, PDO $db, arr
         return $p;
     }
 
-    if ($tipo === 'cierre' && isset($reporte['turnos'])) {
-        $dia = (string) ($reporte['fecha'] ?? '') ?: ($g('fecha') ?: date('Y-m-d'));
-        $f = fn($v) => number_format((float) $v, 2, ',', '.');
-        $estado = fn($d) => abs($d) < 0.005 ? 'Cuadra' : ($d > 0 ? 'Sobra ' : 'Falta ') . $f(abs($d));
-        $hora = fn($t) => date('g:i a', $t);
-        $turnos = array_map(fn($t) => (object) $t, (array) $reporte['turnos']);
-        usort($turnos, fn($a, $b) => strcmp((string) ($a->fecha_apertura ?? ''), (string) ($b->fecha_apertura ?? '')));
-        $fondoU = 0; $fondoB = 0; $contU = 0; $contB = 0; $enCurso = false; $partes = [];
-        foreach ($turnos as $t) {
-            $ab = ($t->estado ?? '') === 'abierto' || empty($t->fecha_cierre);
-            $ta = strtotime((string) ($t->fecha_apertura ?? ''));
-            $tc = $ab ? 0 : strtotime((string) $t->fecha_cierre);
-            $nom = trim(ucwords(mb_strtolower((string) ($t->cajero ?? '')))) ?: (string) ($t->cedula_cajero ?? '');
-            $partes[] = 'turno ' . (int) ($t->numero_turno ?? 0) . ' de ' . $nom . ', ' . ($ab
-                ? 'desde las ' . $hora($ta) . ' (en curso)'
-                : 'de ' . $hora($ta) . ' a ' . (date('Y-m-d', $tc) !== date('Y-m-d', $ta) ? date('d/m', $tc) . ' ' : '') . $hora($tc));
-            $fondoU += (float) ($t->fondo_usd ?? 0); $fondoB += (float) ($t->fondo_bs ?? 0);
-            if ($ab) $enCurso = true;
-            else { $contU += (float) ($t->cierre_usd ?? 0); $contB += (float) ($t->cierre_bs ?? 0); }
-        }
-        $p['titulo'] = 'Cierre del día';
-        $p['subtitulo'] = rp_fecha_larga($dia) . ' · ' . ($partes ? ucfirst(implode('; ', $partes)) : 'Sin turnos de caja');
-
-        $cobU = 0; $cobB = 0; $tU = 0; $tB = 0; $ventas = []; $anuladas = []; $porMetodo = [];
-        foreach ($datos as $d) {
-            $esBs = in_array(mb_strtoupper(trim((string) ($d->moneda ?? ''))), ['BS', 'VES'], true);
-            $monto = (float) ($d->monto ?? 0);
-            $tc = (float) ($d->tasa_cambio ?? 0);
-            $u = $esBs ? ($tc > 0 ? $monto / $tc : 0) : $monto;
-            $b = $esBs ? $monto : $monto * $tc;
-            $orden = (string) ($d->numero_orden ?? '');
-            if (in_array((string) ($d->estado_venta ?? ''), ['cancelado', 'anulado'], true)) {
-                $anuladas[$orden] = ($anuladas[$orden] ?? 0) + $u;
-                continue;
-            }
-            $ventas[$orden] = true;
-            $tU += $u; $tB += $b;
-            $nombreM = (string) ($d->metodo_nombre ?? '') ?: (string) ($d->codigo_metodo ?? 'Otro');
-            if (stripos((string) ($d->codigo_metodo ?? '') . ' ' . $nombreM, 'efectivo') !== false) {
-                if ($esBs) $cobB += $monto; else $cobU += $monto;
-            }
-            $porMetodo[$nombreM][] = [strtotime((string) ($d->fecha_pago ?? '')), $orden, (string) ($d->cliente ?? ''), implode(' · ', array_filter([(string) ($d->banco ?? ''), (string) ($d->referencia ?? '')])), $u, $b];
-        }
-        $espU = $fondoU + $cobU; $espB = $fondoB + $cobB;
-
+  if ($tipo === 'cierre_caja') {
+        $turnos = array_map(fn($t) => (object) $t, (array) ($reporte['turnos'] ?? $reporte['datos'] ?? []));
+        $p['titulo'] = 'Reporte de cierres de caja';
+        $p['subtitulo'] = rp_periodo($desde, $hasta);
         $p['columnas'] = [
-            ['texto' => 'Hora', 'fijo' => true, 'ancho' => 20], ['texto' => 'N.º venta', 'fijo' => true, 'ancho' => 20], ['texto' => 'Cliente', 'ancho' => 22],
-            ['texto' => 'Referencia', 'ancho' => 26], ['texto' => 'Monto $', 'numero' => true, 'ancho' => 16], ['texto' => 'Monto Bs', 'numero' => true, 'ancho' => 20],
+            ['texto' => 'Turno', 'fijo' => true, 'ancho' => 12],
+            ['texto' => 'Cajero', 'ancho' => 22],
+            ['texto' => 'Apertura', 'ancho' => 18],
+            ['texto' => 'Cierre', 'ancho' => 18],
+            ['texto' => 'Fondo $', 'numero' => true, 'ancho' => 12],
+            ['texto' => 'Cierre $', 'numero' => true, 'ancho' => 12],
+            ['texto' => 'Cierre Bs', 'numero' => true, 'ancho' => 16],
         ];
-        if ($turnos) {
-            $p['grupos'][] = [
-                'titulo' => 'Arqueo del día',
-                'columnas' => [['texto' => 'Concepto', 'ancho' => 50], ['texto' => '$', 'numero' => true, 'ancho' => 22], ['texto' => 'Bs', 'numero' => true, 'ancho' => 28]],
-                'filas' => [
-                    ['Fondo inicial', $fondoU, $fondoB],
-                    ['Cobrado en efectivo', $cobU, $cobB],
-                    ['Esperado en caja', $espU, $espB],
-                    $enCurso ? ['Contado al cerrar', 'En curso', 'En curso'] : ['Contado al cerrar', $contU, $contB],
-                ],
-                'subtotal' => $enCurso ? ['Diferencia', 'En curso', 'En curso'] : ['Diferencia', $estado($contU - $espU), $estado($contB - $espB)],
+
+        $filas = [];
+        $totFondoU = 0;
+        $totCierreU = 0;
+        $totCierreB = 0;
+
+        foreach ($turnos as $t) {
+            $numT   = (int) ($t->numero_turno ?? 0);
+            $cajero = (string) ($t->cajero ?? 'Cajero');
+            $fAp    = (string) ($t->fecha_apertura ?? '');
+            $fCi    = (string) ($t->fecha_cierre ?? 'Sin cierre');
+            $fU     = (float) ($t->fondo_usd ?? 0);
+            $cU     = (float) ($t->cierre_usd ?? 0);
+            $cB     = (float) ($t->cierre_bs ?? 0);
+
+            $totFondoU  += $fU;
+            $totCierreU += $cU;
+            $totCierreB += $cB;
+
+            $filas[] = [
+                'Turno #' . $numT,
+                $cajero,
+                $fAp,
+                $fCi,
+                $fU,
+                $cU,
+                $cB
             ];
         }
-        $rango = fn($n) => stripos($n, 'efectivo') === false ? 2 : (preg_match('/bs|bol/i', $n) ? 1 : 0);
-        uksort($porMetodo, fn($a, $b) => [$rango($a), $a] <=> [$rango($b), $b]);
-        foreach ($porMetodo as $nombreM => $items) {
-            usort($items, fn($a, $b) => $a[0] <=> $b[0]);
-            $su = array_sum(array_column($items, 4)); $sb = array_sum(array_column($items, 5));
-            $p['grupos'][] = [
-                'titulo' => $nombreM . ' · ' . count($items) . (count($items) === 1 ? ' pago' : ' pagos'),
-                'filas' => array_map(fn($i) => [$i[0] ? $hora($i[0]) : '', $i[1], $i[2], $i[3], $i[4], $i[5]], $items),
-                'subtotal' => ['Subtotal', '', '', '', $su, $sb],
-            ];
-        }
-        if ($porMetodo) $p['totales'] = ['Total general', '', '', '', $tU, $tB];
-        $nV = count($ventas); $nP = array_sum(array_map('count', $porMetodo)); $nA = count($anuladas);
+
+        $p['grupos'][] = [
+            'titulo'   => 'Historial de turnos cerrados · ' . count($turnos) . (count($turnos) === 1 ? ' turno' : ' turnos'),
+            'filas'    => $filas,
+            'subtotal' => ['Subtotal', '', '', '', $totFondoU, $totCierreU, $totCierreB],
+        ];
+
+        $p['totales'] = ['Total general', '', '', '', $totFondoU, $totCierreU, $totCierreB];
         $p['resumen'] = [
-            ['texto' => 'Total del día', 'valor' => rp_dinero($tU), 'nota' => rp_bs($tB)],
-            ['texto' => 'Efectivo contado', 'valor' => $enCurso ? 'En curso' : rp_dinero($contU), 'nota' => $enCurso ? 'Esperado ' . rp_dinero($espU) : rp_bs($contB)],
-            ['texto' => 'N.º de ventas', 'valor' => (string) $nV, 'nota' => $nP . ($nP === 1 ? ' pago' : ' pagos')],
-            ['texto' => 'Ventas anuladas', 'valor' => (string) $nA, 'nota' => $nA ? rp_dinero(array_sum($anuladas)) . ', no suman' : 'Ninguna'],
+            ['texto' => 'Turnos cerrados', 'valor' => (string) count($turnos), 'nota' => 'en el período'],
+            ['texto' => 'Total $ contado', 'valor' => rp_dinero($totCierreU), 'nota' => 'al cierre'],
+            ['texto' => 'Total Bs contado', 'valor' => rp_bs($totCierreB), 'nota' => 'al cierre'],
         ];
+
         return $p;
     }
-
-    if ($tipo === 'cierre_caja' || $tipo === 'cierre') {
+    if ($tipo === 'cierre') {
         $tu = (object) ($reporte['turno'] ?? []);
         $abierto = ($tu->estado ?? '') === 'abierto' || empty($tu->fecha_cierre);
         $ta = strtotime((string) ($tu->fecha_apertura ?? ''));
