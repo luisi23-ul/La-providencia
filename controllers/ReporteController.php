@@ -98,13 +98,13 @@ class ReporteController {
                 'titulo' => $titulo,
                 'datos'  => $datos
             ];
-        } elseif ($tipo === 'pagos_banco') {
+       } elseif ($tipo === 'pagos_banco') {
             $desde  = trim((string)($_GET['desde'] ?? ''));
             $hasta  = trim((string)($_GET['hasta'] ?? ''));
             $banco  = trim((string)($_GET['banco'] ?? ''));
             $metodo = trim((string)($_GET['metodo'] ?? $_GET['codigo_metodo'] ?? ''));
 
-            // Excluir efectivo para conciliación bancaria
+            // Excluir efectivo
             $where  = ["p.codigo_metodo NOT IN ('efectivo_usd', 'efectivo_bs')"];
             $params = [];
 
@@ -116,29 +116,43 @@ class ReporteController {
                 $where[] = "DATE(p.fecha_pago) <= ?";
                 $params[] = $hasta;
             }
-            // Filtro por Banco
             if (!empty($banco) && $banco !== 'todos' && $banco !== 'Todos los bancos') {
                 $where[] = "p.banco = ?";
                 $params[] = $banco;
             }
-            // Filtro por Método (Pago Móvil / Transferencia)
             if (!empty($metodo) && $metodo !== 'todos' && $metodo !== 'Todos los métodos') {
                 $where[] = "p.codigo_metodo = ?";
                 $params[] = $metodo;
             }
 
-            $sql = "SELECT p.numero_orden, 
+           $sql = "SELECT p.numero_orden, 
                            p.fecha_pago, 
-                           p.banco, 
+                           COALESCE(p.banco, 'Sin banco') AS banco, 
                            p.codigo_metodo, 
-                           p.referencia, 
+                           COALESCE(mp.nombre, p.codigo_metodo) AS metodo_nombre,
+                           COALESCE(p.referencia, 'S/R') AS referencia, 
                            p.moneda, 
                            p.monto, 
                            p.tasa_cambio, 
                            p.estado, 
+                           COALESCE(c.nombre_razon_social, u.nombre, 'Consumidor Final') AS titular,
+                           COALESCE(c.cedula, 'S/C') AS cedula_titular,
+                           COALESCE(c.nombre_razon_social, 'Consumidor Final') AS cliente,
+                           COALESCE(c.cedula, 'S/C') AS cedula_cliente,
+                           CASE 
+                               WHEN UPPER(TRIM(p.moneda)) IN ('BS', 'VES') THEN ROUND(p.monto / NULLIF(p.tasa_cambio, 0), 2)
+                               ELSE p.monto
+                           END AS monto_usd,
+                           CASE 
+                               WHEN UPPER(TRIM(p.moneda)) IN ('BS', 'VES') THEN p.monto
+                               ELSE ROUND(p.monto * COALESCE(NULLIF(p.tasa_cambio, 0), 881.07), 2)
+                           END AS monto_bs,
                            COALESCE(u.nombre, 'Sistema') AS cajero
                     FROM pagos p
+                    LEFT JOIN ventas v ON p.numero_orden = v.numero_orden
+                    LEFT JOIN clientes c ON v.cedula_cliente = c.cedula
                     LEFT JOIN usuarios u ON p.cedula_cajero = u.cedula
+                    LEFT JOIN metodos_pago mp ON p.codigo_metodo = mp.codigo_metodo
                     WHERE " . implode(' AND ', $where) . "
                     ORDER BY p.fecha_pago DESC";
 
@@ -596,10 +610,7 @@ class ReporteController {
                 'cliente' => $cliente,
                 'datos'   => $compras
             ];
- } elseif ($tipo === 'cierre_caja') {
-            // =========================================================================
-            // REPORTE: CIERRES DE CAJA POR PERÍODO (Histórico de turnos cerrados)
-            // =========================================================================
+} elseif ($tipo === 'cierre_caja') {
             $desde = trim((string)($_GET['desde'] ?? ''));
             $hasta = trim((string)($_GET['hasta'] ?? ''));
 
@@ -615,6 +626,7 @@ class ReporteController {
                 $params[] = $hasta;
             }
 
+            // Subconsultas para sumar el efectivo cobrado en el rango del turno
             $sql = "SELECT tc.cedula_cajero, 
                            tc.numero_turno, 
                            DATE_FORMAT(tc.fecha_apertura, '%d/%m/%Y %H:%i') AS fecha_apertura, 
@@ -625,7 +637,25 @@ class ReporteController {
                            tc.cierre_bs, 
                            tc.tasa_apertura, 
                            COALESCE(tc.nota_cierre, '') AS nota_cierre,
-                           CONCAT(COALESCE(u.nombre, ''), ' ', COALESCE(u.apellido, '')) AS cajero
+                           CONCAT(COALESCE(u.nombre, ''), ' ', COALESCE(u.apellido, '')) AS cajero,
+                           COALESCE((
+                               SELECT SUM(p.monto) 
+                               FROM pagos p
+                               WHERE p.cedula_cajero = tc.cedula_cajero 
+                                 AND p.codigo_metodo = 'efectivo_usd'
+                                 AND p.estado IN ('aprobado', 'verificado')
+                                 AND p.fecha_pago >= tc.fecha_apertura 
+                                 AND p.fecha_pago <= COALESCE(tc.fecha_cierre, NOW())
+                           ), 0) AS cobrado_efectivo_usd,
+                           COALESCE((
+                               SELECT SUM(p.monto) 
+                               FROM pagos p
+                               WHERE p.cedula_cajero = tc.cedula_cajero 
+                                 AND p.codigo_metodo = 'efectivo_bs'
+                                 AND p.estado IN ('aprobado', 'verificado')
+                                 AND p.fecha_pago >= tc.fecha_apertura 
+                                 AND p.fecha_pago <= COALESCE(tc.fecha_cierre, NOW())
+                           ), 0) AS cobrado_efectivo_bs
                     FROM turnos_caja tc
                     LEFT JOIN usuarios u ON tc.cedula_cajero = u.cedula
                     WHERE " . implode(' AND ', $where) . "
@@ -690,7 +720,7 @@ class ReporteController {
                 ];
             }
 
-            // Caso 2: Cierre diario completo (todos los turnos y pagos del día)
+            // Caso 2: Cierre diario completo
             $fechaConsulta = !empty($fecha) ? $fecha : date('Y-m-d');
 
             $stmtTurnos = $this->db->prepare("
@@ -707,10 +737,10 @@ class ReporteController {
                        COALESCE(tc.nota_cierre, '') AS nota_cierre
                 FROM turnos_caja tc
                 LEFT JOIN usuarios u ON tc.cedula_cajero = u.cedula
-                WHERE DATE(tc.fecha_apertura) = ?
+                WHERE DATE(tc.fecha_cierre) = ? OR (DATE(tc.fecha_apertura) = ? AND tc.estado = 'abierto')
                 ORDER BY tc.fecha_apertura ASC, tc.numero_turno ASC
             ");
-            $stmtTurnos->execute([$fechaConsulta]);
+            $stmtTurnos->execute([$fechaConsulta, $fechaConsulta]);
             $listaTurnos = $stmtTurnos->fetchAll(PDO::FETCH_ASSOC);
 
             $stmtPagos = $this->db->prepare("
@@ -743,7 +773,8 @@ class ReporteController {
                 'turnos' => $listaTurnos,
                 'datos'  => $listaPagos
             ];
-        }
+             }
+
 
         exit("Tipo de reporte no válido.");
     }
