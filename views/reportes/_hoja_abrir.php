@@ -56,6 +56,7 @@ body { margin: 0; background: #fff; color: #2a2420; font: 400 9.5pt/1.45 'Jost',
 .datos th { padding: 2.2mm 2.5mm; border-bottom: 1.2px solid #2a2420; text-align: left; font-size: 7.5pt; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #5b5148; }
 .datos td { padding: 2mm 2.5mm; border-bottom: 1px solid #eee6db; vertical-align: top; }
 .datos .num { text-align: right; white-space: nowrap; }
+.datos td small { display: block; margin-top: .4mm; font-size: 8pt; line-height: 1.3; color: #6b6058; }
 .datos tr, .datos.junto { page-break-inside: avoid; break-inside: avoid; }
 .datos .cols th { background: #f5f0e8; border-bottom: 1px solid #cfc2b2; }
 .datos .grupo th { padding: 5mm 2.5mm 1.8mm; border-bottom: 0; background: none; font-size: 10pt; font-weight: 600; letter-spacing: 0; text-transform: none; color: #2a2420; }
@@ -65,7 +66,7 @@ main > .datos:first-of-type .grupo th, section + .datos .grupo th { padding-top:
 .datos .total td { padding: 3mm 2.5mm; border-top: 2px solid #2a2420; border-bottom: 0; font-size: 10pt; font-weight: 600; }
 .datos .total td:first-child, .datos .sub td:first-child { overflow-wrap: normal; white-space: nowrap; overflow: visible; }
 .datos .fijo { white-space: nowrap; overflow-wrap: normal; }
-.datos th.num { white-space: normal; overflow-wrap: normal; }
+.datos .cols th { white-space: nowrap; overflow-wrap: normal; }
 .datos .total td:first-child { color: #8c4a2f; letter-spacing: .08em; text-transform: uppercase; font-size: 8.5pt; }
 .resumen { width: 100%; table-layout: fixed; border-collapse: collapse; margin-bottom: 6mm; border: 1px solid #e3d8ca; }
 .resumen td { padding: 4.2mm 4.5mm 4mm; border-left: 1px solid #e3d8ca; vertical-align: top; }
@@ -147,8 +148,8 @@ main > .datos:first-of-type .grupo th, section + .datos .grupo th { padding-top:
   .datos .grupo th { padding-left: 1.2mm; padding-right: 1.2mm; font-size: 9pt; }
   .datos .total td { padding: 2.4mm 1.2mm; font-size: 8.4pt; }
   .datos .total td:first-child { font-size: 7pt; letter-spacing: .04em; }
-  .datos th.num { white-space: normal; }
   .datos .num { padding-left: .5mm; }
+  .datos td small { font-size: 6.6pt; }
   .datos .sub .num, .datos .total .num { font-size: 7.1pt; letter-spacing: -.01em; }
   .ficha td { display: block; width: auto; border-left: 0; border-top: 1px solid #e3d8ca; }
   .ficha td:first-child { border-top: 0; }

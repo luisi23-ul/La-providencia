@@ -19,7 +19,8 @@ $celdas = function (array $fila, string $etiqueta = 'td', ?array $cols = null) u
         $num = !empty($cols[$i]['numero']);
         if ($num && $etiqueta === 'td' && is_numeric($v)) $v = number_format((float) $v, (int) $cols[$i]['decimales'], ',', '.');
         $clase = trim(($num ? 'num' : '') . (!empty($cols[$i]['fijo']) ? ' fijo' : ''));
-        $html .= "<$etiqueta" . ($clase !== '' ? ' class="' . $clase . '"' : '') . '>' . $h($v) . "</$etiqueta>";
+        $texto = is_array($v) ? $h($v[0] ?? '') . (($v[1] ?? '') !== '' ? '<small>' . $h($v[1]) . '</small>' : '') : $h($v);
+        $html .= "<$etiqueta" . ($clase !== '' ? ' class="' . $clase . '"' : '') . '>' . $texto . "</$etiqueta>";
     }
     return $html;
 };

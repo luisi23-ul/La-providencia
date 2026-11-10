@@ -100,10 +100,13 @@ function reporte_excel(array $r): Spreadsheet
 
     $norm = fn(array $cs) => array_map(fn($c) => (is_array($c) ? $c : ['texto' => $c]) + ['numero' => false, 'decimales' => 2], $cs);
     $nums = fn(array $cs) => array_keys(array_filter($cs, fn($c) => $c['numero']));
-    $escribir = function (array $valores, int $fila, array $cs) use ($h, $L, $nums) {
+    $largo = [];
+    $escribir = function (array $valores, int $fila, array $cs) use ($h, $L, $nums, &$largo) {
         $numeros = $nums($cs);
         foreach (array_values($valores) as $i => $v) {
+            if (is_array($v)) $v = trim(($v[0] ?? '') . (($v[1] ?? '') === '' ? '' : (preg_match('/^\p{Ll}/u', $v[1]) ? ' ' : ', ') . $v[1]));
             $celda = $L($i) . $fila;
+            if (!is_numeric($v)) $largo[$i] = max($largo[$i] ?? 0, mb_strlen((string) $v));
             if (in_array($i, $numeros, true)) {
                 if (is_numeric($v)) $h->setCellValue($celda, (float) $v);
                 else $h->setCellValueExplicit($celda, (string) $v, DataType::TYPE_STRING);
@@ -186,7 +189,7 @@ function reporte_excel(array $r): Spreadsheet
         ]);
         $h->getStyle("A$f")->getFont()->getColor()->setRGB('8C4A2F');
     }
-    foreach ($cols as $i => $c) $h->getColumnDimension($L($i))->setWidth($c['ancho'] ?? max(12, min(28, mb_strlen($c['texto']) + 6)));
+    foreach ($cols as $i => $c) $h->getColumnDimension($L($i))->setWidth(max($c['ancho'] ?? max(12, min(28, mb_strlen($c['texto']) + 6)), min(40, ($largo[$i] ?? 0) + 2)));
     if (!empty($r['elaborado'])) {
         $h->setCellValue('A' . ($f + 2), 'Elaborado por ' . $r['elaborado']);
         $h->getStyle('A' . ($f + 2))->getFont()->setSize(8)->getColor()->setRGB('8A7F74');
