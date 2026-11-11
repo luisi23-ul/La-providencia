@@ -625,6 +625,7 @@ class ReporteController {
                 $params[] = $hasta;
             }
 
+            // Cálculo unificado idéntico al Cierre del Día: cobros reales de pagos por turno
             $sql = "SELECT tc.cedula_cajero, 
                            tc.numero_turno, 
                            DATE_FORMAT(tc.fecha_apertura, '%d/%m/%Y %H:%i') AS fecha_apertura, 
@@ -636,50 +637,28 @@ class ReporteController {
                            tc.tasa_apertura, 
                            COALESCE(tc.nota_cierre, '') AS nota_cierre,
                            CONCAT(COALESCE(u.nombre, ''), ' ', COALESCE(u.apellido, '')) AS cajero,
-                           -- Cobros en efectivo USD menos vueltos en USD entregados
-                           (
-                               COALESCE((
-                                   SELECT SUM(p.monto) 
-                                   FROM pagos p
-                                   WHERE p.cedula_cajero = tc.cedula_cajero 
-                                     AND p.codigo_metodo = 'efectivo_usd'
-                                     AND p.estado IN ('aprobado', 'verificado', 'completado')
-                                     AND p.fecha_pago >= tc.fecha_apertura 
-                                     AND p.fecha_pago <= COALESCE(tc.fecha_cierre, NOW())
-                               ), 0)
-                               -
-                               COALESCE((
-                                   SELECT SUM(v.vuelto)
-                                   FROM ventas v
-                                   WHERE v.cedula_usuario = tc.cedula_cajero
-                                     AND v.vuelto_moneda = 'USD'
-                                     AND v.fecha >= tc.fecha_apertura
-                                     AND v.fecha <= COALESCE(tc.fecha_cierre, NOW())
-                                     AND v.estado NOT IN ('cancelado', 'anulado')
-                               ), 0)
-                           ) AS cobrado_efectivo_usd,
-                           -- Cobros en efectivo Bs menos vueltos en Bs entregados
-                           (
-                               COALESCE((
-                                   SELECT SUM(p.monto) 
-                                   FROM pagos p
-                                   WHERE p.cedula_cajero = tc.cedula_cajero 
-                                     AND p.codigo_metodo = 'efectivo_bs'
-                                     AND p.estado IN ('aprobado', 'verificado', 'completado')
-                                     AND p.fecha_pago >= tc.fecha_apertura 
-                                     AND p.fecha_pago <= COALESCE(tc.fecha_cierre, NOW())
-                               ), 0)
-                               -
-                               COALESCE((
-                                   SELECT SUM(v.vuelto)
-                                   FROM ventas v
-                                   WHERE v.cedula_usuario = tc.cedula_cajero
-                                     AND v.vuelto_moneda = 'Bs'
-                                     AND v.fecha >= tc.fecha_apertura
-                                     AND v.fecha <= COALESCE(tc.fecha_cierre, NOW())
-                                     AND v.estado NOT IN ('cancelado', 'anulado')
-                               ), 0)
-                           ) AS cobrado_efectivo_bs
+                           -- Efectivo USD cobrado en el turno
+                           COALESCE((
+                               SELECT SUM(p.monto) 
+                               FROM pagos p
+                               INNER JOIN ventas v ON p.numero_orden = v.numero_orden
+                               WHERE p.cedula_cajero = tc.cedula_cajero 
+                                 AND p.codigo_metodo = 'efectivo_usd'
+                                 AND p.fecha_pago >= tc.fecha_apertura 
+                                 AND p.fecha_pago <= IF(tc.fecha_cierre IS NOT NULL AND tc.fecha_cierre != '2000-01-01 00:00:00', tc.fecha_cierre, NOW())
+                                 AND v.estado NOT IN ('cancelado', 'anulado')
+                           ), 0) AS cobrado_efectivo_usd,
+                           -- Efectivo Bs cobrado en el turno (sin saldo negativo)
+                           COALESCE((
+                               SELECT SUM(p.monto) 
+                               FROM pagos p
+                               INNER JOIN ventas v ON p.numero_orden = v.numero_orden
+                               WHERE p.cedula_cajero = tc.cedula_cajero 
+                                 AND p.codigo_metodo = 'efectivo_bs'
+                                 AND p.fecha_pago >= tc.fecha_apertura 
+                                 AND p.fecha_pago <= IF(tc.fecha_cierre IS NOT NULL AND tc.fecha_cierre != '2000-01-01 00:00:00', tc.fecha_cierre, NOW())
+                                 AND v.estado NOT IN ('cancelado', 'anulado')
+                           ), 0) AS cobrado_efectivo_bs
                     FROM turnos_caja tc
                     LEFT JOIN usuarios u ON tc.cedula_cajero = u.cedula
                     WHERE " . implode(' AND ', $where) . "
@@ -745,7 +724,6 @@ class ReporteController {
             }
 
             // Caso 2: Cierre diario completo
-            // Caso 2: Cierre diario completo
             $fechaConsulta = !empty($fecha) ? $fecha : date('Y-m-d');
 
             $stmtTurnos = $this->db->prepare("
@@ -768,7 +746,6 @@ class ReporteController {
             $stmtTurnos->execute([$fechaConsulta, $fechaConsulta]);
             $listaTurnos = $stmtTurnos->fetchAll(PDO::FETCH_ASSOC);
 
-            // Buscar los pagos efectuados dentro del intervalo de los turnos obtenidos
             $listaPagos = [];
             if (!empty($listaTurnos)) {
                 $condicionesTurnos = [];
@@ -817,7 +794,7 @@ class ReporteController {
                 'turnos' => $listaTurnos,
                 'datos'  => $listaPagos
             ];
-}
+        }
 
         exit("Tipo de reporte no válido.");
     }
